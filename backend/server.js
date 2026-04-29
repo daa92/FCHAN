@@ -42,6 +42,9 @@ app.set('io', io);
 const authRoutes = require('./routes/auth'); // authentication route_phase2
 const farmRoutes = require('./routes/farm'); // farm, zone and plant_phase3
 const sensorRoutes = require('./routes/sensors'); // arduino sensors or manually data entry routes_phase4
+const alertRoutes = require('./routes/alerts'); // alerts management_phase5
+const { startAlertsEngine } = require('./services/alerts');
+
 
 app.get('/', (req, res) => {
   res.json({
@@ -54,6 +57,7 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRoutes); // authentication route_phase2
 app.use('/api/farm', farmRoutes);
 app.use('/api/sensors', sensorRoutes);
+app.use('/api/alerts', alertRoutes);
 // ─── 404 HANDLER ──────────────────────────────────────
 app.use((req, res) => {
   res.status(404).json({
@@ -76,4 +80,14 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`FCHAN server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV}`);
+  startAlertsEngine(io); // start alert
 });
+
+// ─── START ALERT ─────────────────────────────────────
+/*server.listen(PORT, () => {
+  console.log(`FCHAN server running on port ${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV}`);
+  startAlertsEngine(io);
+});*/
+
+
