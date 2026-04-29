@@ -40,6 +40,7 @@ app.set('io', io);
 // We will add routes here as we build each phase // this comment has been set at the beginning
 // As far as we go through phases, it may not be longer important
 const authRoutes = require('./routes/auth'); // authentication route_phase2
+const farmRoutes = require('./routes/farm'); // farm, zone and plant_phase3
 
 app.get('/', (req, res) => {
   res.json({
@@ -50,7 +51,7 @@ app.get('/', (req, res) => {
 });
 
 app.use('/api/auth', authRoutes); // authentication route_phase2
-
+app.use('/api/farm', farmRoutes);
 // ─── 404 HANDLER ──────────────────────────────────────
 app.use((req, res) => {
   res.status(404).json({
