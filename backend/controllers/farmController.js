@@ -214,15 +214,22 @@ const updatePlant = async (req, res) => {
     if (!plant) {
       return res.status(404).json({ success: false, message: 'Plant not found.' });
     }
-    const { name, species, variety, quantity, planted_at, expected_harvest_at, growth_stage, notes } = req.body;
+    
+    const { name, species_id, species, variety, quantity, planted_at, expected_harvest_at, growth_stage, notes } = req.body;
+    //const { name, species, variety, quantity, planted_at, expected_harvest_at, growth_stage, notes } = req.body;
     if (!name) {
       return res.status(400).json({ success: false, message: 'Plant name is required.' });
     }
     await Plant.update(req.params.plantId, {
+  	name, species_id, species, variety, quantity,
+  	planted_at, expected_harvest_at,
+  	growth_stage, notes
+    });
+    /*await Plant.update(req.params.plantId, {
       name, species, variety, quantity,
       planted_at, expected_harvest_at,
       growth_stage, notes
-    });
+    });*/
     const updatedPlant = await Plant.findById(req.params.plantId);
     return res.status(200).json({ success: true, message: 'Plant updated.', plant: updatedPlant });
   } catch (err) {

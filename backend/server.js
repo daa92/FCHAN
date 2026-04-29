@@ -44,6 +44,8 @@ const farmRoutes = require('./routes/farm'); // farm, zone and plant_phase3
 const sensorRoutes = require('./routes/sensors'); // arduino sensors or manually data entry routes_phase4
 const alertRoutes = require('./routes/alerts'); // alerts management_phase5
 const { startAlertsEngine } = require('./services/alerts');
+const speciesRoutes = require('./routes/species'); // forecast engine implementation_phase6
+const forecastRoutes = require('./routes/forecast');
 
 
 app.get('/', (req, res) => {
@@ -58,6 +60,8 @@ app.use('/api/auth', authRoutes); // authentication route_phase2
 app.use('/api/farm', farmRoutes);
 app.use('/api/sensors', sensorRoutes);
 app.use('/api/alerts', alertRoutes);
+app.use('/api/species', speciesRoutes);
+app.use('/api/forecast', forecastRoutes);
 // ─── 404 HANDLER ──────────────────────────────────────
 app.use((req, res) => {
   res.status(404).json({

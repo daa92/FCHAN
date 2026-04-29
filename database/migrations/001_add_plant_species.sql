@@ -1,0 +1,28 @@
+-- PLANT SPECIES TABLE
+CREATE TABLE IF NOT EXISTS plant_species (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(150) NOT NULL,
+  common_name VARCHAR(150) DEFAULT NULL,
+  base_temp DECIMAL(5,2) NOT NULL DEFAULT 10.00,
+  gdd_to_harvest INT NOT NULL DEFAULT 1000,
+  optimal_temp_min DECIMAL(5,2) DEFAULT NULL,
+  optimal_temp_max DECIMAL(5,2) DEFAULT NULL,
+  optimal_humidity_min DECIMAL(5,2) DEFAULT NULL,
+  optimal_humidity_max DECIMAL(5,2) DEFAULT NULL,
+  optimal_soil_moisture_min DECIMAL(5,2) DEFAULT NULL,
+  optimal_soil_moisture_max DECIMAL(5,2) DEFAULT NULL,
+  optimal_ph_min DECIMAL(4,2) DEFAULT NULL,
+  optimal_ph_max DECIMAL(4,2) DEFAULT NULL,
+  optimal_light_min DECIMAL(10,2) DEFAULT NULL,
+  optimal_light_max DECIMAL(10,2) DEFAULT NULL,
+  is_custom BOOLEAN DEFAULT FALSE,
+  created_by INT DEFAULT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (created_by) REFERENCES users (id) ON DELETE SET NULL
+);
+
+-- ADD SPECIES_ID TO PLANTS TABLE
+ALTER TABLE plants 
+ADD COLUMN species_id INT DEFAULT NULL AFTER zone_id,
+ADD FOREIGN KEY (species_id) REFERENCES plant_species (id) ON DELETE SET NULL;

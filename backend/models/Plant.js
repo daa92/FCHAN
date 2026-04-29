@@ -21,7 +21,7 @@ class Plant {
   }
 
   // Create a new plant
-  static async create({ zone_id, name, species, variety, quantity, planted_at, growth_stage, notes }) {
+  /*static async create({ zone_id, name, species, variety, quantity, planted_at, growth_stage, notes }) {
     const [result] = await db.execute(
       `INSERT INTO plants 
        (zone_id, name, species, variety, quantity, planted_at, growth_stage, notes) 
@@ -36,10 +36,28 @@ class Plant {
       ]
     );
     return result.insertId;
+  }*/
+  static async create({ zone_id, name, species_id, species, variety, quantity, planted_at, growth_stage, notes }) {
+    const [result] = await db.execute(
+      `INSERT INTO plants 
+       (zone_id, name, species_id, species, variety, quantity, planted_at, growth_stage, notes) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        zone_id, name,
+        species_id || null,
+        species || null,
+        variety || null,
+        quantity || 1,
+        planted_at || null,
+        growth_stage || 'seedling',
+        notes || null
+      ]
+    );
+    return result.insertId;
   }
 
   // Update a plant
-  static async update(id, { name, species, variety, quantity, planted_at, expected_harvest_at, growth_stage, notes }) {
+  /*static async update(id, { name, species, variety, quantity, planted_at, expected_harvest_at, growth_stage, notes }) {
     const [result] = await db.execute(
       `UPDATE plants SET 
        name = ?, species = ?, variety = ?, quantity = ?,
@@ -52,6 +70,28 @@ class Plant {
         expected_harvest_at || null,
         growth_stage || 'seedling',
         notes || null, id
+      ]
+    );
+    return result.affectedRows;
+  }*/
+  static async update(id, { name, species_id, species, variety, quantity, planted_at, expected_harvest_at, growth_stage, notes }) {
+    const [result] = await db.execute(
+      `UPDATE plants SET 
+       name = ?, species_id = ?, species = ?, variety = ?, quantity = ?,
+       planted_at = ?, expected_harvest_at = ?,
+       growth_stage = ?, notes = ?
+       WHERE id = ?`,
+      [
+        name,
+        species_id || null,
+        species || null,
+        variety || null,
+        quantity || 1,
+        planted_at || null,
+        expected_harvest_at || null,
+        growth_stage || 'seedling',
+        notes || null,
+        id
       ]
     );
     return result.affectedRows;
