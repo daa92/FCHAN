@@ -41,6 +41,7 @@ app.set('io', io);
 // As far as we go through phases, it may not be longer important
 const authRoutes = require('./routes/auth'); // authentication route_phase2
 const farmRoutes = require('./routes/farm'); // farm, zone and plant_phase3
+const sensorRoutes = require('./routes/sensors'); // arduino sensors or manually data entry routes_phase4
 
 app.get('/', (req, res) => {
   res.json({
@@ -52,6 +53,7 @@ app.get('/', (req, res) => {
 
 app.use('/api/auth', authRoutes); // authentication route_phase2
 app.use('/api/farm', farmRoutes);
+app.use('/api/sensors', sensorRoutes);
 // ─── 404 HANDLER ──────────────────────────────────────
 app.use((req, res) => {
   res.status(404).json({
