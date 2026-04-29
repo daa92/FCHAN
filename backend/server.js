@@ -37,7 +37,10 @@ io.on('connection', (socket) => {
 app.set('io', io);
 
 // ─── ROUTES ───────────────────────────────────────────
-// We will add routes here as we build each phase
+// We will add routes here as we build each phase // this comment has been set at the beginning
+// As far as we go through phases, it may not be longer important
+const authRoutes = require('./routes/auth'); // authentication route_phase2
+
 app.get('/', (req, res) => {
   res.json({
     success: true,
@@ -45,6 +48,8 @@ app.get('/', (req, res) => {
     version: '1.0.0'
   });
 });
+
+app.use('/api/auth', authRoutes); // authentication route_phase2
 
 // ─── 404 HANDLER ──────────────────────────────────────
 app.use((req, res) => {
