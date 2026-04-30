@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="../assets/images/logo.png"> <!--tab logo-->
+  <title>FCHAN_Dashboard</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="icon" type="image/png" href="../assets/images/favicon.png">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+  <style>
+    /* ── DASHBOARD SPECIFIC ─────────────────────────── */
+
+    /* Greeting section */
+    .greeting-section {
+      margin-bottom: var(--space-xl);
+    }
+
+    .greeting-section h1 {
+      font-size: var(--text-3xl);
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .greeting-section h1 span {
+      color: var(--primary);
+    }
+
+    .greeting-section p {
+      font-size: var(--text-base);
+      color: var(--text-muted);
+    }
+
+    /* Stats grid - 4 columns on desktop */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--space-md);
+      margin-bottom: var(--space-xl);
+    }
+
+    /* Main grid */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: var(--space-xl);
+    }
+
+    /* Farms grid */
+    .farms-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: var(--space-md);
+      margin-top: var(--space-md);
+    }
+
+    /* Farm card */
+    .farm-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      cursor: pointer;
+      transition: all var(--transition-base);
+      text-decoration: none;
+    }
+
+    .farm-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+      border-color: var(--primary);
+    }
+
+    .farm-card-banner {
+      height: 120px;
+      background: linear-gradient(135deg, var(--secondary), var(--primary));
+      position: relative;
+      overflow: hidden;
+    }
+
+    .farm-card-banner img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0.7;
+    }
+
+    .farm-card-banner .farm-badge {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: rgba(0,0,0,0.4);
+      color: white;
+      padding: 4px 10px;
+      border-radius: var(--radius-full);
+      font-size: var(--text-xs);
+      backdrop-filter: blur(4px);
+    }
+
+    .farm-card-body {
+      padding: var(--space-md);
+    }
+
+    .farm-card-body h3 {
+      font-size: var(--text-md);
+      font-weight: 700;
+      margin-bottom: 4px;
+      color: var(--text);
+    }
+
+    .farm-card-location {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      margin-bottom: var(--space-md);
+    }
+
+    .farm-card-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--space-sm);
+      padding-top: var(--space-md);
+      border-top: 1px solid var(--border);
+    }
+
+    .farm-stat {
+      text-align: center;
+    }
+
+    .farm-stat .value {
+      font-family: var(--font-heading);
+      font-size: var(--text-lg);
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .farm-stat .label {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Add farm card */
+    .farm-card-add {
+      background: var(--surface);
+      border: 2px dashed var(--border);
+      border-radius: var(--radius-md);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-sm);
+      padding: var(--space-xl);
+      cursor: pointer;
+      transition: all var(--transition-base);
+      min-height: 200px;
+      color: var(--text-muted);
+    }
+
+    .farm-card-add:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      background: rgba(39,174,96,0.04);
+    }
+
+    .farm-card-add .add-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-full);
+      background: var(--surface-2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all var(--transition-base);
+    }
+
+    .farm-card-add:hover .add-icon {
+      background: rgba(39,174,96,0.12);
+    }
+
+    .farm-card-add p {
+      font-size: var(--text-sm);
+      font-weight: 500;
+    }
+
+    /* Alerts panel */
+    .alerts-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-md) var(--space-lg);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .panel-header h3 {
+      font-size: var(--text-md);
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+
+    .panel-body {
+      max-height: 480px;
+      overflow-y: auto;
+    }
+
+    /* Alert item */
+    .alert-item {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-md);
+      padding: var(--space-md) var(--space-lg);
+      border-bottom: 1px solid var(--border);
+      transition: background var(--transition-fast);
+      cursor: pointer;
+    }
+
+    .alert-item:last-child { border-bottom: none; }
+
+    .alert-item:hover { background: var(--surface-2); }
+
+    .alert-item.unread { background: rgba(39,174,96,0.04); }
+
+    .alert-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 5px;
+    }
+
+    .alert-dot.critical { background: var(--danger); }
+    .alert-dot.warning  { background: var(--warning); }
+    .alert-dot.info     { background: var(--info); }
+
+    .alert-content { flex: 1; min-width: 0; }
+
+    .alert-type {
+      font-size: var(--text-sm);
+      font-weight: 600;
+      color: var(--text);
+      text-transform: capitalize;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .alert-message {
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+      margin-top: 2px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+
+    .alert-time {
+      font-size: 10px;
+      color: var(--text-light);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    /* Section header */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-md);
+    }
+
+    .section-header h2 {
+      font-size: var(--text-xl);
+      font-weight: 700;
+    }
+
+    /* User avatar */
+    .user-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: var(--radius-full);
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-family: var(--font-heading);
+      font-weight: 700;
+      font-size: var(--text-md);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    /* Pulse animation for critical alerts */
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.6; transform: scale(1.2); }
+    }
+
+    .alert-dot.critical {
+      animation: pulse 1.5s ease infinite;
+    }
+
+    /* Count-up animation */
+    .count-up {
+      transition: all 0.5s ease;
+    }
+
+    /* Modal form */
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-md);
+    }
+
+    /* Real-time indicator */
+    .realtime-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--success);
+      border-radius: 50%;
+      animation: pulse 2s ease infinite;
+    }
+
+    /* ── RESPONSIVE ───────────────────────────────── */
+    @media (max-width: 1200px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--space-sm);
+      }
+      .farms-grid {
+        grid-template-columns: 1fr;
+      }
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .greeting-section h1 { font-size: var(--text-2xl); }
+    }
+
+    @media (min-width: 1920px) {
+      .stats-grid { grid-template-columns: repeat(4, 1fr); }
+      .farms-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+  </style>
+</head>
+
+<body>
+<div class="app-layout">
+
+  <!-- ══ SIDEBAR ══════════════════════════════════ -->
+  <aside class="sidebar" id="sidebar">
+
+    <div class="sidebar-logo">
+      <img src="../assets/images/logo.png"
+           alt="FCHAN"
+           style="height:36px; flex-shrink:0;">
+      <span class="logo-text">FCHAN</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-item active" onclick="navigate('dashboard.html')">
+        <span class="nav-icon"><i data-lucide="layout-dashboard"></i></span>
+        <span class="nav-label" data-i18n="dashboard">Dashboard</span>
+      </div>
+      <div class="nav-item" onclick="navigate('farm.html')">
+        <span class="nav-icon"><i data-lucide="tree-pine"></i></span>
+        <span class="nav-label" data-i18n="farms">My Farms</span>
+      </div>
+      <div class="nav-item" onclick="navigate('alerts.html')">
+        <span class="nav-icon"><i data-lucide="bell"></i></span>
+        <span class="nav-label" data-i18n="alerts">Alerts</span>
+        <span class="nav-badge" id="alertBadge" style="display:none">0</span>
+      </div>
+      <div class="nav-item" onclick="navigate('reports.html')">
+        <span class="nav-icon"><i data-lucide="file-text"></i></span>
+        <span class="nav-label" data-i18n="reports">Reports</span>
+      </div>
+      <div class="nav-item" onclick="navigate('about.html')">
+        <span class="nav-icon"><i data-lucide="info"></i></span>
+        <span class="nav-label" data-i18n="about">About</span>
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <!-- Theme toggle -->
+      <div style="display:flex; align-items:center;
+                  justify-content:space-between; padding: 4px 8px;">
+        <span style="font-size:var(--text-sm);
+                     color:var(--text-muted);">Theme</span>
+        <button class="theme-toggle">
+          <i data-lucide="moon"></i>
+        </button>
+      </div>
+
+      <!-- Language -->
+      <div style="display:flex; align-items:center;
+                  justify-content:space-between; padding: 4px 8px;">
+        <span style="font-size:var(--text-sm);
+                     color:var(--text-muted);">Language</span>
+        <div class="lang-toggle">
+          <button class="lang-btn active" data-lang="en">EN</button>
+          <button class="lang-btn" data-lang="fr">FR</button>
+        </div>
+      </div>
+
+      <!-- User info -->
+      <div style="display:flex; align-items:center;
+                  gap:var(--space-sm); padding: 8px;">
+        <div class="user-avatar" id="userAvatar">D</div>
+        <div style="flex:1; min-width:0;" class="nav-label">
+          <div style="font-size:var(--text-sm); font-weight:600;
+                      color:var(--text); white-space:nowrap;
+                      overflow:hidden; text-overflow:ellipsis;"
+               id="userName">Loading...</div>
+          <div style="font-size:var(--text-xs);
+                      color:var(--text-muted);" id="userRole">farmer</div>
+        </div>
+        <button class="btn-ghost btn-sm"
+                onclick="Auth.logout()"
+                title="Logout"
+                style="padding:6px;">
+          <i data-lucide="log-out"></i>
+        </button>
+      </div>
+
+      <!-- Collapse toggle -->
+      <div style="display:flex; justify-content:flex-end; padding: 0 8px 4px;">
+        <button class="sidebar-toggle" onclick="toggleSidebar()"
+                id="sidebarToggle" title="Collapse sidebar">
+          <i data-lucide="chevrons-left" id="sidebarToggleIcon"></i>
+        </button>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ══ MAIN CONTENT ══════════════════════════════ -->
+  <main class="main-content" id="mainContent">
+
+    <!-- Top bar -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <h1 id="greetingText">
+          Good morning, <span id="greetingName">...</span>
+        </h1>
+        <p id="greetingDate"></p>
+      </div>
+      <div class="topbar-right">
+        <div class="realtime-dot" title="Live data"></div>
+        <span style="font-size:var(--text-xs);
+                     color:var(--text-muted);">Live</span>
+        <button class="btn btn-primary btn-sm"
+                onclick="openAddFarmModal()">
+          <i data-lucide="plus"></i>
+          <span data-i18n="add_farm">Add Farm</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon green">
+          <i data-lucide="tree-pine" style="color:var(--primary)"></i>
+        </div>
+        <div class="stat-info">
+          <div class="value count-up" id="statFarms">0</div>
+          <div class="label" data-i18n="total_farms">Total Farms</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon blue">
+          <i data-lucide="map" style="color:var(--info)"></i>
+        </div>
+        <div class="stat-info">
+          <div class="value count-up" id="statZones">0</div>
+          <div class="label" data-i18n="total_zones">Total Zones</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green">
+          <i data-lucide="sprout" style="color:var(--primary)"></i>
+        </div>
+        <div class="stat-info">
+          <div class="value count-up" id="statPlants">0</div>
+          <div class="label" data-i18n="total_plants">Total Plants</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon red">
+          <i data-lucide="bell" style="color:var(--danger)"></i>
+        </div>
+        <div class="stat-info">
+          <div class="value count-up" id="statAlerts">0</div>
+          <div class="label" data-i18n="active_alerts">Active Alerts</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main grid -->
+    <div class="dashboard-grid">
+
+      <!-- Left: Farms -->
+      <div>
+        <div class="section-header">
+          <h2 data-i18n="my_farms">My Farms</h2>
+          <a href="farm.html"
+             style="font-size:var(--text-sm);
+                    color:var(--primary); font-weight:500;"
+             data-i18n="view_all">View All</a>
+        </div>
+
+        <div class="farms-grid" id="farmsGrid">
+          <!-- Farms loaded here by JS -->
+          <div class="farm-card-add" onclick="openAddFarmModal()">
+            <div class="add-icon">
+              <i data-lucide="plus" style="color:var(--text-muted)"></i>
+            </div>
+            <p data-i18n="add_farm">Add Farm</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Alerts panel -->
+      <div>
+        <div class="alerts-panel">
+          <div class="panel-header">
+            <h3>
+              <i data-lucide="bell" style="width:18px;height:18px"></i>
+              <span data-i18n="recent_alerts">Recent Alerts</span>
+            </h3>
+            <a href="alerts.html"
+               style="font-size:var(--text-sm);
+                      color:var(--primary); font-weight:500;"
+               data-i18n="view_all">View All</a>
+          </div>
+          <div class="panel-body" id="alertsPanel">
+            <div class="empty-state" style="padding: 40px 20px;">
+              <i data-lucide="check-circle"
+                 style="width:40px;height:40px;
+                        color:var(--success);opacity:0.5"></i>
+              <p data-i18n="no_alerts">No alerts</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+</div>
+
+<!-- ══ BOTTOM NAV (Mobile) ══════════════════════════ -->
+<nav class="bottom-nav">
+  <div class="bottom-nav-items">
+    <div class="bottom-nav-item active" onclick="navigate('dashboard.html')">
+      <i data-lucide="layout-dashboard" class="nav-icon"></i>
+      <span data-i18n="dashboard">Dashboard</span>
+    </div>
+    <div class="bottom-nav-item" onclick="navigate('farm.html')">
+      <i data-lucide="tree-pine" class="nav-icon"></i>
+      <span data-i18n="farms">Farms</span>
+    </div>
+    <div class="bottom-nav-item" onclick="navigate('alerts.html')">
+      <i data-lucide="bell" class="nav-icon"></i>
+      <span data-i18n="alerts">Alerts</span>
+      <span class="bottom-nav-badge" id="mobileBadge"
+            style="display:none">0</span>
+    </div>
+    <div class="bottom-nav-item" onclick="navigate('reports.html')">
+      <i data-lucide="file-text" class="nav-icon"></i>
+      <span data-i18n="reports">Reports</span>
+    </div>
+    <div class="bottom-nav-item" onclick="navigate('about.html')">
+      <i data-lucide="info" class="nav-icon"></i>
+      <span data-i18n="about">About</span>
+    </div>
+  </div>
+</nav>
+
+<!-- ══ ADD FARM MODAL ════════════════════════════════ -->
+<div class="modal-overlay" id="addFarmModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 data-i18n="create_farm">Create Farm</h3>
+      <button class="modal-close"
+              onclick="closeModal('addFarmModal')">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" data-i18n="farm_name">Farm Name *</label>
+      <input type="text" class="form-control"
+             id="farmName" placeholder="My Farm">
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" data-i18n="farm_country">Country</label>
+        <input type="text" class="form-control"
+               id="farmCountry" placeholder="Cameroon">
+      </div>
+      <div class="form-group">
+        <label class="form-label" data-i18n="farm_city">City</label>
+        <input type="text" class="form-control"
+               id="farmCity" placeholder="Yaounde">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" data-i18n="farm_desc">Description</label>
+      <textarea class="form-control" id="farmDesc"
+                rows="3"
+                placeholder="Describe your farm..."></textarea>
+    </div>
+
+    <div style="display:flex; gap:var(--space-md);
+                justify-content:flex-end; margin-top:var(--space-lg);">
+      <button class="btn btn-outline"
+              onclick="closeModal('addFarmModal')"
+              data-i18n="cancel">Cancel</button>
+      <button class="btn btn-primary"
+              onclick="createFarm()"
+              id="createFarmBtn">
+        <i data-lucide="plus"></i>
+        <span data-i18n="create_farm">Create Farm</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TOAST CONTAINER ══════════════════════════════ -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Scripts -->
+<script src="../js/theme.js"></script>
+<script src="../js/language.js"></script>
+<script src="../js/auth.js"></script>
+
+<script>
+// ════════════════════════════════════════════════════
+// FCHAN Dashboard
+// ════════════════════════════════════════════════════
+
+// Require auth
+Auth.requireAuth();
+
+// ── INIT ──────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  ThemeManager.init();
+  LanguageManager.init();
+  lucide.createIcons();
+
+  setGreeting();
+  loadUser();
+  await loadDashboard();
+  connectSocket();
+});
+
+// ── GREETING ──────────────────────────────────────
+function setGreeting() {
+  const hour = new Date().getHours();
+  const lang = LanguageManager.get();
+  let greet;
+
+  if (hour < 12)      greet = LanguageManager.t('good_morning');
+  else if (hour < 17) greet = LanguageManager.t('good_afternoon');
+  else                greet = LanguageManager.t('good_evening');
+
+  const user = Auth.getUser();
+  const firstName = user ? user.name.split(' ')[0] : '';
+
+  document.getElementById('greetingText').innerHTML =
+    `${greet}, <span style="color:var(--primary)">${firstName}</span>`;
+
+  // Date
+  const now = new Date();
+  document.getElementById('greetingDate').textContent =
+    now.toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+}
+
+// ── LOAD USER ─────────────────────────────────────
+function loadUser() {
+  const user = Auth.getUser();
+  if (!user) return;
+  document.getElementById('userName').textContent = user.name;
+  document.getElementById('userRole').textContent = user.role;
+  document.getElementById('userAvatar').textContent =
+    user.name.charAt(0).toUpperCase();
+}
+
+// ── LOAD DASHBOARD DATA ───────────────────────────
+async function loadDashboard() {
+  try {
+    // Load farms
+    const farmsData = await Auth.request('/api/farm');
+    if (!farmsData || !farmsData.success) return;
+
+    const farms = farmsData.farms;
+
+    // Update stats
+    animateCount('statFarms', farms.length);
+
+    let totalZones = 0;
+    let totalPlants = 0;
+
+    // Load zones and plants for each farm
+    for (const farm of farms) {
+      const zonesData = await Auth.request(`/api/farm/${farm.id}/zones`);
+      if (zonesData && zonesData.zones) {
+        totalZones += zonesData.zones.length;
+        farm.zones = zonesData.zones;
+
+        for (const zone of zonesData.zones) {
+          const plantsData = await Auth.request(
+            `/api/farm/${farm.id}/zones/${zone.id}/plants`
+          );
+          if (plantsData && plantsData.plants) {
+            totalPlants += plantsData.plants.length;
+          }
+        }
+      }
+    }
+
+    animateCount('statZones', totalZones);
+    animateCount('statPlants', totalPlants);
+
+    // Render farm cards
+    renderFarms(farms);
+
+    // Load alerts for first farm
+    if (farms.length > 0) {
+      await loadAlerts(farms);
+    }
+
+  } catch (err) {
+    console.error('Dashboard load error:', err);
+    showToast('Failed to load dashboard data', 'error');
+  }
+}
+
+// ── RENDER FARMS ──────────────────────────────────
+function renderFarms(farms) {
+  const grid = document.getElementById('farmsGrid');
+
+  // Build farm cards HTML
+  const cardsHTML = farms.map(farm => `
+    <div class="farm-card"
+         onclick="navigate('farm.html?id=${farm.id}')">
+      <div class="farm-card-banner">
+        <img src="../assets/images/hero-farm.jpg"
+             alt="${farm.name}"
+             onerror="this.style.display='none'">
+        <span class="farm-badge">
+          ${farm.zones ? farm.zones.length : 0} zones
+        </span>
+      </div>
+      <div class="farm-card-body">
+        <h3>${farm.name}</h3>
+        <div class="farm-card-location">
+          <i data-lucide="map-pin"
+             style="width:12px;height:12px"></i>
+          ${farm.city || ''}${farm.city && farm.country ? ', ' : ''}
+          ${farm.country || 'Location not set'}
+        </div>
+        <div class="farm-card-stats">
+          <div class="farm-stat">
+            <div class="value">
+              ${farm.zones ? farm.zones.length : 0}
+            </div>
+            <div class="label">Zones</div>
+          </div>
+          <div class="farm-stat">
+            <div class="value">—</div>
+            <div class="label">Plants</div>
+          </div>
+          <div class="farm-stat">
+            <div class="value">—</div>
+            <div class="label">Sensors</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  // Keep the add button
+  grid.innerHTML = cardsHTML + `
+    <div class="farm-card-add" onclick="openAddFarmModal()">
+      <div class="add-icon">
+        <i data-lucide="plus"
+           style="color:var(--text-muted)"></i>
+      </div>
+      <p data-i18n="add_farm">Add Farm</p>
+    </div>
+  `;
+
+  // Re-init lucide icons for new elements
+  lucide.createIcons();
+  LanguageManager.apply(LanguageManager.get());
+}
+
+// ── LOAD ALERTS ───────────────────────────────────
+async function loadAlerts(farms) {
+  let allAlerts = [];
+
+  for (const farm of farms) {
+    const data = await Auth.request(
+      `/api/alerts/farm/${farm.id}/unread`
+    );
+    if (data && data.alerts) {
+      allAlerts = [...allAlerts, ...data.alerts];
+    }
+  }
+
+  // Update alert count
+  const count = allAlerts.length;
+  animateCount('statAlerts', count);
+
+  // Update badges
+  if (count > 0) {
+    document.getElementById('alertBadge').style.display = 'flex';
+    document.getElementById('alertBadge').textContent =
+      count > 99 ? '99+' : count;
+    document.getElementById('mobileBadge').style.display = 'flex';
+    document.getElementById('mobileBadge').textContent =
+      count > 99 ? '99+' : count;
+  }
+
+  // Render alerts panel
+  renderAlerts(allAlerts.slice(0, 10));
+}
+
+// ── RENDER ALERTS ─────────────────────────────────
+function renderAlerts(alerts) {
+  const panel = document.getElementById('alertsPanel');
+
+  if (alerts.length === 0) {
+    panel.innerHTML = `
+      <div class="empty-state" style="padding: 40px 20px;">
+        <i data-lucide="check-circle"
+           style="width:40px;height:40px;
+                  color:var(--success);opacity:0.5"></i>
+        <p>${LanguageManager.t('no_alerts')}</p>
+      </div>
+    `;
+    lucide.createIcons();
+    return;
+  }
+
+  panel.innerHTML = alerts.map(alert => `
+    <div class="alert-item ${alert.is_read ? '' : 'unread'}">
+      <div class="alert-dot ${alert.severity}"></div>
+      <div class="alert-content">
+        <div class="alert-type">
+          ${alert.type.replace(/_/g, ' ')}
+        </div>
+        <div class="alert-message">${alert.message}</div>
+      </div>
+      <div class="alert-time">
+        ${timeAgo(alert.created_at)}
+      </div>
+    </div>
+  `).join('');
+
+  lucide.createIcons();
+}
+
+// ── CREATE FARM ───────────────────────────────────
+async function createFarm() {
+  const name = document.getElementById('farmName').value.trim();
+  if (!name) {
+    showToast(LanguageManager.t('required'), 'error');
+    document.getElementById('farmName').classList.add('error');
+    return;
+  }
+
+  const btn = document.getElementById('createFarmBtn');
+  btn.disabled = true;
+  btn.innerHTML = `
+    <div class="spinner spinner-sm"></div>
+    <span>${LanguageManager.t('loading')}</span>
+  `;
+
+  const data = await Auth.request('/api/farm', {
+    method: 'POST',
+    body: JSON.stringify({
+      name,
+      country: document.getElementById('farmCountry').value.trim(),
+      city:    document.getElementById('farmCity').value.trim(),
+      description: document.getElementById('farmDesc').value.trim()
+    })
+  });
+
+  btn.disabled = false;
+  lucide.createIcons();
+
+  if (data && data.success) {
+    closeModal('addFarmModal');
+    showToast(LanguageManager.t('farm_created'), 'success');
+    // Reset form
+    document.getElementById('farmName').value = '';
+    document.getElementById('farmCountry').value = '';
+    document.getElementById('farmCity').value = '';
+    document.getElementById('farmDesc').value = '';
+    // Reload dashboard
+    await loadDashboard();
+  } else {
+    showToast(data ? data.message : LanguageManager.t('error'), 'error');
+    btn.innerHTML = `
+      <i data-lucide="plus"></i>
+      <span>${LanguageManager.t('create_farm')}</span>
+    `;
+  }
+}
+
+// ── SIDEBAR TOGGLE ────────────────────────────────
+function toggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const main    = document.getElementById('mainContent');
+  const icon    = document.getElementById('sidebarToggleIcon');
+
+  sidebar.classList.toggle('collapsed');
+  main.classList.toggle('sidebar-collapsed');
+
+  if (sidebar.classList.contains('collapsed')) {
+    icon.setAttribute('data-lucide', 'chevrons-right');
+  } else {
+    icon.setAttribute('data-lucide', 'chevrons-left');
+  }
+  lucide.createIcons();
+}
+
+// ── MOBILE SIDEBAR ────────────────────────────────
+function toggleMobileSidebar() {
+  document.getElementById('sidebar').classList.toggle('mobile-open');
+}
+
+// ── SOCKET.IO REAL-TIME ───────────────────────────
+function connectSocket() {
+  // We'll add Socket.io later when we have the CDN
+  console.log('Real-time connection ready');
+}
+
+// ── MODAL ─────────────────────────────────────────
+function openAddFarmModal() {
+  document.getElementById('addFarmModal').classList.add('open');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+// Close modal on overlay click
+document.getElementById('addFarmModal')
+  .addEventListener('click', function(e) {
+    if (e.target === this) closeModal('addFarmModal');
+  });
+
+// ── NAVIGATION ────────────────────────────────────
+function navigate(page) {
+  window.location.href = page;
+}
+
+// ── TOAST ─────────────────────────────────────────
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+
+  const icons = {
+    success: 'check-circle',
+    error:   'x-circle',
+    warning: 'alert-triangle',
+    info:    'info'
+  };
+
+  toast.innerHTML = `
+    <i data-lucide="${icons[type] || 'info'}"
+       style="width:18px;height:18px;flex-shrink:0;
+              color:var(--${type === 'error' ? 'danger' : type})"></i>
+    <span>${message}</span>
+  `;
+
+  container.appendChild(toast);
+  lucide.createIcons();
+
+  // Animate in
+  setTimeout(() => toast.classList.add('show'), 10);
+
+  // Remove after 4s
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 400);
+  }, 4000);
+}
+
+// ── COUNT UP ANIMATION ────────────────────────────
+function animateCount(elementId, target) {
+  const el = document.getElementById(elementId);
+  const duration = 800;
+  const start = parseInt(el.textContent) || 0;
+  const range = target - start;
+  const startTime = performance.now();
+
+  function update(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    el.textContent = Math.round(start + range * eased);
+    if (progress < 1) requestAnimationFrame(update);
+  }
+
+  requestAnimationFrame(update);
+}
+
+// ── TIME AGO ──────────────────────────────────────
+function timeAgo(dateStr) {
+  const now  = new Date();
+  const date = new Date(dateStr);
+  const diff = Math.floor((now - date) / 1000);
+
+  if (diff < 60)    return 'just now';
+  if (diff < 3600)  return Math.floor(diff/60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
+  return Math.floor(diff/86400) + 'd ago';
+}
+</script>
+
+</body>
+</html>

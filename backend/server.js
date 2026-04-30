@@ -21,7 +21,12 @@ const io = socketio(server, {
 
 // ─── MIDDLEWARE ───────────────────────────────────────
 app.use(helmet());         // security headers
-app.use(cors());           // allow frontend to talk to backend
+//app.use(cors());           // allow frontend to talk to backend
+//correct version since backend = 3000 and frontent = 8080
+app.use(cors({
+  origin: ['http://localhost:8080', 'http://192.168.100.40:8080'],
+  credentials: true
+}));
 app.use(morgan('dev'));     // log every request in terminal
 app.use(express.json());   // parse incoming JSON data
 
