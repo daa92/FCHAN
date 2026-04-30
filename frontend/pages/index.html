@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="../assets/images/logo.png"> <!--tab logo-->
+  <title>FCHAN _ Farm Intelligence Platform</title>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Global CSS -->
+  <link rel="stylesheet" href="../css/style.css">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script> <!-- FOR LOGOS -->
+
+  <style>
+    /* ── AUTH PAGE SPECIFIC ─────────────────────────── */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      overflow: hidden;
+      font-family: var(--font-body);
+    }
+
+    /* ── VIDEO BACKGROUND ───────────────────────────── */
+    .video-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+    }
+
+    .video-bg video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* Static image fallback for mobile */
+    .video-bg .img-fallback {
+      display: none;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .video-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        135deg,
+        rgba(13,17,23,0.75) 0%,
+        rgba(26,82,118,0.60) 50%,
+        rgba(39,174,96,0.45) 100%
+      );
+    }
+
+    /* ── TOP BAR ────────────────────────────────────── */
+    .auth-topbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 40px;
+    }
+
+    .auth-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: white;
+      text-decoration: none;
+    }
+
+    .auth-logo .logo-icon { font-size: 32px; }
+
+    .auth-logo .logo-text {
+      font-family: var(--font-heading);
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      color: white;
+    }
+
+    .auth-topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* ── MAIN CONTAINER ─────────────────────────────── */
+    .auth-container {
+      position: relative;
+      z-index: 5;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 100px 20px 40px;
+    }
+
+    /* ── 3D FLIP CARD ───────────────────────────────── */
+    .flip-card {
+      width: 100%;
+      max-width: 440px;
+      height: 620px;
+      perspective: 1200px;
+      -webkit-perspective: 1200px;
+    }
+
+    .flip-card-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      -webkit-transform-style: preserve-3d;
+      transition: transform 0.7s cubic-bezier(0.34, 1.20, 0.64, 1);
+    }
+
+    .flip-card-inner.flipped {
+      transform: rotateY(180deg);
+    }
+
+    .flip-card-front,
+    .flip-card-back {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      -webkit-transform: translate3d(0, 0, 0);
+      transform: translate3d(0, 0, 0);
+    }
+
+    .flip-card-back {
+      transform: rotateY(180deg);
+    }
+
+    /* ── CARD INNER CONTENT ─────────────────────────── */
+    .auth-card {
+      width: 100%;
+      height: 100%;
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      overflow-y: auto;
+    }
+
+    .auth-card-header {
+      text-align: center;
+      margin-bottom: 4px;
+    }
+
+    .auth-card-header .card-icon {
+      font-size: 40px;
+      margin-bottom: 8px;
+    }
+
+    .auth-card-header h2 {
+      font-size: 26px;
+      font-weight: 700;
+      color: white;
+      margin-bottom: 4px;
+    }
+
+    .auth-card-header p {
+      font-size: 13px;
+      color: rgba(255,255,255,0.65);
+    }
+
+    /* ── FORM STYLES (auth specific) ────────────────── */
+    .auth-form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .auth-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.85);
+    }
+
+    .auth-input {
+      width: 100%;
+      padding: 12px 16px;
+      background: rgba(255,255,255,0.12);
+      border: 1.5px solid rgba(255,255,255,0.2);
+      border-radius: var(--radius-sm);
+      color: white;
+      font-size: 14px;
+      font-family: var(--font-body);
+      transition: all var(--transition-fast);
+      min-height: 44px;
+    }
+
+    .auth-input::placeholder {
+      color: rgba(255,255,255,0.4);
+    }
+
+    .auth-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: rgba(255,255,255,0.18);
+      box-shadow: 0 0 0 3px rgba(39,174,96,0.25);
+    }
+
+    .auth-input.error {
+      border-color: var(--danger);
+      box-shadow: 0 0 0 3px rgba(231,76,60,0.25);
+    }
+
+    .auth-error {
+      font-size: 12px;
+      color: #ff6b6b;
+      display: none;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .auth-error.show { display: flex; }
+
+    /* ── PASSWORD TOGGLE ─────────────────────────────── */
+    .input-wrapper {
+      position: relative;
+    }
+
+    .input-wrapper .auth-input {
+      padding-right: 44px;
+    }
+
+    .password-toggle {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: rgba(255,255,255,0.5);
+      cursor: pointer;
+      font-size: 16px;
+      transition: color var(--transition-fast);
+    }
+
+    .password-toggle:hover { color: white; }
+
+    /* ── AUTH BUTTONS ─────────────────────────────────── */
+    .btn-auth {
+      width: 100%;
+      padding: 13px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-heading);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all var(--transition-base);
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 16px rgba(39,174,96,0.35);
+      letter-spacing: 0.5px;
+    }
+
+    .btn-auth:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(39,174,96,0.45);
+    }
+
+    .btn-auth:active { transform: scale(0.98); }
+
+    .btn-auth:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* ── DIVIDER ──────────────────────────────────────── */
+    .auth-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: rgba(255,255,255,0.3);
+      font-size: 12px;
+    }
+
+    .auth-divider::before,
+    .auth-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: rgba(255,255,255,0.15);
+    }
+
+    /* ── SWITCH LINK ──────────────────────────────────── */
+    .auth-switch {
+      text-align: center;
+      font-size: 13px;
+      color: rgba(255,255,255,0.6);
+    }
+
+    .auth-switch-btn {
+      color: var(--primary-light);
+      font-weight: 600;
+      cursor: pointer;
+      background: none;
+      border: none;
+      font-size: 13px;
+      font-family: var(--font-body);
+      transition: color var(--transition-fast);
+    }
+
+    .auth-switch-btn:hover { color: white; }
+
+    /* ── FORGOT PASSWORD ──────────────────────────────── */
+    .forgot-link {
+      text-align: right;
+      font-size: 12px;
+    }
+
+    .forgot-link a {
+      color: rgba(255,255,255,0.55);
+      transition: color var(--transition-fast);
+    }
+
+    .forgot-link a:hover { color: var(--primary-light); }
+
+    /* ── BOTTOM LINK ──────────────────────────────────── */
+    .auth-bottom {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      text-align: center;
+    }
+
+    .auth-bottom a {
+      color: rgba(255,255,255,0.55);
+      font-size: 13px;
+      transition: color var(--transition-fast);
+    }
+
+    .auth-bottom a:hover { color: white; }
+
+    /* ── GLOBAL ERROR MESSAGE ─────────────────────────── */
+    .global-error {
+      background: rgba(231,76,60,0.2);
+      border: 1px solid rgba(231,76,60,0.4);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      font-size: 13px;
+      color: #ff6b6b;
+      display: none;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .global-error.show { display: flex; }
+
+    /* ── LOADING STATE ────────────────────────────────── */
+    .btn-spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255,255,255,0.4);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+
+    .btn-auth.loading .btn-spinner { display: block; }
+    .btn-auth.loading .btn-text { display: none; }
+
+    /* ── SUCCESS STATE ────────────────────────────────── */
+    .success-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: rgba(39,174,96,0.15);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--transition-base);
+    }
+
+    .success-overlay.show {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .success-content {
+      text-align: center;
+      color: white;
+      transform: scale(0.8);
+      transition: transform var(--transition-spring);
+    }
+
+    .success-overlay.show .success-content {
+      transform: scale(1);
+    }
+
+    .success-icon {
+      font-size: 80px;
+      margin-bottom: 16px;
+      animation: bounceIn 0.6s ease;
+    }
+
+    .success-content h2 {
+      font-size: 28px;
+      color: white;
+      margin-bottom: 8px;
+    }
+
+    .success-content p {
+      color: rgba(255,255,255,0.7);
+    }
+
+    /* ── ANIMATIONS ───────────────────────────────────── */
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes bounceIn {
+      0%   { transform: scale(0.3); opacity: 0; }
+      50%  { transform: scale(1.1); }
+      70%  { transform: scale(0.95); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(40px); opacity: 0; }
+      to   { transform: translateY(0); opacity: 1; }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%      { transform: translateX(-8px); }
+      40%      { transform: translateX(8px); }
+      60%      { transform: translateX(-5px); }
+      80%      { transform: translateX(5px); }
+    }
+
+    .card-enter {
+      animation: slideUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+
+    .shake { animation: shake 0.4s ease both; }
+
+    /* ── RESPONSIVE ───────────────────────────────────── */
+    @media (max-width: 768px) {
+      /* Show image instead of video on mobile */
+      .video-bg video { display: none; }
+      .video-bg .img-fallback { display: block; }
+
+      .auth-topbar { padding: 16px 20px; }
+      .auth-logo .logo-text { font-size: 20px; }
+
+      .flip-card {
+        max-width: 100%;
+        height: auto;
+      }
+
+      .flip-card-front,
+      .flip-card-back {
+        position: relative;
+        transform: none !important;
+        backface-visibility: visible !important;
+      }
+
+      .flip-card-inner {
+        transform: none !important;
+        transition: none;
+      }
+
+      .flip-card-back {
+        display: none;
+      }
+
+      .flip-card-inner.flipped .flip-card-front {
+        display: none;
+      }
+
+      .flip-card-inner.flipped .flip-card-back {
+        display: block;
+        transform: none;
+      }
+
+      .auth-card { padding: 28px 24px; }
+      .auth-container { padding: 80px 16px 40px; align-items: flex-start; }
+    }
+
+    @media (max-width: 480px) {
+      .auth-topbar-right .lang-toggle { display: none; }
+    }
+
+    /* Smart TV */
+    @media (min-width: 1920px) {
+      .flip-card { max-width: 520px; height: 640px; }
+      .auth-card { padding: 50px; }
+      .auth-card-header h2 { font-size: 32px; }
+      .auth-input { font-size: 16px; min-height: 52px; }
+      .btn-auth { font-size: 17px; min-height: 56px; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- VIDEO BACKGROUND -->
+  <div class="video-bg">
+    <!--
+      VIDEO: downloaded farm video here
+      login-bg.mp4 (slow drone farm footage)
+    -->
+    <video autoplay muted loop playsinline>
+      <source src="../assets/videos/login-bg.mp4" type="video/mp4">
+    </video>
+    <!--
+      IMAGE FALLBACK for mobile:
+      place login-bg.jpg here
+    -->
+    <img class="img-fallback" src="../assets/images/login-bg.jpg" alt="Farm background">
+    <div class="video-overlay"></div>
+  </div>
+
+  <!-- TOP BAR -->
+  <div class="auth-topbar">
+    <a href="#" class="auth-logo">
+      <!--<span class="logo-icon">🌾</span>
+      <span class="logo-text">FCHAN</span>-->
+      <img src="../assets/images/logo.png" alt="FCHAN" style="height: 40px;">
+    </a>
+    <div class="auth-topbar-right">
+      <!-- Language Toggle -->
+      <div class="lang-toggle">
+        <button class="lang-btn active" data-lang="en">EN</button>
+        <button class="lang-btn" data-lang="fr">FR</button>
+      </div>
+      <!-- Theme Toggle -->
+      <button class="theme-toggle" title="Toggle theme"><i data-lucide="moon"></i></button>
+    </div>
+  </div>
+
+  <!-- MAIN CONTAINER -->
+  <div class="auth-container">
+    <div class="flip-card card-enter" id="flipCard">
+      <div class="flip-card-inner" id="flipCardInner">
+
+        <!-- ══ FRONT: LOGIN ══════════════════════════ -->
+        <div class="flip-card-front">
+          <div class="auth-card">
+
+            <div class="auth-card-header">
+              <div class="card-icon"><i data-lucide="user-key"></i>‍</div>
+              <h2 data-i18n="welcome_back">Welcome Back</h2>
+	      <!--<p data-i18n="no_account">--><P>Sign in to your FCHAN account</p>
+            </div>
+
+            <!-- Global error -->
+            <div class="global-error" id="loginError">
+		    <span><i data-lucide="triangle-alert"></i></span>
+              <span id="loginErrorMsg">Invalid email or password.</span>
+            </div>
+
+            <!-- Email -->
+            <div class="auth-form-group">
+              <label class="auth-label" data-i18n="email">Email Address</label>
+              <input
+                type="email"
+                class="auth-input"
+                id="loginEmail"
+                placeholder="john@gmail.com"
+                autocomplete="email"
+              >
+              <span class="auth-error" id="loginEmailError">
+                <i data-lucide="triangle-alert"></i>
+		<span data-i18n="required">This field is required</span>
+              </span>
+            </div>
+
+            <!-- Password -->
+            <div class="auth-form-group">
+              <label class="auth-label" data-i18n="password">Password</label>
+              <div class="input-wrapper">
+                <input
+                  type="password"
+                  class="auth-input"
+                  id="loginPassword"
+                  placeholder="••••••••"
+                  autocomplete="current-password"
+                >
+                <span class="password-toggle" onclick="togglePassword('loginPassword', this)"><i data-lucide="eye"></i></span>
+              </div>
+              <span class="auth-error" id="loginPasswordError">
+                <i data-lucide="triangle-alert"></i>
+		<span data-i18n="required">This field is required</span>
+              </span>
+            </div>
+
+            <!-- Forgot password -->
+            <div class="forgot-link">
+              <a href="#" onclick="showForgotPassword()" data-i18n="forgot_password">
+                Forgot Password?
+              </a>
+            </div>
+
+            <!-- Submit -->
+            <button class="btn-auth" id="loginBtn" onclick="handleLogin()">
+              <span class="btn-spinner"></span>
+              <span class="btn-text" data-i18n="login">Login</span>
+            </button>
+
+            <!-- Switch to register -->
+            <div class="auth-switch">
+              <span data-i18n="no_account">Don't have an account?</span>
+              <button class="auth-switch-btn" onclick="flipToRegister()">
+                <span data-i18n="register">Create Account</span> →
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ══ BACK: REGISTER ════════════════════════ -->
+        <div class="flip-card-back">
+          <div class="auth-card">
+
+            <div class="auth-card-header">
+              <div class="card-icon"><i data-lucide="leaf"></i></div>
+              <h2 data-i18n="create_account">Join FCHAN</h2>
+              <p>Start managing your farm intelligently</p>
+            </div>
+
+            <!-- Global error -->
+            <div class="global-error" id="registerError">
+              <span><i data-lucide="triangle-alert"></i></span>
+              <span id="registerErrorMsg">Registration failed.</span>
+            </div>
+
+            <!-- Full Name -->
+            <div class="auth-form-group">
+              <label class="auth-label" data-i18n="full_name">Full Name</label>
+              <input
+                type="text"
+                class="auth-input"
+                id="registerName"
+                placeholder="John Doe"
+                autocomplete="name"
+              >
+              <span class="auth-error" id="registerNameError">
+                <i data-lucide="triangle-alert"></i>
+		<span data-i18n="required">This field is required</span>
+              </span>
+            </div>
+
+            <!-- Email -->
+            <div class="auth-form-group">
+              <label class="auth-label" data-i18n="email">Email Address</label>
+              <input
+                type="email"
+                class="auth-input"
+                id="registerEmail"
+                placeholder="john@gmail.com"
+                autocomplete="email"
+              >
+              <span class="auth-error" id="registerEmailError">
+                <i data-lucide="triangle-alert"></i>
+		<span data-i18n="required">This field is required</span>
+              </span>
+            </div>
+
+            <!-- Password -->
+            <div class="auth-form-group">
+              <label class="auth-label" data-i18n="password">Password</label>
+              <div class="input-wrapper">
+                <input
+                  type="password"
+                  class="auth-input"
+                  id="registerPassword"
+                  placeholder="Min. 6 characters"
+                  autocomplete="new-password"
+                >
+                <span class="password-toggle" onclick="togglePassword('registerPassword', this)">
+			<i data-lucide="eye"></i>
+		</span>
+              </div>
+              <span class="auth-error" id="registerPasswordError">
+                <i data-lucide="triangle-alert"></i>
+		Password must be at least 6 characters
+              </span>
+            </div>
+
+            <!-- Confirm Password -->
+            <div class="auth-form-group">
+              <label class="auth-label" data-i18n="confirm_password">Confirm Password</label>
+              <div class="input-wrapper">
+                <input
+                  type="password"
+                  class="auth-input"
+                  id="registerConfirm"
+                  placeholder="••••••••"
+                  autocomplete="new-password"
+                >
+                <span class="password-toggle" onclick="togglePassword('registerConfirm', this)"><i data-lucide="eye"></i></span>
+              </div>
+              <span class="auth-error" id="registerConfirmError">
+                <i data-lucide="triangle-alert"></i>
+		Passwords do not match
+              </span>
+            </div>
+
+            <!-- Submit -->
+            <button class="btn-auth" id="registerBtn" onclick="handleRegister()">
+              <span class="btn-spinner"></span>
+              <span class="btn-text" data-i18n="register">Create Account</span>
+            </button>
+
+            <!-- Switch to login -->
+            <div class="auth-switch">
+              <span data-i18n="have_account">Already have an account?</span>
+              <button class="auth-switch-btn" onclick="flipToLogin()">
+                ← <span data-i18n="login">Login</span>
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM LINK -->
+  <div class="auth-bottom">
+    <a href="about.html" data-i18n="about">About FCHAN</a>
+  </div>
+
+  <!-- SUCCESS OVERLAY -->
+  <div class="success-overlay" id="successOverlay">
+    <div class="success-content">
+      <div class="success-icon"><i data-lucide="laptop-minimal-check"></i></div>
+      <h2 id="successTitle">Welcome!</h2>
+      <p id="successMsg">Redirecting to dashboard...</p>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="../js/theme.js"></script>
+  <script src="../js/language.js"></script>
+  <script src="../js/auth.js"></script>
+
+  <script>
+    // Initialize theme and language
+    ThemeManager.init();
+    LanguageManager.init();
+
+    // ── FLIP CARD ──────────────────────────────────────
+    function flipToRegister() {
+      document.getElementById('flipCardInner').classList.add('flipped');
+    }
+
+    function flipToLogin() {
+      document.getElementById('flipCardInner').classList.remove('flipped');
+    }
+
+    // ── PASSWORD TOGGLE ────────────────────────────────
+    function togglePassword(inputId, btn) {
+      const input = document.getElementById(inputId);
+      if (input.type === 'password') {
+        input.type = 'text';
+        btn.textinnerHTML = '<i data-lucide="eye-off"></i>';
+      } else {
+        input.type = 'password';
+        btn.textinnerHTML = '<i data-lucide="eye"></i>';
+      }
+    }
+
+    // ── FORGOT PASSWORD ────────────────────────────────
+    function showForgotPassword() {
+      const email = document.getElementById('loginEmail').value;
+      const emailInput = prompt(
+        LanguageManager.t('email') + ':',
+        email
+      );
+      if (emailInput) {
+        Auth.forgotPassword(emailInput);
+      }
+    }
+
+    // ── SHOW ERROR ─────────────────────────────────────
+    function showError(containerId, message) {
+      const el = document.getElementById(containerId);
+      const msg = document.getElementById(containerId + 'Msg');
+      if (msg) msg.textContent = message;
+      el.classList.add('show');
+      // shake the card
+      document.querySelector('.flip-card').classList.add('shake');
+      setTimeout(() => {
+        document.querySelector('.flip-card').classList.remove('shake');
+      }, 400);
+    }
+
+    function hideError(containerId) {
+      document.getElementById(containerId).classList.remove('show');
+    }
+
+    // ── FIELD VALIDATION ───────────────────────────────
+    function validateField(inputId, errorId, condition) {
+      const input = document.getElementById(inputId);
+      const error = document.getElementById(errorId);
+      if (!condition(input.value)) {
+        input.classList.add('error');
+        error.classList.add('show');
+        return false;
+      }
+      input.classList.remove('error');
+      error.classList.remove('show');
+      return true;
+    }
+
+    // ── HANDLE LOGIN ───────────────────────────────────
+    async function handleLogin() {
+      hideError('loginError');
+
+      const emailOk = validateField(
+        'loginEmail', 'loginEmailError',
+        v => v.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)
+      );
+      const passOk = validateField(
+        'loginPassword', 'loginPasswordError',
+        v => v.trim().length >= 1
+      );
+
+      if (!emailOk || !passOk) return;
+
+      const btn = document.getElementById('loginBtn');
+      btn.classList.add('loading');
+      btn.disabled = true;
+
+      const email    = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
+
+      const result = await Auth.login(email, password);
+
+      btn.classList.remove('loading');
+      btn.disabled = false;
+
+      if (result.success) {
+        // Show success overlay
+        document.getElementById('successTitle').textContent =
+          LanguageManager.t('welcome_back') + ', ' + result.user.name + '!';
+        document.getElementById('successMsg').textContent =
+          'Redirecting to dashboard...';
+        document.getElementById('successOverlay').classList.add('show');
+
+        // Redirect after 1.5s
+        setTimeout(() => {
+          window.location.href = 'dashboard.html';
+        }, 1500);
+      } else {
+        showError('loginError', result.message);
+      }
+    }
+
+    // ── HANDLE REGISTER ────────────────────────────────
+    async function handleRegister() {
+      hideError('registerError');
+
+      const nameOk = validateField(
+        'registerName', 'registerNameError',
+        v => v.trim().length >= 2
+      );
+      const emailOk = validateField(
+        'registerEmail', 'registerEmailError',
+        v => v.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)
+      );
+      const passOk = validateField(
+        'registerPassword', 'registerPasswordError',
+        v => v.trim().length >= 6
+      );
+      const confirmOk = validateField(
+        'registerConfirm', 'registerConfirmError',
+        v => v === document.getElementById('registerPassword').value
+      );
+
+      if (!nameOk || !emailOk || !passOk || !confirmOk) return;
+
+      const btn = document.getElementById('registerBtn');
+      btn.classList.add('loading');
+      btn.disabled = true;
+
+      const name     = document.getElementById('registerName').value.trim();
+      const email    = document.getElementById('registerEmail').value.trim();
+      const password = document.getElementById('registerPassword').value;
+
+      const result = await Auth.register(name, email, password);
+
+      btn.classList.remove('loading');
+      btn.disabled = false;
+
+      if (result.success) {
+        document.getElementById('successTitle').textContent =
+          'Welcome to FCHAN, ' + result.user.name + '!';
+        document.getElementById('successMsg').textContent =
+          'Your account has been created. Redirecting...';
+        document.getElementById('successOverlay').classList.add('show');
+
+        setTimeout(() => {
+          window.location.href = 'dashboard.html';
+        }, 1500);
+      } else {
+        showError('registerError', result.message);
+      }
+    }
+
+    // ── ENTER KEY SUPPORT ──────────────────────────────
+    document.getElementById('loginPassword')
+      .addEventListener('keypress', e => {
+        if (e.key === 'Enter') handleLogin();
+      });
+
+    document.getElementById('registerConfirm')
+      .addEventListener('keypress', e => {
+        if (e.key === 'Enter') handleRegister();
+      });
+
+    // initialazation of the lucide icons
+    lucide.createIcons();
+  </script>
+
+</body>
+</html>
