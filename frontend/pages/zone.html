@@ -1374,7 +1374,7 @@ async function loadForecast(plantId) {
                   padding:var(--space-sm) var(--space-md);
                   font-size:var(--text-sm);
                   color:var(--warning);">
-        ⚠️ ${forecast.error}
+        <i data-lucide="triangle-alert"></i>${forecast.error}
       </div>
     `;
     return;

@@ -1,0 +1,1385 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>FCHAN_Alerts</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="icon" type="image/png" href="../assets/images/logo.png">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+  <style>
+    /* ── ALERTS PAGE ──────────────────────────────── */
+
+    /* Stats row */
+    .alert-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--space-md);
+      margin-bottom: var(--space-xl);
+    }
+
+    .alert-stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: var(--space-lg);
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+      transition: all var(--transition-base);
+      cursor: pointer;
+    }
+
+    .alert-stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .alert-stat-card.active {
+      border-color: var(--primary);
+      background: rgba(39,174,96,0.04);
+    }
+
+    .alert-stat-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .alert-stat-icon.all      { background: rgba(52,152,219,0.12); }
+    .alert-stat-icon.critical { background: rgba(231,76,60,0.12); }
+    .alert-stat-icon.warning  { background: rgba(243,156,18,0.12); }
+    .alert-stat-icon.resolved { background: rgba(39,174,96,0.12); }
+
+    .alert-stat-info .count {
+      font-family: var(--font-heading);
+      font-size: var(--text-2xl);
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .alert-stat-info .label {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Filter bar */
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+      margin-bottom: var(--space-lg);
+      flex-wrap: wrap;
+    }
+
+    .filter-tabs {
+      display: flex;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 4px;
+      gap: 4px;
+    }
+
+    .filter-tab {
+      padding: 6px 16px;
+      border-radius: var(--radius-sm);
+      font-size: var(--text-sm);
+      font-weight: 500;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      border: none;
+      background: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .filter-tab.active {
+      background: var(--surface);
+      color: var(--primary);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .filter-tab:hover:not(.active) {
+      color: var(--text);
+    }
+
+    .filter-tab .tab-count {
+      background: var(--surface-2);
+      color: var(--text-muted);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: var(--radius-full);
+      min-width: 18px;
+      text-align: center;
+    }
+
+    .filter-tab.active .tab-count {
+      background: rgba(39,174,96,0.12);
+      color: var(--primary);
+    }
+
+    .filter-search {
+      flex: 1;
+      min-width: 200px;
+      position: relative;
+    }
+
+    .filter-search input {
+      width: 100%;
+      padding: 8px 14px 8px 36px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      color: var(--text);
+      font-size: var(--text-sm);
+      transition: all var(--transition-fast);
+    }
+
+    .filter-search input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(39,174,96,0.1);
+    }
+
+    .filter-search .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    /* Alert cards */
+    .alerts-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-sm);
+    }
+
+    .alert-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: var(--space-md) var(--space-lg);
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-md);
+      transition: all var(--transition-base);
+      position: relative;
+      overflow: hidden;
+      animation: slideInRight 0.3s ease both;
+    }
+
+    @keyframes slideInRight {
+      from {
+        transform: translateX(20px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    .alert-card:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateX(-2px);
+    }
+
+    .alert-card.unread {
+      background: rgba(39,174,96,0.03);
+    }
+
+    .alert-card::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      border-radius: var(--radius-md) 0 0 var(--radius-md);
+    }
+
+    .alert-card.critical::before { background: var(--danger); }
+    .alert-card.warning::before  { background: var(--warning); }
+    .alert-card.info::before     { background: var(--info); }
+
+    .alert-card-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .alert-card-icon.critical {
+      background: rgba(231,76,60,0.12);
+      color: var(--danger);
+    }
+
+    .alert-card-icon.warning {
+      background: rgba(243,156,18,0.12);
+      color: var(--warning);
+    }
+
+    .alert-card-icon.info {
+      background: rgba(52,152,219,0.12);
+      color: var(--info);
+    }
+
+    .alert-card-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .alert-card-top {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      margin-bottom: 4px;
+      flex-wrap: wrap;
+    }
+
+    .alert-card-type {
+      font-size: var(--text-sm);
+      font-weight: 700;
+      color: var(--text);
+      text-transform: capitalize;
+    }
+
+    .alert-card-message {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: var(--space-sm);
+    }
+
+    .alert-card-meta {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+      font-size: var(--text-xs);
+      color: var(--text-light);
+    }
+
+    .alert-card-actions {
+      display: flex;
+      gap: var(--space-sm);
+      flex-shrink: 0;
+      align-items: flex-start;
+    }
+
+    /* Pulse for critical */
+    @keyframes criticalPulse {
+      0%, 100% {
+        box-shadow: 0 0 0 0 rgba(231,76,60,0);
+      }
+      50% {
+        box-shadow: 0 0 0 4px rgba(231,76,60,0.1);
+      }
+    }
+
+    .alert-card.critical.unread {
+      animation: slideInRight 0.3s ease both,
+                 criticalPulse 2s ease 0.3s infinite;
+    }
+
+    /* Farm selector */
+    .farm-selector {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+
+    .farm-selector label {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      white-space: nowrap;
+      font-weight: 500;
+    }
+
+    .farm-selector select {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 6px 12px;
+      font-size: var(--text-sm);
+      color: var(--text);
+      cursor: pointer;
+      min-height: 36px;
+    }
+
+    /* Empty state */
+    .alerts-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-3xl);
+      text-align: center;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+    }
+
+    /* Threshold section */
+    .threshold-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      margin-top: var(--space-xl);
+    }
+
+    .threshold-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-md) var(--space-lg);
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background var(--transition-fast);
+    }
+
+    .threshold-header:hover { background: var(--surface-2); }
+
+    .threshold-header h3 {
+      font-size: var(--text-md);
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+
+    .threshold-body {
+      padding: var(--space-lg);
+      display: none;
+    }
+
+    .threshold-body.open { display: block; }
+
+    .threshold-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: var(--space-md);
+    }
+
+    .threshold-card {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: var(--space-md);
+    }
+
+    .threshold-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-md);
+    }
+
+    .threshold-card-header h4 {
+      font-size: var(--text-sm);
+      font-weight: 700;
+      text-transform: capitalize;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .threshold-inputs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-sm);
+    }
+
+    .threshold-input-group label {
+      display: block;
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      font-weight: 500;
+    }
+
+    .threshold-input-group input {
+      width: 100%;
+      padding: 6px 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xs);
+      color: var(--text);
+      font-size: var(--text-sm);
+    }
+
+    .threshold-input-group input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    /* ── RESPONSIVE ───────────────────────────────── */
+    @media (max-width: 1024px) {
+      .alert-stats { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 768px) {
+      .alert-stats { grid-template-columns: repeat(2, 1fr); }
+      .filter-bar { flex-direction: column; align-items: stretch; }
+      .filter-tabs { overflow-x: auto; }
+      .alert-card-actions { flex-direction: column; }
+    }
+
+    @media (max-width: 480px) {
+      .alert-stats { grid-template-columns: 1fr 1fr; gap: var(--space-sm); }
+      .alert-card { flex-direction: column; }
+      .alert-card-actions { flex-direction: row; width: 100%; }
+    }
+
+    @media (min-width: 1920px) {
+      .alert-stats { grid-template-columns: repeat(4, 1fr); }
+      .threshold-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+  </style>
+</head>
+
+<body>
+<div class="app-layout">
+
+  <!-- ══ SIDEBAR ══════════════════════════════════ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <img src="../assets/images/logo.png"
+           alt="FCHAN" style="height:36px;flex-shrink:0;">
+      <span class="logo-text">FCHAN</span>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-item"
+           onclick="navigate('dashboard.html')">
+        <span class="nav-icon">
+          <i data-lucide="layout-dashboard"></i>
+        </span>
+        <span class="nav-label"
+              data-i18n="dashboard">Dashboard</span>
+      </div>
+      <div class="nav-item"
+           onclick="navigate('farm.html')">
+        <span class="nav-icon">
+          <i data-lucide="tree-pine"></i>
+        </span>
+        <span class="nav-label"
+              data-i18n="farms">My Farms</span>
+      </div>
+      <div class="nav-item active"
+           onclick="navigate('alerts.html')">
+        <span class="nav-icon">
+          <i data-lucide="bell"></i>
+        </span>
+        <span class="nav-label"
+              data-i18n="alerts">Alerts</span>
+        <span class="nav-badge"
+              id="alertBadge"
+              style="display:none">0</span>
+      </div>
+      <div class="nav-item"
+           onclick="navigate('reports.html')">
+        <span class="nav-icon">
+          <i data-lucide="file-text"></i>
+        </span>
+        <span class="nav-label"
+              data-i18n="reports">Reports</span>
+      </div>
+      <div class="nav-item"
+           onclick="navigate('about.html')">
+        <span class="nav-icon">
+          <i data-lucide="info"></i>
+        </span>
+        <span class="nav-label"
+              data-i18n="about">About</span>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div style="display:flex;align-items:center;
+                  justify-content:space-between;padding:4px 8px;">
+        <span style="font-size:var(--text-sm);
+                     color:var(--text-muted);">Theme</span>
+        <button class="theme-toggle">
+          <i data-lucide="moon"></i>
+        </button>
+      </div>
+      <div style="display:flex;align-items:center;
+                  justify-content:space-between;padding:4px 8px;">
+        <span style="font-size:var(--text-sm);
+                     color:var(--text-muted);">Language</span>
+        <div class="lang-toggle">
+          <button class="lang-btn active" data-lang="en">EN</button>
+          <button class="lang-btn" data-lang="fr">FR</button>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;
+                  gap:var(--space-sm);padding:8px;">
+        <div class="user-avatar" id="userAvatar">D</div>
+        <div style="flex:1;min-width:0;" class="nav-label">
+          <div style="font-size:var(--text-sm);font-weight:600;
+                      color:var(--text);white-space:nowrap;
+                      overflow:hidden;text-overflow:ellipsis;"
+               id="userName">Loading...</div>
+          <div style="font-size:var(--text-xs);
+                      color:var(--text-muted);"
+               id="userRole">farmer</div>
+        </div>
+        <button class="btn-ghost btn-sm"
+                onclick="Auth.logout()"
+                title="Logout"
+                style="padding:6px;">
+          <i data-lucide="log-out"></i>
+        </button>
+      </div>
+      <div style="display:flex;justify-content:flex-end;
+                  padding:0 8px 4px;">
+        <button class="sidebar-toggle"
+                onclick="toggleSidebar()"
+                id="sidebarToggle">
+          <i data-lucide="chevrons-left"
+             id="sidebarToggleIcon"></i>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ══ MAIN CONTENT ══════════════════════════════ -->
+  <main class="main-content" id="mainContent">
+
+    <!-- Top bar -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <h1 data-i18n="alerts">Alerts</h1>
+        <p>Monitor and manage all farm alerts</p>
+      </div>
+      <div class="topbar-right">
+        <div class="farm-selector">
+          <label>Farm:</label>
+          <select id="farmSelector"
+                  onchange="loadAlertsForFarm()">
+            <option value="">All Farms</option>
+          </select>
+        </div>
+        <button class="btn btn-outline btn-sm"
+                onclick="triggerAlertsCheck()">
+          <i data-lucide="refresh-cw"></i>
+          Check Now
+        </button>
+        <button class="btn btn-primary btn-sm"
+                onclick="markAllRead()">
+          <i data-lucide="check-check"></i>
+          <span data-i18n="mark_all_read">Mark All Read</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="alert-stats">
+      <div class="alert-stat-card active"
+           onclick="filterAlerts('all')"
+           id="stat-all">
+        <div class="alert-stat-icon all">
+          <i data-lucide="bell"
+             style="width:22px;height:22px;
+                    color:var(--info)"></i>
+        </div>
+        <div class="alert-stat-info">
+          <div class="count" id="count-all">0</div>
+          <div class="label">Total Alerts</div>
+        </div>
+      </div>
+      <div class="alert-stat-card"
+           onclick="filterAlerts('critical')"
+           id="stat-critical">
+        <div class="alert-stat-icon critical">
+          <i data-lucide="alert-octagon"
+             style="width:22px;height:22px;
+                    color:var(--danger)"></i>
+        </div>
+        <div class="alert-stat-info">
+          <div class="count"
+               style="color:var(--danger)"
+               id="count-critical">0</div>
+          <div class="label"
+               data-i18n="critical">Critical</div>
+        </div>
+      </div>
+      <div class="alert-stat-card"
+           onclick="filterAlerts('warning')"
+           id="stat-warning">
+        <div class="alert-stat-icon warning">
+          <i data-lucide="alert-triangle"
+             style="width:22px;height:22px;
+                    color:var(--warning)"></i>
+        </div>
+        <div class="alert-stat-info">
+          <div class="count"
+               style="color:var(--warning)"
+               id="count-warning">0</div>
+          <div class="label"
+               data-i18n="warning">Warning</div>
+        </div>
+      </div>
+      <div class="alert-stat-card"
+           onclick="filterAlerts('resolved')"
+           id="stat-resolved">
+        <div class="alert-stat-icon resolved">
+          <i data-lucide="check-circle"
+             style="width:22px;height:22px;
+                    color:var(--success)"></i>
+        </div>
+        <div class="alert-stat-info">
+          <div class="count"
+               style="color:var(--success)"
+               id="count-resolved">0</div>
+          <div class="label"
+               data-i18n="resolved">Resolved</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter bar -->
+    <div class="filter-bar">
+      <div class="filter-tabs">
+        <button class="filter-tab active"
+                onclick="filterAlerts('all')"
+                id="tab-all">
+          <i data-lucide="list"
+             style="width:14px;height:14px"></i>
+          All
+          <span class="tab-count" id="tc-all">0</span>
+        </button>
+        <button class="filter-tab"
+                onclick="filterAlerts('unread')"
+                id="tab-unread">
+          <i data-lucide="bell-dot"
+             style="width:14px;height:14px"></i>
+          Unread
+          <span class="tab-count" id="tc-unread">0</span>
+        </button>
+        <button class="filter-tab"
+                onclick="filterAlerts('critical')"
+                id="tab-critical">
+          <i data-lucide="alert-octagon"
+             style="width:14px;height:14px"></i>
+          Critical
+          <span class="tab-count" id="tc-critical">0</span>
+        </button>
+        <button class="filter-tab"
+                onclick="filterAlerts('warning')"
+                id="tab-warning">
+          <i data-lucide="alert-triangle"
+             style="width:14px;height:14px"></i>
+          Warning
+          <span class="tab-count" id="tc-warning">0</span>
+        </button>
+        <button class="filter-tab"
+                onclick="filterAlerts('info')"
+                id="tab-info">
+          <i data-lucide="info"
+             style="width:14px;height:14px"></i>
+          Info
+          <span class="tab-count" id="tc-info">0</span>
+        </button>
+        <button class="filter-tab"
+                onclick="filterAlerts('resolved')"
+                id="tab-resolved">
+          <i data-lucide="check-circle"
+             style="width:14px;height:14px"></i>
+          Resolved
+          <span class="tab-count" id="tc-resolved">0</span>
+        </button>
+      </div>
+
+      <div class="filter-search">
+        <i data-lucide="search"
+           class="search-icon"
+           style="width:16px;height:16px"></i>
+        <input type="text"
+               id="searchInput"
+               placeholder="Search alerts..."
+               oninput="searchAlerts(this.value)">
+      </div>
+    </div>
+
+    <!-- Alerts list -->
+    <div class="alerts-list" id="alertsList">
+      <div class="alerts-empty">
+        <i data-lucide="loader"
+           style="width:40px;height:40px;
+                  color:var(--text-light)"></i>
+        <p style="margin-top:var(--space-md);">
+          Loading alerts...
+        </p>
+      </div>
+    </div>
+
+    <!-- Threshold management -->
+    <div class="threshold-section">
+      <div class="threshold-header"
+           onclick="toggleThresholds()">
+        <h3>
+          <i data-lucide="sliders-horizontal"
+             style="width:18px;height:18px;
+                    color:var(--primary)"></i>
+          Alert Thresholds
+        </h3>
+        <i data-lucide="chevron-down"
+           id="thresholdIcon"
+           style="width:18px;height:18px;
+                  color:var(--text-muted);
+                  transition:transform 0.3s"></i>
+      </div>
+      <div class="threshold-body" id="thresholdBody">
+        <p style="font-size:var(--text-sm);
+                  color:var(--text-muted);
+                  margin-bottom:var(--space-lg);">
+          Set min/max values for each sensor type.
+          Alerts will be triggered when readings
+          go outside these ranges.
+        </p>
+        <div style="margin-bottom:var(--space-md);">
+          <label class="form-label">Select Zone</label>
+          <select class="form-control"
+                  id="thresholdZoneSelect"
+                  style="max-width:300px;"
+                  onchange="loadThresholds()">
+            <option value="">-- Select zone --</option>
+          </select>
+        </div>
+        <div class="threshold-grid" id="thresholdGrid">
+          <!-- loaded by JS -->
+        </div>
+        <div style="margin-top:var(--space-lg);">
+          <button class="btn btn-primary"
+                  onclick="saveThresholds()">
+            <i data-lucide="save"></i>
+            Save Thresholds
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ══ BOTTOM NAV ════════════════════════════════════ -->
+<nav class="bottom-nav">
+  <div class="bottom-nav-items">
+    <div class="bottom-nav-item"
+         onclick="navigate('dashboard.html')">
+      <i data-lucide="layout-dashboard" class="nav-icon"></i>
+      <span>Dashboard</span>
+    </div>
+    <div class="bottom-nav-item"
+         onclick="navigate('farm.html')">
+      <i data-lucide="tree-pine" class="nav-icon"></i>
+      <span>Farms</span>
+    </div>
+    <div class="bottom-nav-item active"
+         onclick="navigate('alerts.html')">
+      <i data-lucide="bell" class="nav-icon"></i>
+      <span>Alerts</span>
+    </div>
+    <div class="bottom-nav-item"
+         onclick="navigate('reports.html')">
+      <i data-lucide="file-text" class="nav-icon"></i>
+      <span>Reports</span>
+    </div>
+    <div class="bottom-nav-item"
+         onclick="navigate('about.html')">
+      <i data-lucide="info" class="nav-icon"></i>
+      <span>About</span>
+    </div>
+  </div>
+</nav>
+
+<!-- ══ TOAST ══════════════════════════════════════════ -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Scripts -->
+<script src="../js/theme.js"></script>
+<script src="../js/language.js"></script>
+<script src="../js/auth.js"></script>
+
+<script>
+// ════════════════════════════════════════════════════
+// FCHAN — Alerts Page
+// ════════════════════════════════════════════════════
+
+let allAlerts  = [];
+let farms      = [];
+let currentFilter = 'all';
+let searchQuery   = '';
+
+document.addEventListener('DOMContentLoaded', async () => {
+  ThemeManager.init();
+  LanguageManager.init();
+  lucide.createIcons();
+  loadUser();
+  await loadFarms();
+  await loadAllAlerts();
+  await loadZonesForThresholds();
+});
+
+// ── LOAD USER ─────────────────────────────────────
+function loadUser() {
+  const user = Auth.getUser();
+  if (!user) return;
+  document.getElementById('userName').textContent = user.name;
+  document.getElementById('userRole').textContent = user.role;
+  document.getElementById('userAvatar').textContent =
+    user.name.charAt(0).toUpperCase();
+}
+
+// ── LOAD FARMS ────────────────────────────────────
+async function loadFarms() {
+  const data = await Auth.request('/farm');
+  if (!data || !data.farms) return;
+
+  farms = data.farms;
+
+  const selector = document.getElementById('farmSelector');
+  selector.innerHTML = '<option value="">All Farms</option>' +
+    farms.map(f => `
+      <option value="${f.id}">${f.name}</option>
+    `).join('');
+}
+
+// ── LOAD ALL ALERTS ───────────────────────────────
+async function loadAllAlerts() {
+  allAlerts = [];
+
+  for (const farm of farms) {
+    const data = await Auth.request(
+      `/alerts/farm/${farm.id}?limit=100`
+    );
+    if (data && data.alerts) {
+      data.alerts.forEach(a => {
+        a.farmName = farm.name;
+        allAlerts.push(a);
+      });
+    }
+  }
+
+  // Sort by date descending
+  allAlerts.sort((a, b) =>
+    new Date(b.created_at) - new Date(a.created_at)
+  );
+
+  updateCounts();
+  renderAlerts(allAlerts);
+}
+
+// ── LOAD ALERTS FOR SPECIFIC FARM ─────────────────
+async function loadAlertsForFarm() {
+  const farmId = document.getElementById('farmSelector').value;
+
+  if (!farmId) {
+    await loadAllAlerts();
+    return;
+  }
+
+  const data = await Auth.request(
+    `/alerts/farm/${farmId}?limit=100`
+  );
+
+  if (data && data.alerts) {
+    allAlerts = data.alerts.map(a => {
+      const farm = farms.find(f => f.id == farmId);
+      a.farmName = farm ? farm.name : '';
+      return a;
+    });
+    allAlerts.sort((a, b) =>
+      new Date(b.created_at) - new Date(a.created_at)
+    );
+    updateCounts();
+    renderAlerts(filterAlertsList(allAlerts));
+  }
+}
+
+// ── UPDATE COUNTS ─────────────────────────────────
+function updateCounts() {
+  const total    = allAlerts.length;
+  const critical = allAlerts.filter(
+    a => a.severity === 'critical').length;
+  const warning  = allAlerts.filter(
+    a => a.severity === 'warning').length;
+  const info     = allAlerts.filter(
+    a => a.severity === 'info').length;
+  const unread   = allAlerts.filter(
+    a => !a.is_read).length;
+  const resolved = allAlerts.filter(
+    a => a.is_resolved).length;
+
+  document.getElementById('count-all').textContent      = total;
+  document.getElementById('count-critical').textContent = critical;
+  document.getElementById('count-warning').textContent  = warning;
+  document.getElementById('count-resolved').textContent = resolved;
+
+  document.getElementById('tc-all').textContent      = total;
+  document.getElementById('tc-critical').textContent = critical;
+  document.getElementById('tc-warning').textContent  = warning;
+  document.getElementById('tc-info').textContent     = info;
+  document.getElementById('tc-unread').textContent   = unread;
+  document.getElementById('tc-resolved').textContent = resolved;
+
+  // Update sidebar badge
+  if (unread > 0) {
+    document.getElementById('alertBadge').style.display = 'flex';
+    document.getElementById('alertBadge').textContent =
+      unread > 99 ? '99+' : unread;
+  }
+}
+
+// ── FILTER ALERTS ─────────────────────────────────
+function filterAlerts(filter) {
+  currentFilter = filter;
+
+  // Update active tab
+  document.querySelectorAll('.filter-tab').forEach(t =>
+    t.classList.remove('active'));
+  document.querySelectorAll('.alert-stat-card').forEach(c =>
+    c.classList.remove('active'));
+
+  const tab = document.getElementById(`tab-${filter}`);
+  if (tab) tab.classList.add('active');
+
+  const stat = document.getElementById(`stat-${filter}`);
+  if (stat) stat.classList.add('active');
+
+  renderAlerts(filterAlertsList(allAlerts));
+}
+
+// ── FILTER ALERTS LIST ────────────────────────────
+function filterAlertsList(alerts) {
+  let filtered = [...alerts];
+
+  switch (currentFilter) {
+    case 'critical':
+      filtered = filtered.filter(a => a.severity === 'critical');
+      break;
+    case 'warning':
+      filtered = filtered.filter(a => a.severity === 'warning');
+      break;
+    case 'info':
+      filtered = filtered.filter(a => a.severity === 'info');
+      break;
+    case 'unread':
+      filtered = filtered.filter(a => !a.is_read);
+      break;
+    case 'resolved':
+      filtered = filtered.filter(a => a.is_resolved);
+      break;
+  }
+
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    filtered = filtered.filter(a =>
+      a.message.toLowerCase().includes(q) ||
+      a.type.toLowerCase().includes(q)
+    );
+  }
+
+  return filtered;
+}
+
+// ── SEARCH ────────────────────────────────────────
+function searchAlerts(query) {
+  searchQuery = query;
+  renderAlerts(filterAlertsList(allAlerts));
+}
+
+// ── RENDER ALERTS ─────────────────────────────────
+function renderAlerts(alerts) {
+  const list = document.getElementById('alertsList');
+
+  if (alerts.length === 0) {
+    list.innerHTML = `
+      <div class="alerts-empty">
+        <i data-lucide="check-circle"
+           style="width:60px;height:60px;
+                  color:var(--success);opacity:0.4"></i>
+        <h3 style="margin-top:var(--space-md);
+                   color:var(--text-muted);">
+          No alerts found
+        </h3>
+        <p style="font-size:var(--text-sm);">
+          ${currentFilter !== 'all'
+            ? 'No alerts match the current filter'
+            : 'Your farms are all healthy!'}
+        </p>
+      </div>
+    `;
+    lucide.createIcons();
+    return;
+  }
+
+  const severityIcons = {
+    critical: 'alert-octagon',
+    warning:  'alert-triangle',
+    info:     'info'
+  };
+
+  list.innerHTML = alerts.map((alert, index) => `
+    <div class="alert-card ${alert.severity}
+                ${!alert.is_read ? 'unread' : ''}"
+         id="alert-${alert.id}"
+         style="animation-delay: ${index * 0.05}s">
+
+      <div class="alert-card-icon ${alert.severity}">
+        <i data-lucide="${severityIcons[alert.severity] || 'bell'}"
+           style="width:20px;height:20px"></i>
+      </div>
+
+      <div class="alert-card-content">
+        <div class="alert-card-top">
+          <span class="alert-card-type">
+            ${alert.type.replace(/_/g, ' ')}
+          </span>
+          <span class="badge badge-${
+            alert.severity === 'critical' ? 'danger' :
+            alert.severity === 'warning'  ? 'warning' : 'info'
+          }">
+            ${alert.severity}
+          </span>
+          ${!alert.is_read
+            ? `<span class="badge badge-primary">New</span>`
+            : ''}
+          ${alert.is_resolved
+            ? `<span class="badge badge-success">Resolved</span>`
+            : ''}
+        </div>
+
+        <div class="alert-card-message">
+          ${alert.message}
+        </div>
+
+        <div class="alert-card-meta">
+          <span>
+            <i data-lucide="clock"
+               style="width:12px;height:12px"></i>
+            ${timeAgo(alert.created_at)}
+          </span>
+          ${alert.farmName ? `
+            <span>
+              <i data-lucide="tree-pine"
+                 style="width:12px;height:12px"></i>
+              ${alert.farmName}
+            </span>
+          ` : ''}
+          <span>
+            ${new Date(alert.created_at).toLocaleDateString()}
+          </span>
+        </div>
+      </div>
+
+      <div class="alert-card-actions">
+        ${!alert.is_read ? `
+          <button class="btn btn-outline btn-sm"
+                  onclick="markRead(${alert.id})"
+                  title="Mark as read">
+            <i data-lucide="check"
+               style="width:14px;height:14px"></i>
+          </button>
+        ` : ''}
+        ${!alert.is_resolved ? `
+          <button class="btn btn-primary btn-sm"
+                  onclick="resolve(${alert.id})"
+                  title="Mark as resolved">
+            <i data-lucide="check-check"
+               style="width:14px;height:14px"></i>
+          </button>
+        ` : ''}
+      </div>
+    </div>
+  `).join('');
+
+  lucide.createIcons();
+}
+
+// ── MARK READ ─────────────────────────────────────
+async function markRead(alertId) {
+  const data = await Auth.request(
+    `/alerts/${alertId}/read`, { method: 'PUT' }
+  );
+  if (data && data.success) {
+    const alert = allAlerts.find(a => a.id === alertId);
+    if (alert) alert.is_read = true;
+    updateCounts();
+    renderAlerts(filterAlertsList(allAlerts));
+    showToast('Alert marked as read', 'success');
+  }
+}
+
+// ── RESOLVE ───────────────────────────────────────
+async function resolve(alertId) {
+  const data = await Auth.request(
+    `/alerts/${alertId}/resolve`, { method: 'PUT' }
+  );
+  if (data && data.success) {
+    const alert = allAlerts.find(a => a.id === alertId);
+    if (alert) {
+      alert.is_resolved = true;
+      alert.is_read = true;
+    }
+    updateCounts();
+    renderAlerts(filterAlertsList(allAlerts));
+    showToast('Alert resolved', 'success');
+  }
+}
+
+// ── MARK ALL READ ─────────────────────────────────
+async function markAllRead() {
+  const farmId = document.getElementById('farmSelector').value;
+
+  if (farmId) {
+    await Auth.request(
+      `/alerts/farm/${farmId}/read-all`, { method: 'PUT' }
+    );
+  } else {
+    for (const farm of farms) {
+      await Auth.request(
+        `/alerts/farm/${farm.id}/read-all`, { method: 'PUT' }
+      );
+    }
+  }
+
+  allAlerts.forEach(a => a.is_read = true);
+  updateCounts();
+  renderAlerts(filterAlertsList(allAlerts));
+  showToast('All alerts marked as read', 'success');
+}
+
+// ── TRIGGER ALERTS CHECK ──────────────────────────
+async function triggerAlertsCheck() {
+  const btn = document.querySelector('[onclick="triggerAlertsCheck()"]');
+  btn.disabled = true;
+
+  const data = await Auth.request(
+    '/alerts/check', { method: 'POST' }
+  );
+
+  btn.disabled = false;
+  lucide.createIcons();
+
+  if (data && data.success) {
+    showToast('Alerts check complete', 'success');
+    await loadAllAlerts();
+  } else {
+    showToast('Error running alerts check', 'error');
+  }
+}
+
+// ── LOAD ZONES FOR THRESHOLDS ─────────────────────
+async function loadZonesForThresholds() {
+  const select = document.getElementById('thresholdZoneSelect');
+  select.innerHTML = '<option value="">-- Select zone --</option>';
+
+  for (const farm of farms) {
+    const data = await Auth.request(`/farm/${farm.id}/zones`);
+    if (data && data.zones) {
+      data.zones.forEach(zone => {
+        select.innerHTML += `
+          <option value="${zone.id}"
+                  data-farm="${farm.id}">
+            ${farm.name} → ${zone.name}
+          </option>
+        `;
+      });
+    }
+  }
+}
+
+// ── LOAD THRESHOLDS ───────────────────────────────
+async function loadThresholds() {
+  const zoneId = document.getElementById('thresholdZoneSelect').value;
+  if (!zoneId) return;
+
+  const data = await Auth.request(
+    `/alerts/thresholds/zone/${zoneId}`
+  );
+
+  const sensorTypes = [
+    'temperature', 'humidity', 'soil_moisture',
+    'soil_ph', 'light', 'co2', 'wind', 'rainfall'
+  ];
+
+  const icons = {
+    temperature:   'thermometer',
+    humidity:      'droplets',
+    soil_moisture: 'droplet',
+    soil_ph:       'flask-conical',
+    light:         'sun',
+    co2:           'wind',
+    wind:          'wind',
+    rainfall:      'cloud-rain'
+  };
+
+  const existing = data && data.thresholds ? data.thresholds : [];
+
+  document.getElementById('thresholdGrid').innerHTML =
+    sensorTypes.map(type => {
+      const thresh = existing.find(t => t.sensor_type === type);
+      return `
+        <div class="threshold-card">
+          <div class="threshold-card-header">
+            <h4>
+              <i data-lucide="${icons[type]}"
+                 style="width:14px;height:14px;
+                        color:var(--primary)"></i>
+              ${type.replace('_', ' ')}
+            </h4>
+            ${thresh
+              ? `<span class="badge badge-success">Set</span>`
+              : `<span class="badge">Not set</span>`}
+          </div>
+          <div class="threshold-inputs">
+            <div class="threshold-input-group">
+              <label>Min</label>
+              <input type="number"
+                     id="thresh-min-${type}"
+                     placeholder="—"
+                     step="0.1"
+                     value="${thresh && thresh.min_value !== null
+                       ? thresh.min_value : ''}">
+            </div>
+            <div class="threshold-input-group">
+              <label>Max</label>
+              <input type="number"
+                     id="thresh-max-${type}"
+                     placeholder="—"
+                     step="0.1"
+                     value="${thresh && thresh.max_value !== null
+                       ? thresh.max_value : ''}">
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+  lucide.createIcons();
+}
+
+// ── SAVE THRESHOLDS ───────────────────────────────
+async function saveThresholds() {
+  const zoneId = document.getElementById('thresholdZoneSelect').value;
+  if (!zoneId) {
+    showToast('Please select a zone first', 'error');
+    return;
+  }
+
+  const sensorTypes = [
+    'temperature', 'humidity', 'soil_moisture',
+    'soil_ph', 'light', 'co2', 'wind', 'rainfall'
+  ];
+
+  let saved = 0;
+
+  for (const type of sensorTypes) {
+    const min = document.getElementById(`thresh-min-${type}`).value;
+    const max = document.getElementById(`thresh-max-${type}`).value;
+
+    if (min === '' && max === '') continue;
+
+    await Auth.request(`/alerts/thresholds/zone/${zoneId}`, {
+      method: 'POST',
+      body: JSON.stringify({
+        sensor_type: type,
+        min_value: min !== '' ? parseFloat(min) : null,
+        max_value: max !== '' ? parseFloat(max) : null
+      })
+    });
+    saved++;
+  }
+
+  showToast(
+    `${saved} threshold${saved !== 1 ? 's' : ''} saved!`,
+    'success'
+  );
+  await loadThresholds();
+}
+
+// ── TOGGLE THRESHOLDS ─────────────────────────────
+function toggleThresholds() {
+  const body = document.getElementById('thresholdBody');
+  const icon = document.getElementById('thresholdIcon');
+  body.classList.toggle('open');
+  icon.style.transform = body.classList.contains('open')
+    ? 'rotate(180deg)' : 'rotate(0deg)';
+}
+
+// ── SIDEBAR ───────────────────────────────────────
+function toggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const main    = document.getElementById('mainContent');
+  const icon    = document.getElementById('sidebarToggleIcon');
+  sidebar.classList.toggle('collapsed');
+  main.classList.toggle('sidebar-collapsed');
+  icon.setAttribute('data-lucide',
+    sidebar.classList.contains('collapsed')
+      ? 'chevrons-right' : 'chevrons-left');
+  lucide.createIcons();
+}
+
+function navigate(page) { window.location.href = page; }
+
+// ── TOAST ─────────────────────────────────────────
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  const icons = {
+    success: 'check-circle',
+    error:   'x-circle',
+    warning: 'alert-triangle',
+    info:    'info'
+  };
+  toast.innerHTML = `
+    <i data-lucide="${icons[type] || 'info'}"
+       style="width:18px;height:18px;flex-shrink:0;
+              color:var(--${type === 'error' ? 'danger' : type})"></i>
+    <span>${message}</span>
+  `;
+  container.appendChild(toast);
+  lucide.createIcons();
+  setTimeout(() => toast.classList.add('show'), 10);
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 400);
+  }, 4000);
+}
+
+// ── TIME AGO ──────────────────────────────────────
+function timeAgo(dateStr) {
+  const diff =
+    Math.floor((new Date() - new Date(dateStr)) / 1000);
+  if (diff < 60)    return 'just now';
+  if (diff < 3600)  return Math.floor(diff / 60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+  return Math.floor(diff / 86400) + 'd ago';
+}
+</script>
+
+</body>
+</html>
