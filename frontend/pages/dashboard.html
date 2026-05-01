@@ -1,14 +1,17 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
+  <!-- Prevent caching of protected pages -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" type="image/png" href="../assets/images/logo.png"> <!--tab logo-->
   <title>FCHAN_Dashboard</title>
 
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/style.css">
-  <link rel="icon" type="image/png" href="../assets/images/favicon.png">
+  <link rel="icon" type="image/png" href="../assets/images/logo.png">
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 
   <style>
@@ -673,7 +676,7 @@
 // ════════════════════════════════════════════════════
 
 // Require auth
-Auth.requireAuth();
+//Auth.requireAuth();
 
 // ── INIT ──────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
@@ -728,7 +731,8 @@ function loadUser() {
 async function loadDashboard() {
   try {
     // Load farms
-    const farmsData = await Auth.request('/api/farm');
+    //const farmsData = await Auth.request('/api/farm');
+    const farmsData = await Auth.request('/farm');
     if (!farmsData || !farmsData.success) return;
 
     const farms = farmsData.farms;
@@ -741,14 +745,18 @@ async function loadDashboard() {
 
     // Load zones and plants for each farm
     for (const farm of farms) {
-      const zonesData = await Auth.request(`/api/farm/${farm.id}/zones`);
+      //const zonesData = await Auth.request(`/api/farm/${farm.id}/zones`);
+      const zonesData = await Auth.request(`/farm/${farm.id}/zones`);
       if (zonesData && zonesData.zones) {
         totalZones += zonesData.zones.length;
         farm.zones = zonesData.zones;
 
         for (const zone of zonesData.zones) {
-          const plantsData = await Auth.request(
+          /*const plantsData = await Auth.request(
             `/api/farm/${farm.id}/zones/${zone.id}/plants`
+          );*/
+	  const plantsData = await Auth.request(
+            `/farm/${farm.id}/zones/${zone.id}/plants`
           );
           if (plantsData && plantsData.plants) {
             totalPlants += plantsData.plants.length;
@@ -839,8 +847,11 @@ async function loadAlerts(farms) {
   let allAlerts = [];
 
   for (const farm of farms) {
-    const data = await Auth.request(
+    /*const data = await Auth.request(
       `/api/alerts/farm/${farm.id}/unread`
+    );*/
+    const data = await Auth.request(
+      `/alerts/farm/${farm.id}/unread`
     );
     if (data && data.alerts) {
       allAlerts = [...allAlerts, ...data.alerts];
@@ -916,7 +927,16 @@ async function createFarm() {
     <span>${LanguageManager.t('loading')}</span>
   `;
 
-  const data = await Auth.request('/api/farm', {
+  /*const data = await Auth.request('/api/farm', {
+    method: 'POST',
+    body: JSON.stringify({
+      name,
+      country: document.getElementById('farmCountry').value.trim(),
+      city:    document.getElementById('farmCity').value.trim(),
+      description: document.getElementById('farmDesc').value.trim()
+    })
+  });*/
+  const data = await Auth.request('/farm', {
     method: 'POST',
     body: JSON.stringify({
       name,

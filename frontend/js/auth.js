@@ -38,7 +38,9 @@ const Auth = {
   // ── REDIRECT IF NOT LOGGED IN ────────────────────
   requireAuth() {
     if (!this.isLoggedIn()) {
-      window.location.href = 'index.html';
+      //window.location.href = 'index.html';
+      //window.location.href = '/pages/index.html';
+      window.location.replace = '/pages/index.html';
       return false;
     }
     return true;
@@ -47,7 +49,9 @@ const Auth = {
   // ── REDIRECT IF ALREADY LOGGED IN ───────────────
   redirectIfLoggedIn() {
     if (this.isLoggedIn()) {
-      window.location.href = 'dashboard.html';
+      //window.location.href = 'dashboard.html';
+      //window.location.href = '/pagesdashboard.html';
+      window.location.replace('/pages/dashboard.html');
     }
   },
 
@@ -65,6 +69,7 @@ const Auth = {
       if (data.success) {
         this.setToken(data.token);
         this.setUser(data.user);
+	window.location.replace('/pages/dashboard.html');
         return { success: true, user: data.user };
       }
 
@@ -92,6 +97,7 @@ const Auth = {
       if (data.success) {
         this.setToken(data.token);
         this.setUser(data.user);
+	window.location.replace('/pages/dashboard.html');
         return { success: true, user: data.user };
       }
 
@@ -108,7 +114,9 @@ const Auth = {
   // ── LOGOUT ───────────────────────────────────────
   logout() {
     this.removeToken();
-    window.location.href = 'index.html';
+    //window.location.href = 'index.html';
+    //window.location.href = '/pages/index.html';
+    window.location.replace('/pages/index.html');
   },
 
   // ── FORGOT PASSWORD ──────────────────────────────
@@ -142,9 +150,14 @@ const Auth = {
     const response = await fetch(`${API_URL}${endpoint}`, config);
 
     // Token expired
-    if (response.status === 401) {
+    /*if (response.status === 401) {
       this.logout();
       return null;
+    }*/
+    if (response.status === 401) {
+  	this.removeToken();
+  	window.location.replace('/pages/index.html');
+  	return null;
     }
 
     return response.json();
@@ -152,7 +165,45 @@ const Auth = {
 };
 
 // Redirect if already logged in (on auth page)
-if (window.location.pathname.includes('index.html') ||
+/*if (window.location.pathname.includes('index.html') ||
+    window.location.pathname === '/') {
+  Auth.redirectIfLoggedIn();
+}*/
+
+if (window.location.pathname.includes('/pages/index.html') ||
     window.location.pathname === '/') {
   Auth.redirectIfLoggedIn();
 }
+
+// ── PAGE PROTECTION ───────────────────────────────
+(function() {
+  const path = window.location.pathname;
+  const isAuthPage = path.includes('index.html') ||
+                     path.endsWith('/pages') ||
+                     path.endsWith('/pages/') ||
+                     path === '/';
+
+  if (isAuthPage) {
+    // On login page: redirect to dashboard if already logged in
+    if (Auth.isLoggedIn()) {
+      window.location.replace('/pages/dashboard.html');
+    }
+  } else {
+    // On protected page: redirect to login if not logged in
+    if (!Auth.isLoggedIn()) {
+      window.location.replace('/pages/index.html');
+    }
+  }
+
+  // Handle forward/back button navigation
+  window.addEventListener('pageshow', function(event) {
+    // event.persisted = true means page was loaded from cache
+    if (event.persisted) {
+      if (isAuthPage && Auth.isLoggedIn()) {
+        window.location.replace('/pages/dashboard.html');
+      } else if (!isAuthPage && !Auth.isLoggedIn()) {
+        window.location.replace('/pages/index.html');
+      }
+    }
+  });
+})();
