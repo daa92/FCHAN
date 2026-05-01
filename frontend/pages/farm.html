@@ -1124,7 +1124,7 @@ async function loadZones(farmId) {
 
   grid.innerHTML = zones.map(zone => `
     <div class="zone-card"
-         onclick="navigate('zone.html?farmId=${farmId}&zoneId=${zone.id}')">
+         onclick="goToZone(${farmId}, ${zone.id})">
       <div class="zone-card-header">
         <h3>${zone.name}</h3>
         ${zone.area_sqm
@@ -1726,6 +1726,11 @@ function showToast(message, type = 'info') {
     toast.classList.remove('show');
     setTimeout(() => toast.remove(), 400);
   }, 4000);
+}
+
+
+function goToZone(farmId, zoneId) {
+  window.location.href = `zone.html?farmId=${farmId}&zoneId=${zoneId}`;
 }
 
 // ── TIME AGO ──────────────────────────────────────

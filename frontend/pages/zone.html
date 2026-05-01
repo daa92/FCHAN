@@ -1,0 +1,1751 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>FCHAN_Zone</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="icon" type="image/png" href="../assets/images/logo.png">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    /* ── ZONE PAGE SPECIFIC ─────────────────────────── */
+
+    /* Two column layout */
+    .zone-layout {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: var(--space-xl);
+    }
+
+    /* Section title */
+    .section-title {
+      font-size: var(--text-lg);
+      font-weight: 700;
+      margin-bottom: var(--space-md);
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      padding-bottom: var(--space-sm);
+      border-bottom: 2px solid var(--border);
+    }
+
+    /* ── SENSOR CARDS ───────────────────────────────── */
+    .sensors-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: var(--space-md);
+      margin-bottom: var(--space-xl);
+    }
+
+    .sensor-live-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: var(--space-md);
+      position: relative;
+      overflow: hidden;
+      transition: all var(--transition-base);
+    }
+
+    .sensor-live-card:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+
+    .sensor-live-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--primary);
+      border-radius: var(--radius-md) var(--radius-md) 0 0;
+    }
+
+    .sensor-live-card.warning::before { background: var(--warning); }
+    .sensor-live-card.critical::before { background: var(--danger); }
+
+    .sensor-card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-sm);
+    }
+
+    .sensor-type-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+    }
+
+    .live-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      animation: livePulse 2s ease infinite;
+    }
+
+    .live-indicator.offline {
+      background: var(--text-light);
+      animation: none;
+    }
+
+    @keyframes livePulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(39,174,96,0.4); }
+      50% { opacity: 0.8; box-shadow: 0 0 0 4px rgba(39,174,96,0); }
+    }
+
+    .sensor-value-big {
+      font-family: var(--font-mono);
+      font-size: 36px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1;
+      margin: var(--space-sm) 0;
+    }
+
+    .sensor-value-big .unit {
+      font-size: var(--text-md);
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .sensor-card-name {
+      font-size: var(--text-sm);
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+
+    .sensor-card-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: var(--space-sm);
+      padding-top: var(--space-sm);
+      border-top: 1px solid var(--border);
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+    }
+
+    .sensor-mini-chart {
+      height: 40px;
+      margin: var(--space-sm) 0;
+    }
+
+    /* ── CHARTS ─────────────────────────────────────── */
+    .charts-section {
+      margin-bottom: var(--space-xl);
+    }
+
+    .chart-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: var(--space-lg);
+      margin-bottom: var(--space-md);
+    }
+
+    .chart-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-md);
+    }
+
+    .chart-title {
+      font-size: var(--text-md);
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+
+    .chart-controls {
+      display: flex;
+      gap: 4px;
+      background: var(--surface-2);
+      padding: 3px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+    }
+
+    .chart-period-btn {
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: var(--text-xs);
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      border: none;
+      background: none;
+    }
+
+    .chart-period-btn.active {
+      background: var(--surface);
+      color: var(--primary);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .chart-wrapper {
+      position: relative;
+      height: 200px;
+    }
+
+    /* ── RIGHT PANEL ─────────────────────────────────── */
+    .right-panel {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-lg);
+    }
+
+    /* Plant cards */
+    .plant-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      transition: all var(--transition-base);
+    }
+
+    .plant-card:hover {
+      box-shadow: var(--shadow-md);
+    }
+
+    .plant-card-header {
+      background: linear-gradient(135deg,
+        rgba(39,174,96,0.1), rgba(26,82,118,0.1));
+      padding: var(--space-md) var(--space-lg);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .plant-card-header h4 {
+      font-size: var(--text-md);
+      font-weight: 700;
+    }
+
+    .plant-card-body {
+      padding: var(--space-md) var(--space-lg);
+    }
+
+    .plant-info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: var(--text-sm);
+      padding: 4px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .plant-info-row:last-of-type { border-bottom: none; }
+    .plant-info-row span { color: var(--text-muted); }
+    .plant-info-row strong { color: var(--text); }
+
+    /* Growth progress */
+    .growth-section {
+      margin-top: var(--space-md);
+      padding-top: var(--space-md);
+      border-top: 1px solid var(--border);
+    }
+
+    .growth-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-sm);
+      font-size: var(--text-sm);
+    }
+
+    .growth-header span { color: var(--text-muted); }
+    .growth-header strong { color: var(--text); font-weight: 700; }
+
+    .growth-bar {
+      height: 10px;
+      background: var(--border);
+      border-radius: var(--radius-full);
+      overflow: hidden;
+      margin-bottom: var(--space-sm);
+    }
+
+    .growth-fill {
+      height: 100%;
+      border-radius: var(--radius-full);
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
+      transition: width 1.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .forecast-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-sm);
+      margin-top: var(--space-sm);
+    }
+
+    .forecast-item {
+      background: var(--surface-2);
+      border-radius: var(--radius-sm);
+      padding: var(--space-sm) var(--space-md);
+    }
+
+    .forecast-item .fi-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .forecast-item .fi-value {
+      font-size: var(--text-sm);
+      font-weight: 700;
+      color: var(--text);
+      margin-top: 2px;
+    }
+
+    /* Manual entry panel */
+    .manual-entry-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    .panel-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-md) var(--space-lg);
+      cursor: pointer;
+      transition: background var(--transition-fast);
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+    }
+
+    .panel-toggle:hover { background: var(--surface-2); }
+
+    .panel-toggle h4 {
+      font-size: var(--text-md);
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+
+    .panel-body {
+      padding: var(--space-md) var(--space-lg);
+      border-top: 1px solid var(--border);
+      display: none;
+    }
+
+    .panel-body.open { display: block; }
+
+    /* Add sensor panel */
+    .add-sensor-card {
+      background: var(--surface);
+      border: 2px dashed var(--border);
+      border-radius: var(--radius-md);
+      padding: var(--space-lg);
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+      cursor: pointer;
+      transition: all var(--transition-base);
+      color: var(--text-muted);
+    }
+
+    .add-sensor-card:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      background: rgba(39,174,96,0.04);
+    }
+
+    /* Recommendations */
+    .recommendations {
+      background: rgba(243,156,18,0.08);
+      border: 1px solid rgba(243,156,18,0.2);
+      border-radius: var(--radius-sm);
+      padding: var(--space-md);
+      margin-top: var(--space-md);
+    }
+
+    .recommendations h5 {
+      font-size: var(--text-sm);
+      color: var(--warning);
+      margin-bottom: var(--space-sm);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .recommendations ul {
+      list-style: disc;
+      padding-left: var(--space-lg);
+    }
+
+    .recommendations ul li {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    /* ── RESPONSIVE ───────────────────────────────── */
+    @media (max-width: 1200px) {
+      .zone-layout {
+        grid-template-columns: 1fr;
+      }
+      .right-panel {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      }
+    }
+
+    @media (max-width: 768px) {
+      .sensors-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .right-panel {
+        grid-template-columns: 1fr;
+      }
+      .chart-wrapper { height: 160px; }
+    }
+
+    @media (max-width: 480px) {
+      .sensors-grid { grid-template-columns: 1fr; }
+      .sensor-value-big { font-size: 28px; }
+    }
+
+    @media (min-width: 1920px) {
+      .zone-layout { grid-template-columns: 1fr 440px; }
+      .sensors-grid { grid-template-columns: repeat(4, 1fr); }
+      .chart-wrapper { height: 260px; }
+    }
+  </style>
+</head>
+
+<body>
+<div class="app-layout">
+
+  <!-- ══ SIDEBAR ══════════════════════════════════ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <img src="../assets/images/logo.png"
+           alt="FCHAN" style="height:36px;flex-shrink:0;">
+      <span class="logo-text">FCHAN</span>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-item" onclick="navigate('dashboard.html')">
+        <span class="nav-icon"><i data-lucide="layout-dashboard"></i></span>
+        <span class="nav-label" data-i18n="dashboard">Dashboard</span>
+      </div>
+      <div class="nav-item active" onclick="navigate('farm.html')">
+        <span class="nav-icon"><i data-lucide="tree-pine"></i></span>
+        <span class="nav-label" data-i18n="farms">My Farms</span>
+      </div>
+      <div class="nav-item" onclick="navigate('alerts.html')">
+        <span class="nav-icon"><i data-lucide="bell"></i></span>
+        <span class="nav-label" data-i18n="alerts">Alerts</span>
+        <span class="nav-badge" id="alertBadge" style="display:none">0</span>
+      </div>
+      <div class="nav-item" onclick="navigate('reports.html')">
+        <span class="nav-icon"><i data-lucide="file-text"></i></span>
+        <span class="nav-label" data-i18n="reports">Reports</span>
+      </div>
+      <div class="nav-item" onclick="navigate('about.html')">
+        <span class="nav-icon"><i data-lucide="info"></i></span>
+        <span class="nav-label" data-i18n="about">About</span>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div style="display:flex;align-items:center;
+                  justify-content:space-between;padding:4px 8px;">
+        <span style="font-size:var(--text-sm);
+                     color:var(--text-muted);">Theme</span>
+        <button class="theme-toggle">
+          <i data-lucide="moon"></i>
+        </button>
+      </div>
+      <div style="display:flex;align-items:center;
+                  justify-content:space-between;padding:4px 8px;">
+        <span style="font-size:var(--text-sm);
+                     color:var(--text-muted);">Language</span>
+        <div class="lang-toggle">
+          <button class="lang-btn active" data-lang="en">EN</button>
+          <button class="lang-btn" data-lang="fr">FR</button>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;
+                  gap:var(--space-sm);padding:8px;">
+        <div class="user-avatar" id="userAvatar">D</div>
+        <div style="flex:1;min-width:0;" class="nav-label">
+          <div style="font-size:var(--text-sm);font-weight:600;
+                      color:var(--text);white-space:nowrap;
+                      overflow:hidden;text-overflow:ellipsis;"
+               id="userName">Loading...</div>
+          <div style="font-size:var(--text-xs);
+                      color:var(--text-muted);"
+               id="userRole">farmer</div>
+        </div>
+        <button class="btn-ghost btn-sm"
+                onclick="Auth.logout()"
+                title="Logout" style="padding:6px;">
+          <i data-lucide="log-out"></i>
+        </button>
+      </div>
+      <div style="display:flex;justify-content:flex-end;
+                  padding:0 8px 4px;">
+        <button class="sidebar-toggle" onclick="toggleSidebar()"
+                id="sidebarToggle">
+          <i data-lucide="chevrons-left" id="sidebarToggleIcon"></i>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ══ MAIN CONTENT ══════════════════════════════ -->
+  <main class="main-content" id="mainContent">
+
+    <!-- Breadcrumb -->
+    <div class="breadcrumb" id="breadcrumb">
+      <span class="breadcrumb-item" onclick="navigate('farm.html')">
+        <i data-lucide="tree-pine" style="width:14px;height:14px"></i>
+        <span data-i18n="farms">My Farms</span>
+      </span>
+      <span class="breadcrumb-sep">›</span>
+      <span class="breadcrumb-item"
+            id="breadcrumbFarm"
+            onclick="goBackToFarm()">Farm</span>
+      <span class="breadcrumb-sep">›</span>
+      <span class="breadcrumb-item active"
+            id="breadcrumbZone">Zone</span>
+    </div>
+
+    <!-- Zone header -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <h1 id="zoneName">Loading...</h1>
+        <p id="zoneDesc" style="color:var(--text-muted)"></p>
+      </div>
+      <div class="topbar-right">
+        <div style="display:flex;align-items:center;
+                    gap:6px;font-size:var(--text-xs);
+                    color:var(--text-muted);">
+          <div class="realtime-dot"
+               style="width:8px;height:8px;background:var(--success);
+                      border-radius:50%;
+                      animation:livePulse 2s ease infinite;"></div>
+          Live
+        </div>
+        <button class="btn btn-outline btn-sm"
+                onclick="openModal('addSensorModal')">
+          <i data-lucide="plus"></i>
+          <span data-i18n="add_sensor">Add Sensor</span>
+        </button>
+        <button class="btn btn-primary btn-sm"
+                onclick="openModal('addPlantModal')">
+          <i data-lucide="sprout"></i>
+          <span data-i18n="create_plant">Add Plant</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Main zone layout -->
+    <div class="zone-layout">
+
+      <!-- ── LEFT: Sensors + Charts ─────────────────── -->
+      <div>
+
+        <!-- Sensor cards -->
+        <h3 class="section-title">
+          <i data-lucide="activity"
+             style="width:20px;height:20px;
+                    color:var(--primary)"></i>
+          Live Sensor Readings
+        </h3>
+
+        <div class="sensors-grid" id="sensorsGrid">
+          <div class="add-sensor-card"
+               onclick="openModal('addSensorModal')">
+            <i data-lucide="plus-circle"
+               style="width:24px;height:24px"></i>
+            <div>
+              <div style="font-weight:600;
+                          font-size:var(--text-sm);">
+                Add Sensor
+              </div>
+              <div style="font-size:var(--text-xs);">
+                Connect IoT or manual
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="charts-section" id="chartsSection">
+          <!-- Charts rendered by JS -->
+        </div>
+
+        <!-- Manual entry -->
+        <div class="manual-entry-panel">
+          <button class="panel-toggle"
+                  onclick="togglePanel('manualPanel')">
+            <h4>
+              <i data-lucide="edit-3"
+                 style="width:18px;height:18px;
+                        color:var(--primary)"></i>
+              <span data-i18n="manual_entry">Manual Data Entry</span>
+            </h4>
+            <i data-lucide="chevron-down"
+               id="manualPanelIcon"
+               style="width:18px;height:18px;
+                      color:var(--text-muted);
+                      transition:transform 0.3s"></i>
+          </button>
+          <div class="panel-body" id="manualPanel">
+            <div class="form-group">
+              <label class="form-label"
+                     data-i18n="sensor_name">Select Sensor</label>
+              <select class="form-control" id="manualSensorSelect">
+                <option value="">-- Select sensor --</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label"
+                     data-i18n="enter_value">Value</label>
+              <div style="display:flex;gap:var(--space-sm);">
+                <input type="number"
+                       class="form-control"
+                       id="manualValue"
+                       placeholder="0.00"
+                       step="0.01">
+                <span id="manualUnit"
+                      style="display:flex;align-items:center;
+                             padding:0 var(--space-md);
+                             background:var(--surface-2);
+                             border:1px solid var(--border);
+                             border-radius:var(--radius-sm);
+                             color:var(--text-muted);
+                             white-space:nowrap;
+                             font-size:var(--text-sm);">
+                  unit
+                </span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Date & Time (optional)</label>
+              <input type="datetime-local"
+                     class="form-control"
+                     id="manualDateTime">
+            </div>
+            <button class="btn btn-primary btn-full"
+                    onclick="submitManualReading()">
+              <i data-lucide="save"></i>
+              <span data-i18n="record">Record Reading</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ── RIGHT: Plants + Forecast ──────────────── -->
+      <div class="right-panel">
+
+        <div>
+          <h3 class="section-title">
+            <i data-lucide="sprout"
+               style="width:20px;height:20px;
+                      color:var(--primary)"></i>
+            Plants & Forecast
+          </h3>
+          <div id="plantsContainer">
+            <!-- Plants loaded by JS -->
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+</div>
+
+<!-- ══ BOTTOM NAV ════════════════════════════════════ -->
+<nav class="bottom-nav">
+  <div class="bottom-nav-items">
+    <div class="bottom-nav-item"
+         onclick="navigate('dashboard.html')">
+      <i data-lucide="layout-dashboard" class="nav-icon"></i>
+      <span>Dashboard</span>
+    </div>
+    <div class="bottom-nav-item active"
+         onclick="navigate('farm.html')">
+      <i data-lucide="tree-pine" class="nav-icon"></i>
+      <span>Farms</span>
+    </div>
+    <div class="bottom-nav-item"
+         onclick="navigate('alerts.html')">
+      <i data-lucide="bell" class="nav-icon"></i>
+      <span>Alerts</span>
+    </div>
+    <div class="bottom-nav-item"
+         onclick="navigate('reports.html')">
+      <i data-lucide="file-text" class="nav-icon"></i>
+      <span>Reports</span>
+    </div>
+    <div class="bottom-nav-item"
+         onclick="navigate('about.html')">
+      <i data-lucide="info" class="nav-icon"></i>
+      <span>About</span>
+    </div>
+  </div>
+</nav>
+
+<!-- ══ ADD SENSOR MODAL ══════════════════════════════ -->
+<div class="modal-overlay" id="addSensorModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 data-i18n="add_sensor">Add Sensor</h3>
+      <button class="modal-close"
+              onclick="closeModal('addSensorModal')">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Sensor Name *</label>
+      <input type="text" class="form-control"
+             id="sensorName" placeholder="Temperature Sensor 1">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;
+                gap:var(--space-md);">
+      <div class="form-group">
+        <label class="form-label">Type *</label>
+        <select class="form-control" id="sensorType"
+                onchange="updateSensorUnit()">
+          <option value="temperature">Temperature</option>
+          <option value="humidity">Humidity</option>
+          <option value="soil_moisture">Soil Moisture</option>
+          <option value="soil_ph">Soil pH</option>
+          <option value="light">Light</option>
+          <option value="co2">CO2</option>
+          <option value="wind">Wind</option>
+          <option value="rainfall">Rainfall</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Unit</label>
+        <input type="text" class="form-control"
+               id="sensorUnit" placeholder="°C">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Connection Type</label>
+      <select class="form-control" id="sensorConnection">
+        <option value="manual">Manual</option>
+        <option value="wifi">WiFi (ESP32)</option>
+        <option value="usb">USB (Arduino)</option>
+        <option value="bluetooth">Bluetooth</option>
+      </select>
+    </div>
+    <div class="form-group"
+         id="apiKeySection" style="display:none;">
+      <label class="form-label">API Key</label>
+      <div style="display:flex;gap:var(--space-sm);">
+        <input type="text" class="form-control"
+               id="sensorApiKey"
+               placeholder="Auto-generated" readonly>
+        <button class="btn btn-outline btn-sm"
+                onclick="copyApiKey()">
+          <i data-lucide="copy"></i>
+        </button>
+      </div>
+      <p style="font-size:var(--text-xs);
+                color:var(--text-muted);
+                margin-top:4px;">
+        Use this key in your Arduino/ESP32 code
+      </p>
+    </div>
+    <div style="display:flex;gap:var(--space-md);
+                justify-content:flex-end;
+                margin-top:var(--space-lg);">
+      <button class="btn btn-outline"
+              onclick="closeModal('addSensorModal')">Cancel</button>
+      <button class="btn btn-primary"
+              onclick="createSensor()">
+        <i data-lucide="plus"></i> Add Sensor
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ADD PLANT MODAL ═══════════════════════════════ -->
+<div class="modal-overlay" id="addPlantModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 data-i18n="create_plant">Add Plant</h3>
+      <button class="modal-close"
+              onclick="closeModal('addPlantModal')">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Plant Name *</label>
+      <input type="text" class="form-control"
+             id="plantName" placeholder="Tomato Plant 1">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Species</label>
+      <select class="form-control" id="plantSpecies">
+        <option value="">Loading species...</option>
+      </select>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;
+                gap:var(--space-md);">
+      <div class="form-group">
+        <label class="form-label">Quantity</label>
+        <input type="number" class="form-control"
+               id="plantQuantity" value="1" min="1">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Growth Stage</label>
+        <select class="form-control" id="plantStage">
+          <option value="seedling">Seedling</option>
+          <option value="vegetative">Vegetative</option>
+          <option value="flowering">Flowering</option>
+          <option value="harvest">Harvest</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Planted Date</label>
+      <input type="date" class="form-control" id="plantDate">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notes</label>
+      <textarea class="form-control" id="plantNotes"
+                rows="2"
+                placeholder="Any notes..."></textarea>
+    </div>
+    <div style="display:flex;gap:var(--space-md);
+                justify-content:flex-end;
+                margin-top:var(--space-lg);">
+      <button class="btn btn-outline"
+              onclick="closeModal('addPlantModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="createPlant()">
+        <i data-lucide="sprout"></i> Add Plant
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TOAST ══════════════════════════════════════════ -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Scripts -->
+<script src="../js/theme.js"></script>
+<script src="../js/language.js"></script>
+<script src="../js/auth.js"></script>
+
+<script>
+console.log('Token exists:', !!Auth.getToken());
+console.log('Is logged in:', Auth.isLoggedIn());
+// ════════════════════════════════════════════════════
+// FCHAN — Zone Page
+// ════════════════════════════════════════════════════
+
+let farmId = null;
+let zoneId = null;
+let sensors = [];
+let charts  = {};
+let refreshInterval = null;
+
+// Default units per sensor type
+const SENSOR_UNITS = {
+  temperature:   '°C',
+  humidity:      '%',
+  soil_moisture: '%',
+  soil_ph:       'pH',
+  light:         'lux',
+  co2:           'ppm',
+  wind:          'km/h',
+  rainfall:      'mm'
+};
+
+const SENSOR_ICONS = {
+  temperature:   'thermometer',
+  humidity:      'droplets',
+  soil_moisture: 'droplet',
+  soil_ph:       'flask-conical',
+  light:         'sun',
+  co2:           'wind',
+  wind:          'wind',
+  rainfall:      'cloud-rain'
+};
+
+const SENSOR_COLORS = {
+  temperature:   '#e74c3c',
+  humidity:      '#3498db',
+  soil_moisture: '#27ae60',
+  soil_ph:       '#9b59b6',
+  light:         '#f39c12',
+  co2:           '#1abc9c',
+  wind:          '#95a5a6',
+  rainfall:      '#2980b9'
+};
+
+document.addEventListener('DOMContentLoaded', async () => {
+  ThemeManager.init();
+  LanguageManager.init();
+  lucide.createIcons();
+  loadUser();
+
+	// debug lines
+  console.log('Full URL:', window.location.href);
+  console.log('Search params:', window.location.search);
+  // Get URL params
+  const params = new URLSearchParams(window.location.search);
+  farmId = params.get('farmId');
+  zoneId = params.get('zoneId');
+
+  if (!farmId || !zoneId) {
+    navigate('farm.html');
+    return;
+  }
+
+  await loadZone();
+  await loadSensors();
+  await loadPlants();
+  await loadSpecies();
+
+  // Auto-refresh every 30 seconds
+  refreshInterval = setInterval(refreshReadings, 30000);
+});
+
+// ── LOAD USER ─────────────────────────────────────
+function loadUser() {
+  const user = Auth.getUser();
+  if (!user) return;
+  document.getElementById('userName').textContent = user.name;
+  document.getElementById('userRole').textContent = user.role;
+  document.getElementById('userAvatar').textContent =
+    user.name.charAt(0).toUpperCase();
+}
+
+// ── LOAD ZONE ─────────────────────────────────────
+async function loadZone() {
+  // Get farm name for breadcrumb
+  const farmData = await Auth.request(`/farm/${farmId}`);
+  if (farmData && farmData.farm) {
+    document.getElementById('breadcrumbFarm').textContent =
+      farmData.farm.name;
+  }
+
+  // Get all zones to find this one
+  const zonesData = await Auth.request(`/farm/${farmId}/zones`);
+  if (zonesData && zonesData.zones) {
+    const zone = zonesData.zones.find(z => z.id == zoneId);
+    if (zone) {
+      document.getElementById('zoneName').textContent = zone.name;
+      document.getElementById('breadcrumbZone').textContent = zone.name;
+      document.getElementById('zoneDesc').textContent =
+        zone.description || '';
+      document.title = `FCHAN — ${zone.name}`;
+    }
+  }
+}
+
+// ── LOAD SENSORS ──────────────────────────────────
+async function loadSensors() {
+  const data = await Auth.request(`/sensors/zone/${zoneId}`);
+  if (!data || !data.sensors) return;
+
+  sensors = data.sensors;
+  renderSensorCards(sensors);
+  populateManualSelect(sensors);
+  renderCharts(sensors);
+}
+
+// ── RENDER SENSOR CARDS ───────────────────────────
+function renderSensorCards(sensors) {
+  const grid = document.getElementById('sensorsGrid');
+
+  const cardsHTML = sensors.map(sensor => `
+    <div class="sensor-live-card" id="scard-${sensor.id}">
+      <div class="sensor-card-top">
+        <div class="sensor-type-badge">
+          <i data-lucide="${SENSOR_ICONS[sensor.type] || 'activity'}"
+             style="width:14px;height:14px;
+                    color:${SENSOR_COLORS[sensor.type]}"></i>
+          ${sensor.type.replace('_', ' ')}
+        </div>
+        <div class="live-indicator ${sensor.is_active
+          ? '' : 'offline'}"
+             title="${sensor.is_active ? 'Active' : 'Offline'}">
+        </div>
+      </div>
+
+      <div class="sensor-value-big" id="sval-${sensor.id}">
+        —<span class="unit">${sensor.unit || ''}</span>
+      </div>
+
+      <div class="sensor-card-name">${sensor.name}</div>
+
+      <div class="sensor-card-meta">
+        <span id="stime-${sensor.id}">No data</span>
+        <div style="display:flex;gap:4px;">
+          <button class="btn btn-ghost"
+                  style="padding:2px 6px;"
+                  onclick="openManualEntryFor(${sensor.id})"
+                  title="Add reading manually">
+            <i data-lucide="edit-3"
+               style="width:12px;height:12px"></i>
+          </button>
+          <button class="btn btn-ghost"
+                  style="padding:2px 6px;color:var(--danger);"
+                  onclick="deleteSensor(${sensor.id})"
+                  title="Delete sensor">
+            <i data-lucide="trash-2"
+               style="width:12px;height:12px"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  grid.innerHTML = cardsHTML + `
+    <div class="add-sensor-card"
+         onclick="openModal('addSensorModal')">
+      <i data-lucide="plus-circle"
+         style="width:24px;height:24px"></i>
+      <div>
+        <div style="font-weight:600;font-size:var(--text-sm);">
+          Add Sensor
+        </div>
+        <div style="font-size:var(--text-xs);">
+          Connect IoT or manual
+        </div>
+      </div>
+    </div>
+  `;
+
+  lucide.createIcons();
+
+  // Load latest readings for each sensor
+  sensors.forEach(sensor => loadLatestReading(sensor));
+}
+
+// ── LOAD LATEST READING ───────────────────────────
+async function loadLatestReading(sensor) {
+  const data = await Auth.request(
+    `/sensors/${sensor.id}/readings/latest`
+  );
+
+  if (data && data.reading) {
+    const val = parseFloat(data.reading.value).toFixed(1);
+    const el = document.getElementById(`sval-${sensor.id}`);
+    if (el) {
+      el.innerHTML = `${val}<span class="unit">${sensor.unit || ''}</span>`;
+    }
+    const te = document.getElementById(`stime-${sensor.id}`);
+    if (te) te.textContent = timeAgo(data.reading.recorded_at);
+
+    // Check thresholds — color the card
+    // (basic visual feedback)
+    const card = document.getElementById(`scard-${sensor.id}`);
+    if (card) {
+      card.classList.remove('warning', 'critical');
+    }
+  }
+}
+
+// ── RENDER CHARTS ─────────────────────────────────
+async function renderCharts(sensors) {
+  const section = document.getElementById('chartsSection');
+  section.innerHTML = '';
+
+  for (const sensor of sensors) {
+    const data = await Auth.request(
+      `/sensors/${sensor.id}/readings/stats?hours=24`
+    );
+
+    if (!data || !data.hourly_data ||
+        data.hourly_data.length === 0) continue;
+
+    const chartId = `chart-${sensor.id}`;
+
+    section.innerHTML += `
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">
+            <i data-lucide="${SENSOR_ICONS[sensor.type] || 'activity'}"
+               style="width:18px;height:18px;
+                      color:${SENSOR_COLORS[sensor.type]}"></i>
+            ${sensor.name}
+            <span style="font-size:var(--text-sm);
+                         color:var(--text-muted);
+                         font-weight:400;">
+              (${sensor.unit || ''})
+            </span>
+          </div>
+          <div class="chart-controls">
+            <button class="chart-period-btn active"
+                    onclick="loadChartData(${sensor.id}, 24, this)">
+              24h
+            </button>
+            <button class="chart-period-btn"
+                    onclick="loadChartData(${sensor.id}, 48, this)">
+              48h
+            </button>
+            <button class="chart-period-btn"
+                    onclick="loadChartData(${sensor.id}, 168, this)">
+              7d
+            </button>
+          </div>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="${chartId}"></canvas>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);
+                    gap:var(--space-sm);margin-top:var(--space-md);">
+          <div style="text-align:center;padding:var(--space-sm);
+                      background:var(--surface-2);
+                      border-radius:var(--radius-sm);">
+            <div style="font-size:var(--text-xs);
+                        color:var(--text-muted);">Average</div>
+            <div style="font-weight:700;font-size:var(--text-md);"
+                 id="avg-${sensor.id}">
+              ${data.stats.average
+                ? parseFloat(data.stats.average).toFixed(1) : '—'}
+              ${sensor.unit || ''}
+            </div>
+          </div>
+          <div style="text-align:center;padding:var(--space-sm);
+                      background:var(--surface-2);
+                      border-radius:var(--radius-sm);">
+            <div style="font-size:var(--text-xs);
+                        color:var(--text-muted);">Min</div>
+            <div style="font-weight:700;font-size:var(--text-md);">
+              ${data.stats.minimum
+                ? parseFloat(data.stats.minimum).toFixed(1) : '—'}
+              ${sensor.unit || ''}
+            </div>
+          </div>
+          <div style="text-align:center;padding:var(--space-sm);
+                      background:var(--surface-2);
+                      border-radius:var(--radius-sm);">
+            <div style="font-size:var(--text-xs);
+                        color:var(--text-muted);">Max</div>
+            <div style="font-weight:700;font-size:var(--text-md);">
+              ${data.stats.maximum
+                ? parseFloat(data.stats.maximum).toFixed(1) : '—'}
+              ${sensor.unit || ''}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    lucide.createIcons();
+    renderChart(chartId, sensor, data.hourly_data);
+  }
+}
+
+// ── RENDER SINGLE CHART ───────────────────────────
+function renderChart(canvasId, sensor, hourlyData) {
+  const ctx = document.getElementById(canvasId);
+  if (!ctx) return;
+
+  const isDark = document.documentElement
+    .getAttribute('data-theme') === 'dark';
+
+  const labels = hourlyData.map(d => {
+    const date = new Date(d.hour);
+    return date.getHours() + ':00';
+  });
+
+  const values = hourlyData.map(d =>
+    parseFloat(d.average).toFixed(2)
+  );
+
+  const color = SENSOR_COLORS[sensor.type] || '#27ae60';
+
+  if (charts[canvasId]) {
+    charts[canvasId].destroy();
+  }
+
+  charts[canvasId] = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: sensor.name,
+        data: values,
+        borderColor: color,
+        backgroundColor: color + '18',
+        borderWidth: 2,
+        pointRadius: 3,
+        pointBackgroundColor: color,
+        tension: 0.4,
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          mode: 'index',
+          intersect: false,
+          callbacks: {
+            label: ctx =>
+              `${ctx.parsed.y} ${sensor.unit || ''}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: {
+            color: isDark
+              ? 'rgba(255,255,255,0.05)'
+              : 'rgba(0,0,0,0.05)'
+          },
+          ticks: {
+            color: isDark ? '#8b949e' : '#7f8c8d',
+            maxTicksLimit: 8,
+            font: { size: 11 }
+          }
+        },
+        y: {
+          grid: {
+            color: isDark
+              ? 'rgba(255,255,255,0.05)'
+              : 'rgba(0,0,0,0.05)'
+          },
+          ticks: {
+            color: isDark ? '#8b949e' : '#7f8c8d',
+            font: { size: 11 }
+          }
+        }
+      }
+    }
+  });
+}
+
+// ── LOAD CHART DATA (period change) ──────────────
+async function loadChartData(sensorId, hours, btn) {
+  // Update active button
+  btn.closest('.chart-controls')
+    .querySelectorAll('.chart-period-btn')
+    .forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  const sensor = sensors.find(s => s.id === sensorId);
+  if (!sensor) return;
+
+  const data = await Auth.request(
+    `/sensors/${sensorId}/readings/stats?hours=${hours}`
+  );
+
+  if (data && data.hourly_data) {
+    renderChart(`chart-${sensorId}`, sensor, data.hourly_data);
+  }
+}
+
+// ── LOAD PLANTS ───────────────────────────────────
+async function loadPlants() {
+  const data = await Auth.request(
+    `/farm/${farmId}/zones/${zoneId}/plants`
+  );
+  if (!data || !data.plants) return;
+
+  const container = document.getElementById('plantsContainer');
+
+  if (data.plants.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state" style="padding:40px 20px;">
+        <i data-lucide="sprout"
+           style="width:48px;height:48px;
+                  color:var(--text-light)"></i>
+        <h3 style="font-size:var(--text-md);">No plants yet</h3>
+        <button class="btn btn-primary btn-sm"
+                onclick="openModal('addPlantModal')">
+          <i data-lucide="plus"></i> Add Plant
+        </button>
+      </div>
+    `;
+    lucide.createIcons();
+    return;
+  }
+
+  container.innerHTML = data.plants.map(plant => `
+    <div class="plant-card" style="margin-bottom:var(--space-md);">
+      <div class="plant-card-header">
+        <h4>${plant.name}</h4>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span class="badge badge-primary">
+            ${plant.growth_stage}
+          </span>
+          <button class="btn btn-ghost"
+                  style="padding:2px 6px;color:var(--danger);"
+                  onclick="deletePlant(${plant.id})">
+            <i data-lucide="trash-2"
+               style="width:14px;height:14px"></i>
+          </button>
+        </div>
+      </div>
+      <div class="plant-card-body">
+        <div class="plant-info-row">
+          <span>Quantity</span>
+          <strong>${plant.quantity}</strong>
+        </div>
+        <div class="plant-info-row">
+          <span>Planted</span>
+          <strong>${plant.planted_at
+            ? new Date(plant.planted_at).toLocaleDateString()
+            : 'Not set'}</strong>
+        </div>
+        <div class="plant-info-row">
+          <span>Est. Harvest</span>
+          <strong id="harvest-${plant.id}">Loading...</strong>
+        </div>
+
+        <div class="growth-section"
+             id="forecast-${plant.id}">
+          <div style="text-align:center;
+                      color:var(--text-muted);
+                      font-size:var(--text-sm);">
+            Loading forecast...
+          </div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  lucide.createIcons();
+
+  // Load forecast for each plant
+  data.plants.forEach(plant => loadForecast(plant.id));
+}
+
+// ── LOAD FORECAST ─────────────────────────────────
+async function loadForecast(plantId) {
+  const data = await Auth.request(`/forecast/plant/${plantId}`);
+
+  if (!data || !data.forecast) return;
+
+  const forecast = data.forecast;
+
+  // Update harvest date
+  const harvestEl = document.getElementById(`harvest-${plantId}`);
+  if (harvestEl) {
+    harvestEl.textContent = forecast.estimated_harvest_date
+      ? new Date(forecast.estimated_harvest_date)
+          .toLocaleDateString()
+      : 'N/A';
+  }
+
+  // Update forecast section
+  const forecastEl = document.getElementById(`forecast-${plantId}`);
+  if (!forecastEl) return;
+
+  if (forecast.error) {
+    forecastEl.innerHTML = `
+      <div style="background:rgba(243,156,18,0.08);
+                  border:1px solid rgba(243,156,18,0.2);
+                  border-radius:var(--radius-sm);
+                  padding:var(--space-sm) var(--space-md);
+                  font-size:var(--text-sm);
+                  color:var(--warning);">
+        ⚠️ ${forecast.error}
+      </div>
+    `;
+    return;
+  }
+
+  const healthColor = forecast.health_score >= 85
+    ? 'var(--success)'
+    : forecast.health_score >= 70
+      ? 'var(--primary)'
+      : forecast.health_score >= 50
+        ? 'var(--warning)'
+        : 'var(--danger)';
+
+  forecastEl.innerHTML = `
+    <div class="growth-header">
+      <span>Growth Progress</span>
+      <strong>${forecast.growth_percentage}%</strong>
+    </div>
+    <div class="growth-bar">
+      <div class="growth-fill"
+           style="width:${forecast.growth_percentage}%;
+                  background:${healthColor}">
+      </div>
+    </div>
+    <div class="forecast-grid">
+      <div class="forecast-item">
+        <div class="fi-label">Days Left</div>
+        <div class="fi-value">
+          ${forecast.days_remaining ?? 'N/A'}
+        </div>
+      </div>
+      <div class="forecast-item">
+        <div class="fi-label">Health</div>
+        <div class="fi-value"
+             style="color:${healthColor}">
+          ${forecast.health_score ?? '—'}/100
+        </div>
+      </div>
+      <div class="forecast-item">
+        <div class="fi-label">Acc. GDD</div>
+        <div class="fi-value">
+          ${forecast.accumulated_gdd ?? '—'}
+        </div>
+      </div>
+      <div class="forecast-item">
+        <div class="fi-label">Status</div>
+        <div class="fi-value"
+             style="color:${healthColor}">
+          ${forecast.health_status ?? '—'}
+        </div>
+      </div>
+    </div>
+    ${forecast.recommendations &&
+      forecast.recommendations.length > 0 ? `
+      <div class="recommendations">
+        <h5>
+          <i data-lucide="lightbulb"
+             style="width:14px;height:14px"></i>
+          Recommendations
+        </h5>
+        <ul>
+          ${forecast.recommendations
+            .map(r => `<li>${r}</li>`).join('')}
+        </ul>
+      </div>
+    ` : ''}
+  `;
+
+  lucide.createIcons();
+}
+
+// ── LOAD SPECIES ──────────────────────────────────
+async function loadSpecies() {
+  const data = await Auth.request('/species');
+  if (!data || !data.species) return;
+
+  const select = document.getElementById('plantSpecies');
+  select.innerHTML = '<option value="">-- Select species --</option>' +
+    data.species.map(s => `
+      <option value="${s.id}">${s.common_name || s.name}</option>
+    `).join('');
+}
+
+// ── REFRESH READINGS ──────────────────────────────
+async function refreshReadings() {
+  for (const sensor of sensors) {
+    await loadLatestReading(sensor);
+  }
+}
+
+// ── POPULATE MANUAL SELECT ────────────────────────
+function populateManualSelect(sensors) {
+  const select = document.getElementById('manualSensorSelect');
+  select.innerHTML = '<option value="">-- Select sensor --</option>' +
+    sensors.map(s => `
+      <option value="${s.id}"
+              data-unit="${s.unit || ''}">
+        ${s.name} (${s.type.replace('_', ' ')})
+      </option>
+    `).join('');
+
+  select.addEventListener('change', function() {
+    const opt = this.selectedOptions[0];
+    document.getElementById('manualUnit').textContent =
+      opt ? (opt.dataset.unit || 'unit') : 'unit';
+  });
+}
+
+// ── OPEN MANUAL ENTRY FOR SPECIFIC SENSOR ─────────
+function openManualEntryFor(sensorId) {
+  const panel = document.getElementById('manualPanel');
+  if (!panel.classList.contains('open')) {
+    togglePanel('manualPanel');
+  }
+  document.getElementById('manualSensorSelect').value = sensorId;
+  document.getElementById('manualSensorSelect').dispatchEvent(
+    new Event('change')
+  );
+  document.getElementById('manualValue').focus();
+}
+
+// ── SUBMIT MANUAL READING ─────────────────────────
+async function submitManualReading() {
+  const sensorId = document.getElementById('manualSensorSelect').value;
+  const value    = document.getElementById('manualValue').value;
+  const dateTime = document.getElementById('manualDateTime').value;
+
+  if (!sensorId || !value) {
+    showToast('Please select a sensor and enter a value', 'error');
+    return;
+  }
+
+  const body = { value: parseFloat(value) };
+  if (dateTime) body.recorded_at = new Date(dateTime).toISOString();
+
+  const data = await Auth.request(
+    `/sensors/${sensorId}/readings`, {
+    method: 'POST',
+    body: JSON.stringify(body)
+  });
+
+  if (data && data.success) {
+    showToast('Reading recorded successfully', 'success');
+    document.getElementById('manualValue').value = '';
+    document.getElementById('manualDateTime').value = '';
+
+    // Refresh the sensor card
+    const sensor = sensors.find(s => s.id == sensorId);
+    if (sensor) await loadLatestReading(sensor);
+
+    // Refresh charts
+    await renderCharts(sensors);
+
+    // Refresh plant forecasts
+    await loadPlants();
+  } else {
+    showToast(data ? data.message : 'Error recording reading', 'error');
+  }
+}
+
+// ── CREATE SENSOR ─────────────────────────────────
+async function createSensor() {
+  const name = document.getElementById('sensorName').value.trim();
+  const type = document.getElementById('sensorType').value;
+
+  if (!name) {
+    showToast('Sensor name is required', 'error');
+    return;
+  }
+
+  const data = await Auth.request(`/sensors/zone/${zoneId}`, {
+    method: 'POST',
+    body: JSON.stringify({
+      name,
+      type,
+      unit: document.getElementById('sensorUnit').value.trim() ||
+            SENSOR_UNITS[type] || '',
+      connection_type:
+        document.getElementById('sensorConnection').value
+    })
+  });
+
+  if (data && data.success) {
+    closeModal('addSensorModal');
+    showToast('Sensor added successfully', 'success');
+
+    // Show API key if auto type
+    if (data.sensor && data.sensor.api_key) {
+      const conn = document.getElementById('sensorConnection').value;
+      if (conn !== 'manual') {
+        setTimeout(() => {
+          alert(
+            `Your sensor API Key:\n\n${data.sensor.api_key}\n\n` +
+            `Save this key — you'll need it in your Arduino code.`
+          );
+        }, 300);
+      }
+    }
+
+    document.getElementById('sensorName').value = '';
+    await loadSensors();
+  } else {
+    showToast(data ? data.message : 'Error', 'error');
+  }
+}
+
+// ── DELETE SENSOR ─────────────────────────────────
+async function deleteSensor(sensorId) {
+  if (!confirm('Delete this sensor and all its readings?')) return;
+
+  const data = await Auth.request(`/sensors/${sensorId}`, {
+    method: 'DELETE'
+  });
+
+  if (data && data.success) {
+    showToast('Sensor deleted', 'success');
+    await loadSensors();
+  } else {
+    showToast('Error deleting sensor', 'error');
+  }
+}
+
+// ── CREATE PLANT ──────────────────────────────────
+async function createPlant() {
+  const name = document.getElementById('plantName').value.trim();
+  if (!name) {
+    showToast('Plant name is required', 'error');
+    return;
+  }
+
+  const data = await Auth.request(
+    `/farm/${farmId}/zones/${zoneId}/plants`, {
+    method: 'POST',
+    body: JSON.stringify({
+      name,
+      species_id: document.getElementById('plantSpecies').value || null,
+      quantity:   document.getElementById('plantQuantity').value || 1,
+      growth_stage: document.getElementById('plantStage').value,
+      planted_at: document.getElementById('plantDate').value || null,
+      notes:      document.getElementById('plantNotes').value.trim()
+    })
+  });
+
+  if (data && data.success) {
+    closeModal('addPlantModal');
+    showToast('Plant added successfully', 'success');
+    document.getElementById('plantName').value = '';
+    document.getElementById('plantNotes').value = '';
+    await loadPlants();
+  } else {
+    showToast(data ? data.message : 'Error', 'error');
+  }
+}
+
+// ── DELETE PLANT ──────────────────────────────────
+async function deletePlant(plantId) {
+  if (!confirm('Delete this plant?')) return;
+
+  const data = await Auth.request(
+    `/farm/${farmId}/zones/${zoneId}/plants/${plantId}`, {
+    method: 'DELETE'
+  });
+
+  if (data && data.success) {
+    showToast('Plant deleted', 'success');
+    await loadPlants();
+  } else {
+    showToast('Error deleting plant', 'error');
+  }
+}
+
+// ── UPDATE SENSOR UNIT ────────────────────────────
+function updateSensorUnit() {
+  const type = document.getElementById('sensorType').value;
+  document.getElementById('sensorUnit').value =
+    SENSOR_UNITS[type] || '';
+}
+
+// ── COPY API KEY ──────────────────────────────────
+function copyApiKey() {
+  const key = document.getElementById('sensorApiKey').value;
+  navigator.clipboard.writeText(key).then(() => {
+    showToast('API key copied!', 'success');
+  });
+}
+
+// ── PANEL TOGGLE ──────────────────────────────────
+function togglePanel(id) {
+  const panel = document.getElementById(id);
+  const icon  = document.getElementById(id + 'Icon');
+  panel.classList.toggle('open');
+  if (icon) {
+    icon.style.transform = panel.classList.contains('open')
+      ? 'rotate(180deg)' : 'rotate(0deg)';
+  }
+}
+
+// ── GO BACK TO FARM ───────────────────────────────
+function goBackToFarm() {
+  navigate(`farm.html?id=${farmId}`);
+}
+
+// ── MODAL ─────────────────────────────────────────
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  lucide.createIcons();
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+['addSensorModal', 'addPlantModal'].forEach(id => {
+  document.getElementById(id).addEventListener('click', function(e) {
+    if (e.target === this) closeModal(id);
+  });
+});
+
+// ── SIDEBAR ───────────────────────────────────────
+function toggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const main    = document.getElementById('mainContent');
+  const icon    = document.getElementById('sidebarToggleIcon');
+  sidebar.classList.toggle('collapsed');
+  main.classList.toggle('sidebar-collapsed');
+  icon.setAttribute('data-lucide',
+    sidebar.classList.contains('collapsed')
+      ? 'chevrons-right' : 'chevrons-left');
+  lucide.createIcons();
+}
+
+function navigate(page) { window.location.href = page; }
+
+// ── TOAST ─────────────────────────────────────────
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  const icons = {
+    success:'check-circle', error:'x-circle',
+    warning:'alert-triangle', info:'info'
+  };
+  toast.innerHTML = `
+    <i data-lucide="${icons[type]||'info'}"
+       style="width:18px;height:18px;flex-shrink:0;
+              color:var(--${type==='error'?'danger':type})"></i>
+    <span>${message}</span>
+  `;
+  container.appendChild(toast);
+  lucide.createIcons();
+  setTimeout(() => toast.classList.add('show'), 10);
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 400);
+  }, 4000);
+}
+
+// ── TIME AGO ──────────────────────────────────────
+function timeAgo(dateStr) {
+  const diff = Math.floor((new Date() - new Date(dateStr)) / 1000);
+  if (diff < 60)    return 'just now';
+  if (diff < 3600)  return Math.floor(diff/60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
+  return Math.floor(diff/86400) + 'd ago';
+}
+
+// Cleanup on page leave
+window.addEventListener('beforeunload', () => {
+  if (refreshInterval) clearInterval(refreshInterval);
+});
+</script>
+
+</body>
+</html>
