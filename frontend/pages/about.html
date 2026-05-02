@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FCHAN_About Us</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="icon" type="image/png" href="../assets/images/logo.png">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+  <style>
+    /* ── ABOUT PAGE ───────────────────────────────── */
+
+    /* No sidebar on about page - full width */
+    body { overflow-x: hidden; }
+
+    /* Top navigation */
+    .about-nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 40px;
+      background: rgba(var(--bg-rgb, 240,244,248), 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      transition: all var(--transition-base);
+    }
+
+    [data-theme="dark"] .about-nav {
+      background: rgba(13,17,23,0.85);
+    }
+
+    .about-nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+
+    .about-nav-logo span {
+      font-family: var(--font-heading);
+      font-size: var(--text-xl);
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    .about-nav-right {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+    }
+
+    .about-nav-links {
+      display: flex;
+      align-items: center;
+      gap: var(--space-lg);
+    }
+
+    .about-nav-links a {
+      font-size: var(--text-sm);
+      font-weight: 500;
+      color: var(--text-muted);
+      transition: color var(--transition-fast);
+    }
+
+    .about-nav-links a:hover { color: var(--primary); }
+
+    /* Main content */
+    .about-content {
+      padding-top: 80px;
+    }
+
+    /* ── HERO SECTION ─────────────────────────────── */
+    .hero-section {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      text-align: center;
+      padding: var(--space-3xl) var(--space-xl);
+    }
+
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+    }
+
+    .hero-bg img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .hero-bg-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        135deg,
+        rgba(13,17,23,0.85) 0%,
+        rgba(26,82,118,0.75) 50%,
+        rgba(39,174,96,0.65) 100%
+      );
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(39,174,96,0.2);
+      border: 1px solid rgba(39,174,96,0.4);
+      color: #a9dfbf;
+      padding: 6px 16px;
+      border-radius: var(--radius-full);
+      font-size: var(--text-sm);
+      font-weight: 600;
+      margin-bottom: var(--space-lg);
+      backdrop-filter: blur(8px);
+    }
+
+    .hero-content h1 {
+      font-size: clamp(48px, 8vw, 80px);
+      font-weight: 900;
+      color: white;
+      letter-spacing: -2px;
+      margin-bottom: var(--space-lg);
+      line-height: 1.1;
+    }
+
+    .hero-content h1 span {
+      background: linear-gradient(135deg, #27ae60, #3498db);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-content p {
+      font-size: var(--text-lg);
+      color: rgba(255,255,255,0.75);
+      max-width: 600px;
+      margin: 0 auto var(--space-xl);
+      line-height: 1.8;
+    }
+
+    .hero-buttons {
+      display: flex;
+      gap: var(--space-md);
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .hero-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 28px;
+      border-radius: var(--radius-lg);
+      font-family: var(--font-heading);
+      font-size: var(--text-base);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all var(--transition-base);
+      text-decoration: none;
+      min-height: 52px;
+    }
+
+    .hero-btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: white;
+      border: none;
+      box-shadow: 0 4px 20px rgba(39,174,96,0.4);
+    }
+
+    .hero-btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(39,174,96,0.5);
+      color: white;
+    }
+
+    .hero-btn-outline {
+      background: rgba(255,255,255,0.1);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.3);
+      backdrop-filter: blur(8px);
+    }
+
+    .hero-btn-outline:hover {
+      background: rgba(255,255,255,0.2);
+      color: white;
+      transform: translateY(-2px);
+    }
+
+    /* Scroll indicator */
+    .scroll-indicator {
+      position: absolute;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      color: rgba(255,255,255,0.5);
+      font-size: var(--text-xs);
+      animation: bounce 2s ease infinite;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      50%       { transform: translateX(-50%) translateY(8px); }
+    }
+
+    /* ── SECTION WRAPPER ──────────────────────────── */
+    .section {
+      padding: var(--space-3xl) var(--space-xl);
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .section-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(39,174,96,0.1);
+      color: var(--primary);
+      padding: 6px 14px;
+      border-radius: var(--radius-full);
+      font-size: var(--text-sm);
+      font-weight: 600;
+      margin-bottom: var(--space-md);
+    }
+
+    .section-title {
+      font-size: clamp(28px, 4vw, 42px);
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: var(--space-md);
+      line-height: 1.2;
+    }
+
+    .section-subtitle {
+      font-size: var(--text-md);
+      color: var(--text-muted);
+      max-width: 600px;
+      line-height: 1.7;
+      margin-bottom: var(--space-2xl);
+    }
+
+    /* ── STORY SECTION ────────────────────────────── */
+    .story-section {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .story-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-3xl);
+      align-items: center;
+    }
+
+    .story-image {
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      aspect-ratio: 4/3;
+      box-shadow: var(--shadow-xl);
+    }
+
+    .story-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .story-text .story-quote {
+      font-size: var(--text-xl);
+      font-style: italic;
+      color: var(--primary);
+      border-left: 4px solid var(--primary);
+      padding-left: var(--space-lg);
+      margin: var(--space-xl) 0;
+      line-height: 1.6;
+    }
+
+    /* ── TIMELINE ─────────────────────────────────── */
+    .timeline {
+      position: relative;
+      padding-left: 40px;
+    }
+
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 12px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: linear-gradient(to bottom, var(--primary), var(--secondary));
+    }
+
+    .timeline-item {
+      position: relative;
+      margin-bottom: var(--space-xl);
+    }
+
+    .timeline-dot {
+      position: absolute;
+      left: -34px;
+      top: 4px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--primary);
+      border: 3px solid var(--bg);
+      box-shadow: 0 0 0 2px var(--primary);
+    }
+
+    .timeline-date {
+      font-size: var(--text-xs);
+      font-weight: 700;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+
+    .timeline-title {
+      font-size: var(--text-md);
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .timeline-desc {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+    }
+
+    /* ── STATS SECTION ────────────────────────────── */
+    .stats-section {
+      background: linear-gradient(135deg, var(--secondary), var(--primary));
+      padding: var(--space-3xl) var(--space-xl);
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--space-xl);
+      max-width: 1200px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .stat-item .num {
+      font-family: var(--font-heading);
+      font-size: clamp(36px, 5vw, 56px);
+      font-weight: 900;
+      color: white;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .stat-item .desc {
+      font-size: var(--text-sm);
+      color: rgba(255,255,255,0.75);
+      font-weight: 500;
+    }
+
+    /* ── TEAM SECTION ─────────────────────────────── */
+    .team-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: var(--space-xl);
+    }
+
+    /* 3D flip team card */
+    .team-card-wrapper {
+      height: 380px;
+      perspective: 1000px;
+    }
+
+    .team-card-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      transition: transform 0.6s cubic-bezier(0.34, 1.20, 0.64, 1);
+    }
+
+    .team-card-wrapper:hover .team-card-inner {
+      transform: rotateY(180deg);
+    }
+
+    .team-card-front,
+    .team-card-back {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .team-card-back {
+      transform: rotateY(180deg);
+      background: linear-gradient(135deg, var(--secondary), var(--primary));
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-xl);
+      text-align: center;
+    }
+
+    /* ── TEAM CARD FRONT ──────────────────────────── */
+    .team-photo {
+      height: 240px;
+      overflow: hidden;
+      background: linear-gradient(135deg,
+        rgba(26,82,118,0.1),
+        rgba(39,174,96,0.1));
+      position: relative;
+    }
+
+    .team-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center top;
+      transition: transform var(--transition-slow);
+    }
+
+    .team-card-wrapper:hover .team-photo img {
+      transform: scale(1.05);
+    }
+
+    /*
+      PHOTO PLACEHOLDER:
+      If no photo is available, this placeholder will show.
+      Replace the img src with the developer's photo path:
+      e.g. src="../assets/images/team/developer1.jpg"
+    */
+    .team-photo-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg,
+        rgba(26,82,118,0.15),
+        rgba(39,174,96,0.15));
+    }
+
+    .team-photo-placeholder .initials {
+      font-family: var(--font-heading);
+      font-size: 64px;
+      font-weight: 800;
+      color: var(--primary);
+      opacity: 0.4;
+    }
+
+    .team-info {
+      padding: var(--space-md) var(--space-lg);
+      background: var(--surface);
+    }
+
+    .team-name {
+      font-size: var(--text-lg);
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .team-role {
+      font-size: var(--text-sm);
+      color: var(--primary);
+      font-weight: 600;
+      margin-bottom: var(--space-sm);
+    }
+
+    .team-bio-preview {
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+      line-height: 1.5;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+
+    .team-hover-hint {
+      font-size: var(--text-xs);
+      color: var(--text-light);
+      margin-top: 4px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* ── TEAM CARD BACK ───────────────────────────── */
+    .team-card-back h3 {
+      font-size: var(--text-xl);
+      color: white;
+      margin-bottom: 4px;
+    }
+
+    .team-card-back .back-role {
+      font-size: var(--text-sm);
+      color: rgba(255,255,255,0.75);
+      margin-bottom: var(--space-lg);
+      font-weight: 600;
+    }
+
+    .team-card-back .back-bio {
+      font-size: var(--text-sm);
+      color: rgba(255,255,255,0.85);
+      line-height: 1.7;
+      margin-bottom: var(--space-lg);
+    }
+
+    .team-social {
+      display: flex;
+      gap: var(--space-sm);
+      justify-content: center;
+    }
+
+    .social-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-full);
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      text-decoration: none;
+    }
+
+    .social-btn:hover {
+      background: rgba(255,255,255,0.25);
+      color: white;
+      transform: scale(1.1);
+    }
+
+    /* ── TECH STACK ───────────────────────────────── */
+    .tech-section {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tech-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: var(--space-md);
+    }
+
+    .tech-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: var(--space-lg);
+      text-align: center;
+      transition: all var(--transition-base);
+    }
+
+    .tech-card:hover {
+      border-color: var(--primary);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-3px);
+    }
+
+    .tech-card .tech-icon {
+      font-size: 32px;
+      margin-bottom: var(--space-sm);
+    }
+
+    .tech-card .tech-name {
+      font-size: var(--text-sm);
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+
+    .tech-card .tech-desc {
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+    }
+
+    /* ── FOOTER ───────────────────────────────────── */
+    .about-footer {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: var(--space-xl);
+      text-align: center;
+    }
+
+    .about-footer p {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+    }
+
+    .about-footer .footer-logo {
+      font-family: var(--font-heading);
+      font-size: var(--text-2xl);
+      font-weight: 900;
+      color: var(--primary);
+      margin-bottom: var(--space-sm);
+    }
+
+    /* ── RESPONSIVE ───────────────────────────────── */
+    @media (max-width: 1024px) {
+      .story-grid { grid-template-columns: 1fr; }
+      .story-image { display: none; }
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+      .team-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 768px) {
+      .about-nav { padding: 12px 20px; }
+      .about-nav-links { display: none; }
+      .hero-content h1 { letter-spacing: -1px; }
+      .stats-row { grid-template-columns: repeat(2, 1fr); gap: var(--space-lg); }
+      .team-grid { grid-template-columns: 1fr; }
+      .team-card-wrapper { height: 340px; }
+      .tech-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    @media (max-width: 480px) {
+      .hero-buttons { flex-direction: column; align-items: center; }
+      .stats-row { grid-template-columns: 1fr 1fr; }
+      .tech-grid { grid-template-columns: repeat(2, 1fr); }
+      .section { padding: var(--space-2xl) var(--space-md); }
+    }
+
+    @media (min-width: 1920px) {
+      .team-grid { grid-template-columns: repeat(5, 1fr); }
+      .team-card-wrapper { height: 420px; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ══ TOP NAVIGATION ════════════════════════════ -->
+  <nav class="about-nav">
+    <a href="index.html" class="about-nav-logo">
+      <img src="../assets/images/logo.png"
+           alt="FCHAN" style="height:32px;">
+      <span>FCHAN</span>
+    </a>
+    <div class="about-nav-links">
+      <a href="#story">Our Story</a>
+      <a href="#team">Team</a>
+      <a href="#tech">Technology</a>
+    </div>
+    <div class="about-nav-right">
+      <div class="lang-toggle">
+        <button class="lang-btn active" data-lang="en">EN</button>
+        <button class="lang-btn" data-lang="fr">FR</button>
+      </div>
+      <button class="theme-toggle">
+        <i data-lucide="moon"></i>
+      </button>
+      <a href="dashboard.html" class="hero-btn hero-btn-primary"
+         style="padding:8px 18px;font-size:var(--text-sm);
+                min-height:36px;border-radius:var(--radius-sm);">
+        <i data-lucide="layout-dashboard"
+           style="width:16px;height:16px"></i>
+        Dashboard
+      </a>
+    </div>
+  </nav>
+
+  <div class="about-content">
+
+    <!-- ══ HERO SECTION ══════════════════════════════ -->
+    <section class="hero-section">
+      <div class="hero-bg">
+        <!--
+          BACKGROUND IMAGE:
+          Replace with your AI-generated farm background
+          Recommended: about-bg.jpg
+        -->
+        <img src="../assets/images/about-bg.jpg"
+             alt="FCHAN"
+             onerror="this.style.display='none'">
+        <div class="hero-bg-overlay"></div>
+      </div>
+
+      <div class="hero-content">
+        <div class="hero-badge">
+          <i data-lucide="sprout"
+             style="width:14px;height:14px"></i>
+          Farm Intelligence Platform
+        </div>
+
+        <h1>
+          Smart Farming<br>
+          <span>Starts Here</span>
+        </h1>
+
+        <p>
+          FCHAN is a next-generation farm monitoring platform
+          that combines IoT sensors, AI-driven forecasting,
+          and real-time analytics to help farmers make
+          better decisions and maximize their yield.
+        </p>
+
+        <div class="hero-buttons">
+          <a href="dashboard.html"
+             class="hero-btn hero-btn-primary">
+            <i data-lucide="layout-dashboard"
+               style="width:18px;height:18px"></i>
+            Go to Dashboard
+          </a>
+          <a href="#story"
+             class="hero-btn hero-btn-outline">
+            <i data-lucide="book-open"
+               style="width:18px;height:18px"></i>
+            Our Story
+          </a>
+        </div>
+      </div>
+
+      <div class="scroll-indicator">
+        <i data-lucide="chevron-down"
+           style="width:20px;height:20px"></i>
+        Scroll
+      </div>
+    </section>
+
+    <!-- ══ STORY SECTION ═════════════════════════════ -->
+    <section class="story-section" id="story">
+      <div class="section">
+        <div class="story-grid">
+
+          <div class="story-text">
+            <div class="section-label">
+              <i data-lucide="book-open"
+                 style="width:14px;height:14px"></i>
+              Our Story
+            </div>
+
+            <!--
+              PROJECT STORY:
+              Replace this text with your actual project story.
+              Describe: why you built FCHAN, what problem it solves,
+              how the idea came about, your vision for the future.
+            -->
+            <h2 class="section-title">
+              Born from a Vision to<br>Transform Agriculture
+            </h2>
+
+            <p style="color:var(--text-muted);line-height:1.8;
+                      margin-bottom:var(--space-lg);">
+              <!--
+                STORY PARAGRAPH 1:
+                Write your project's origin story here.
+                Example: "FCHAN was born in 2024 when five
+                students at [University Name] realized that..."
+              -->
+              FCHAN was conceived as a solution to one of
+              agriculture's most persistent challenges: the lack
+              of accessible, intelligent farm management tools
+              for small and medium-scale farmers.
+            </p>
+
+            <p style="color:var(--text-muted);line-height:1.8;
+                      margin-bottom:var(--space-lg);">
+              <!--
+                STORY PARAGRAPH 2:
+                Describe the development journey, challenges faced,
+                technologies explored, etc.
+              -->
+              Our team of five developers combined expertise in
+              software engineering, IoT systems, and agricultural
+              science to create a platform that bridges the gap
+              between traditional farming and modern technology.
+            </p>
+
+            <blockquote class="story-quote">
+              <!--
+                PROJECT QUOTE:
+                Add a meaningful quote about your project vision.
+                This could be from one of the team members.
+              -->
+              "Technology should serve the farmer,
+               not the other way around."
+            </blockquote>
+
+            <!-- Project timeline -->
+            <div class="timeline">
+              <!--
+                TIMELINE ITEMS:
+                Update these dates and descriptions with
+                your actual project milestones.
+              -->
+              <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-date">Phase 1</div>
+                <div class="timeline-title">Project Conception</div>
+                <div class="timeline-desc">
+                  Initial research, requirements analysis
+                  and architecture design
+                </div>
+              </div>
+              <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-date">Phase 2</div>
+                <div class="timeline-title">Backend Development</div>
+                <div class="timeline-desc">
+                  REST API, database design, authentication
+                  and IoT integration
+                </div>
+              </div>
+              <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-date">Phase 3</div>
+                <div class="timeline-title">Intelligence Layer</div>
+                <div class="timeline-desc">
+                  Alerts engine, harvest forecasting algorithm
+                  and PDF reporting
+                </div>
+              </div>
+              <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-date">Phase 4</div>
+                <div class="timeline-title">Frontend & Launch</div>
+                <div class="timeline-desc">
+                  Responsive UI, real-time dashboard
+                  and public deployment
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="story-image">
+            <!--
+              STORY IMAGE:
+              Add a photo of your team working, or a farm photo.
+              Recommended: about-bg.jpg or a team photo.
+            -->
+            <img src="../assets/images/about-bg.jpg"
+                 alt="FCHAN Story"
+                 onerror="this.style.background=
+                   'linear-gradient(135deg,#1a5276,#27ae60)'">
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ STATS SECTION ═════════════════════════════ -->
+    <section class="stats-section">
+      <div class="stats-row">
+        <!--
+          STATS:
+          Update these numbers to reflect your actual project stats.
+        -->
+        <div class="stat-item">
+          <div class="num">5</div>
+          <div class="desc">Team Members</div>
+        </div>
+        <div class="stat-item">
+          <div class="num">11</div>
+          <div class="desc">Dev Phases</div>
+        </div>
+        <div class="stat-item">
+          <div class="num">8+</div>
+          <div class="desc">Sensor Types</div>
+        </div>
+        <div class="stat-item">
+          <div class="num">15+</div>
+          <div class="desc">Plant Species</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ TEAM SECTION ══════════════════════════════ -->
+    <section id="team">
+      <div class="section">
+        <div class="section-label">
+          <i data-lucide="users"
+             style="width:14px;height:14px"></i>
+          Meet the Team
+        </div>
+        <h2 class="section-title">The People Behind FCHAN</h2>
+        <p class="section-subtitle">
+          Five passionate developers united by a shared vision
+          to transform agriculture through technology.
+        </p>
+
+        <div class="team-grid">
+
+          <!--
+            ════════════════════════════════════════════
+            DEVELOPER 1
+            Replace ALL values marked with arrows below
+            ════════════════════════════════════════════
+          -->
+          <div class="team-card-wrapper">
+            <div class="team-card-inner">
+              <!-- FRONT -->
+              <div class="team-card-front">
+                <div class="team-photo">
+                  <!--
+                    PHOTO: Replace src with developer 1's photo
+                    Save photo as: frontend/assets/images/team/dev1.jpg
+                    If no photo: remove <img> and keep placeholder div
+                  -->
+		  <img src="../assets/images/dylan2.jpeg"
+                 alt="FCHAN Story"
+                 onerror="this.style.background=
+                   'linear-gradient(135deg,#1a5276,#27ae60)'">
+                  <div class="team-photo-placeholder">
+                    <div class="initials">
+                      <!-- INITIALS: Replace with developer 1's initials -->
+                      D1
+                    </div>
+                  </div>
+                </div>
+                <div class="team-info">
+                  <div class="team-name">
+                    <!-- NAME: Replace with developer 1's full name -->
+                    BAGNAWE Dylan
+                  </div>
+                  <div class="team-role">
+                    <!-- ROLE: e.g. "Backend Developer", "Team Lead" -->
+                    Developer
+                  </div>
+                  <div class="team-bio-preview">
+                    <!-- BIO PREVIEW: 1-2 sentence summary -->
+                    Wanderlust
+                  </div>
+                  <div class="team-hover-hint">
+                    <i data-lucide="rotate-cw"
+                       style="width:10px;height:10px"></i>
+                    Hover to learn more
+                  </div>
+                </div>
+              </div>
+              <!-- BACK -->
+              <div class="team-card-back">
+                <h3>
+                  <!-- NAME (back): Same as front -->
+                  Developer One
+                </h3>
+                <div class="back-role">
+                  <!-- ROLE (back): Same as front -->
+                  Role Here
+                </div>
+                <p class="back-bio">
+                  <!--
+                    FULL BIO: Write 2-3 sentences about this developer.
+                    Include their skills, contributions to FCHAN,
+                    and interests.
+                  -->
+                  Full biography goes here. Describe their
+                  contributions to the project, their technical
+                  skills and their background.
+                </p>
+                <div class="team-social">
+                  <!--
+                    SOCIAL LINKS: Replace # with actual URLs
+                    Remove any links that don't apply
+                  -->
+                  <a href="#" class="social-btn" title="GitHub">
+                    <i data-lucide="github"
+                       style="width:18px;height:18px"></i>
+                  </a>
+                  <a href="#" class="social-btn" title="LinkedIn">
+                    <i data-lucide="linkedin"
+                       style="width:18px;height:18px"></i>
+                  </a>
+                  <a href="#" class="social-btn" title="Email">
+                    <i data-lucide="mail"
+                       style="width:18px;height:18px"></i>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!--
+            ════════════════════════════════════════════
+            DEVELOPER 2
+            ════════════════════════════════════════════
+          -->
+          <div class="team-card-wrapper">
+            <div class="team-card-inner">
+              <div class="team-card-front">
+                <div class="team-photo">
+                  <div class="team-photo-placeholder">
+                    <div class="initials">D2</div>
+                  </div>
+                </div>
+                <div class="team-info">
+                  <div class="team-name">Developer Two</div>
+                  <div class="team-role">Role Here</div>
+                  <div class="team-bio-preview">
+                    Short bio preview here...
+                  </div>
+                  <div class="team-hover-hint">
+                    <i data-lucide="rotate-cw"
+                       style="width:10px;height:10px"></i>
+                    Hover to learn more
+                  </div>
+                </div>
+              </div>
+              <div class="team-card-back">
+                <h3>Developer Two</h3>
+                <div class="back-role">Role Here</div>
+                <p class="back-bio">
+                  Full biography goes here.
+                </p>
+                <div class="team-social">
+                  <a href="#" class="social-btn" title="GitHub">
+                    <i data-lucide="github"
+                       style="width:18px;height:18px"></i>
+                  </a>
+                  <a href="#" class="social-btn" title="LinkedIn">
+                    <i data-lucide="linkedin"
+                       style="width:18px;height:18px"></i>
+                  </a>
+                  <a href="#" class="social-btn" title="Email">
+                    <i data-lucide="mail"
+                       style="width:18px;height:18px"></i>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!--
+            ════════════════════════════════════════════
+            DEVELOPER 3
+            ════════════════════════════════════════════
+          -->
+          <div class="team-card-wrapper">
+            <div class="team-card-inner">
+              <div class="team-card-front">
+                <div class="team-photo">
+                  <div class="team-photo-placeholder">
+                    <div class="initials">D3</div>
+                  </div>
+                </div>
+                <div class="team-info">
+                  <div class="team-name">Developer Three</div>
+                  <div class="team-role">Role Here</div>
+                  <div class="team-bio-preview">
+                    Short bio preview here...
+                  </div>
+                  <div class="team-hover-hint">
+                    <i data-lucide="rotate-cw"
+                       style="width:10px;height:10px"></i>
+                    Hover to learn more
+                  </div>
+                </div>
+              </div>
+              <div class="team-card-back">
+                <h3>Developer Three</h3>
+                <div class="back-role">Role Here</div>
+                <p class="back-bio">Full biography goes here.</p>
+                <div class="team-social">
+                  <a href="#" class="social-btn" title="GitHub">
+                    <i data-lucide="github"
+                       style="width:18px;height:18px"></i>
+                  </a>
+                  <a href="#" class="social-btn" title="LinkedIn">
+                    <i data-lucide="linkedin"
+                       style="width:18px;height:18px"></i>
+                  </a>
+                  <a href="#" class="social-btn" title="Email">
+                    <i data-lucide="mail"
+                       style="width:18px;height:18px"></i>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!--
+            ════════════════════════════════════════════
+            DEVELOPER 4
+            ════════════════════════════════════════════
+          -->
+          <div class="team-card-wrapper">
+            <div class="team-card-inner">
+              <div class="team-card-front">
+                <div class="team-photo">
+                  <div class="team-photo-placeholder">
+                    <div class="initials">D4</div>
+                  </div>
+                </div>
+                <div class="team-info">
+                  <div class="team-name">Developer Four</div>
+                  <div class="team-role">Role Here</div>
+                  <div class="team-bio-preview">
+                    Short bio preview here...
+                  </div>
+                  <div class="team-hover-hint">
+                    <i data-lucide="rotate-cw"
+                       style="width:10px;height:10px"></i>
+                    Hover to learn more
+                  </div>
+                </div>
+              </div>
+              <div class="team-card-back">
+                <h3>Developer Four</h3>
+                <div class="back-role">Role Here</div>
+                <p class="back-bio">Full biography goes here.</p>
+                <div class="team-social">
+                  <a href="#" class="social-btn" title="GitHub">
+                    <i data-lucide="github"
+                       style="width:18px;height:18px"></i>
+                  </a>
+                  <a href="#" class="social-btn" title="LinkedIn">
+                    <i data-lucide="linkedin"
+                       style="width:18px;height:18px"></i>
+                  </a>
+                  <a href="#" class="social-btn" title="Email">
+                    <i data-lucide="mail"
+                       style="width:18px;height:18px"></i>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!--
+            ════════════════════════════════════════════
+            DEVELOPER 5
+            ════════════════════════════════════════════
+          -->
+          <div class="team-card-wrapper">
+            <div class="team-card-inner">
+              <div class="team-card-front">
+                <div class="team-photo">
+                  <div class="team-photo-placeholder">
+                    <div class="initials">D5</div>
+                  </div>
+                </div>
+                <div class="team-info">
+                  <div class="team-name">Developer Five</div>
+                  <div class="team-role">Role Here</div>
+                  <div class="team-bio-preview">
+                    Short bio preview here...
+                  </div>
+                  <div class="team-hover-hint">
+                    <i data-lucide="rotate-cw"
+                       style="width:10px;height:10px"></i>
+                    Hover to learn more
+                  </div>
+                </div>
+              </div>
+              <div class="team-card-back">
+                <h3>Developer Five</h3>
+                <div class="back-role">Role Here</div>
+                <p class="back-bio">Full biography goes here.</p>
+                <div class="team-social">
+                  <a href="#" class="social-btn" title="GitHub">
+                    <i data-lucide="github"
+                       style="width:18px;height:18px"></i>
+                  </a>
+                  <a href="#" class="social-btn" title="LinkedIn">
+                    <i data-lucide="linkedin"
+                       style="width:18px;height:18px"></i>
+                  </a>
+                  <a href="#" class="social-btn" title="Email">
+                    <i data-lucide="mail"
+                       style="width:18px;height:18px"></i>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ TECH STACK SECTION ════════════════════════ -->
+    <section class="tech-section" id="tech">
+      <div class="section">
+        <div class="section-label">
+          <i data-lucide="cpu"
+             style="width:14px;height:14px"></i>
+          Technology
+        </div>
+        <h2 class="section-title">Built With Modern Tech</h2>
+        <p class="section-subtitle">
+          FCHAN leverages a carefully chosen stack of
+          open-source technologies to deliver a reliable,
+          scalable and beautiful experience.
+        </p>
+
+        <div class="tech-grid">
+          <div class="tech-card">
+            <div class="tech-icon"><i data-lucide="server"></i></div>
+            <div class="tech-name">Node.js</div>
+            <div class="tech-desc">Backend runtime</div>
+          </div>
+          <div class="tech-card">
+            <div class="tech-icon"><i data-lucide="zap"></i></div>
+            <div class="tech-name">Express</div>
+            <div class="tech-desc">Web framework</div>
+          </div>
+          <div class="tech-card">
+            <div class="tech-icon"><i data-lucide="database"></i></div>
+            <div class="tech-name">MySQL</div>
+            <div class="tech-desc">Database</div>
+          </div>
+          <div class="tech-card">
+            <div class="tech-icon"><i data-lucide="key"></i></div>
+            <div class="tech-name">JWT</div>
+            <div class="tech-desc">Authentication</div>
+          </div>
+          <div class="tech-card">
+            <div class="tech-icon"><i data-lucide="chart-line"></i></div>
+            <div class="tech-name">Chart.js</div>
+            <div class="tech-desc">Data visualization</div>
+          </div>
+          <div class="tech-card">
+            <div class="tech-icon"><i data-lucide="file-text"></i></div>
+            <div class="tech-name">Puppeteer</div>
+            <div class="tech-desc">PDF generation</div>
+          </div>
+          <div class="tech-card">
+            <div class="tech-icon"><i data-lucide="zap"></i></div>
+            <div class="tech-name">Socket.io</div>
+            <div class="tech-desc">Real-time data</div>
+          </div>
+          <div class="tech-card">
+            <div class="tech-icon"><i data-lucide="cat"></i></div>
+            <div class="tech-name">GitHub</div>
+            <div class="tech-desc">Version control</div>
+          </div>
+          <div class="tech-card">
+            <div class="tech-icon"><i data-lucide="whole-word"></i></div>
+            <div class="tech-name">Docker</div>
+            <div class="tech-desc">Containerization</div>
+          </div>
+          <div class="tech-card">
+            <div class="tech-icon"><i data-lucide="bot"></i></div>
+            <div class="tech-name">Arduino</div>
+            <div class="tech-desc">IoT sensors</div>
+          </div>
+          <div class="tech-card">
+            <div class="tech-icon"><i data-lucide="satellite-dish"></i></div>
+            <div class="tech-name">ESP32</div>
+            <div class="tech-desc">WiFi module</div>
+          </div>
+          <div class="tech-card">
+            <div class="tech-icon"><i data-lucide="worm"></i></div>
+            <div class="tech-name">Python</div>
+            <div class="tech-desc">Serial reader</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ FOOTER ═════════════════════════════════════ -->
+    <footer class="about-footer">
+      <div class="footer-logo">FCHAN</div>
+      <p>Farm Intelligence Platform</p>
+      <p style="margin-top:var(--space-sm);">
+        <!--
+          FOOTER TEXT:
+          Update year and university/organization name
+        -->
+        © 2026 FCHAN Team. Built with <i data-lucide="heart"></i>for farmers everywhere.
+      </p>
+      <div style="display:flex;justify-content:center;
+                  gap:var(--space-lg);margin-top:var(--space-lg);">
+        <a href="dashboard.html"
+           style="font-size:var(--text-sm);
+                  color:var(--text-muted);">Dashboard</a>
+        <a href="#story"
+           style="font-size:var(--text-sm);
+                  color:var(--text-muted);">Our Story</a>
+        <a href="#team"
+           style="font-size:var(--text-sm);
+                  color:var(--text-muted);">Team</a>
+        <!--
+          GITHUB LINK:
+          Replace # with your actual GitHub repository URL
+        -->
+        <a href="https://github.com/daa92/FCHAN"
+           target="_blank"
+           style="font-size:var(--text-sm);
+                  color:var(--text-muted);">GitHub</a>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- Scripts -->
+  <script src="../js/theme.js"></script>
+  <script src="../js/language.js"></script>
+
+  <script>
+    // Initialize theme and language
+    // Note: no auth required on about page
+    ThemeManager.init();
+    LanguageManager.init();
+    lucide.createIcons();
+
+    // Smooth scroll for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function(e) {
+        e.preventDefault();
+        const target = document.querySelector(
+          this.getAttribute('href')
+        );
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth' });
+        }
+      });
+    });
+
+    // Navbar background on scroll
+    window.addEventListener('scroll', () => {
+      const nav = document.querySelector('.about-nav');
+      if (window.scrollY > 50) {
+        nav.style.boxShadow = 'var(--shadow-md)';
+      } else {
+        nav.style.boxShadow = 'none';
+      }
+    });
+  </script>
+
+</body>
+</html>
