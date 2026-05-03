@@ -18,7 +18,7 @@ FCHAN_API_URL = "http://localhost:3000/api"
 # Map of sensor names to their API keys
 # Fill these with your actual API keys from FCHAN dashboard
 SENSOR_API_KEYS = {
-    "temperature":   "YOUR_TEMPERATURE_SENSOR_API_KEY",
+    "temperature":   "1082c05710d8fa8198516cc2d290b8643b55485f605965d8bb6d99b78fab2a6c",
     "humidity":      "YOUR_HUMIDITY_SENSOR_API_KEY",
     "soil_moisture": "YOUR_SOIL_MOISTURE_SENSOR_API_KEY",
     "soil_ph":       "YOUR_SOIL_PH_SENSOR_API_KEY",
@@ -92,8 +92,7 @@ def send_reading(api_key, value):
         return False
 
 # ── PARSE ARDUINO LINE ──────────────────────────────
-def parse_line(line):
-    """
+"""def parse_line(line):
     Expected Arduino serial format:
     SENSOR_TYPE:VALUE
     Examples:
@@ -102,7 +101,6 @@ def parse_line(line):
       SOIL:45.0
       PH:6.8
       LIGHT:3200
-    """
     line = line.strip()
     if not line or ':' not in line:
         return None, None
@@ -131,6 +129,83 @@ def parse_line(line):
 
     sensor_type = sensor_map.get(sensor_code)
     return sensor_type, value
+"""
+
+def parse_line(line):
+    """
+    Handles multiple Arduino output formats:
+
+    Our format:    TEMP:28.5
+    Common format: Temperature: 28.5
+    Your Arduino:  intencity : 64 / water sensor value :266
+    """
+    line = line.strip()
+    if not line:
+        return None, None
+
+    # Remove common units and clean up
+    line_clean = line.replace(' cm', '').replace(' °C', '')
+    line_clean = line_clean.replace(' %', '').replace(' lux', '')
+    line_clean = line_clean.replace(' ppm', '').replace(' pH', '')
+
+    # Split by colon
+    if ':' not in line_clean:
+        return None, None
+
+    # Get the last colon (handles "water sensor value :266")
+    parts = line_clean.rsplit(':', 1)
+    if len(parts) != 2:
+        return None, None
+
+    label = parts[0].strip().lower()
+    try:
+        value = float(parts[1].strip())
+    except ValueError:
+        return None, None
+
+    # Map any label variation to sensor type
+    sensor_map = {
+        # Temperature
+        'temp': 'temperature', 'temperature': 'temperature',
+        'tmp': 'temperature', 't': 'temperature',
+
+        # Humidity
+        'hum': 'humidity', 'humidity': 'humidity',
+        'h': 'humidity', 'rh': 'humidity',
+
+        # Soil moisture
+        'soil': 'soil_moisture', 'soil_moisture': 'soil_moisture',
+        'moisture': 'soil_moisture', 'water sensor value': 'soil_moisture',
+        'water': 'soil_moisture', 'sm': 'soil_moisture',
+
+        # Soil pH
+        'ph': 'soil_ph', 'soil_ph': 'soil_ph',
+        'soil ph': 'soil_ph',
+
+        # Light
+        'light': 'light', 'lux': 'light',
+        'intencity': 'light', 'intensity': 'light',
+        'light intensity': 'light', 'ldr': 'light',
+        'brightness': 'light',
+
+        # CO2
+        'co2': 'co2', 'carbon': 'co2',
+
+        # Wind
+        'wind': 'wind', 'wind speed': 'wind',
+
+        # Rainfall
+        'rain': 'rainfall', 'rainfall': 'rainfall',
+
+        # Distance (ultrasonic sensor)
+        'distance': 'distance', 'dist': 'distance',
+        'e': 'distance',
+    }
+
+    sensor_type = sensor_map.get(label)
+    return sensor_type, value
+
+
 
 # ── SIMULATE ARDUINO (for testing without hardware) ──
 def simulate_arduino():

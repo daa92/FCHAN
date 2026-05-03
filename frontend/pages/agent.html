@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FCHAN — Arduino Agent</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="icon" type="image/png" href="../assets/images/logo.png">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+    body {
+      min-height: 100vh;
+      background: var(--bg);
+    }
+
+    .agent-layout {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: var(--space-xl);
+    }
+
+    .agent-header {
+      text-align: center;
+      margin-bottom: var(--space-2xl);
+      padding: var(--space-2xl);
+      background: linear-gradient(135deg, var(--secondary), var(--primary));
+      border-radius: var(--radius-lg);
+      color: white;
+    }
+
+    .agent-header h1 {
+      color: white;
+      font-size: var(--text-3xl);
+      margin-bottom: var(--space-sm);
+    }
+
+    .agent-header p {
+      color: rgba(255,255,255,0.8);
+    }
+
+    .step-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: var(--space-xl);
+      margin-bottom: var(--space-lg);
+      position: relative;
+    }
+
+    .step-number {
+      position: absolute;
+      top: -16px;
+      left: var(--space-xl);
+      width: 32px;
+      height: 32px;
+      background: var(--primary);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: var(--text-sm);
+    }
+
+    .step-title {
+      font-size: var(--text-lg);
+      font-weight: 700;
+      margin-bottom: var(--space-md);
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+
+    /* Serial terminal */
+    .serial-terminal {
+      background: #0d1117;
+      border-radius: var(--radius-sm);
+      padding: var(--space-md);
+      height: 200px;
+      overflow-y: auto;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      margin-top: var(--space-md);
+    }
+
+    .serial-line {
+      padding: 2px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+    }
+
+    .serial-line.received { color: #58a6ff; }
+    .serial-line.sent     { color: #3fb950; }
+    .serial-line.error    { color: #ff7b72; }
+    .serial-line.info     { color: #8b949e; }
+    .serial-line.success  { color: #56d364; }
+
+    /* Status indicator */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+      padding: var(--space-md) var(--space-lg);
+      background: var(--surface-2);
+      border-radius: var(--radius-sm);
+      margin-bottom: var(--space-md);
+      border: 1px solid var(--border);
+    }
+
+    .status-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--text-light);
+      flex-shrink: 0;
+    }
+
+    .status-dot.connected {
+      background: var(--success);
+      animation: pulse 2s ease infinite;
+      box-shadow: 0 0 0 0 rgba(39,174,96,0.4);
+    }
+
+    .status-dot.error { background: var(--danger); }
+
+    @keyframes pulse {
+      0%   { box-shadow: 0 0 0 0 rgba(39,174,96,0.4); }
+      70%  { box-shadow: 0 0 0 8px rgba(39,174,96,0); }
+      100% { box-shadow: 0 0 0 0 rgba(39,174,96,0); }
+    }
+
+    /* Sensor mapping */
+    .sensor-mapping {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-md);
+      margin-top: var(--space-md);
+    }
+
+    .mapping-item {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: var(--space-md);
+    }
+
+    .mapping-label {
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    /* Stats */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--space-md);
+      margin-top: var(--space-md);
+    }
+
+    .stat-box {
+      text-align: center;
+      padding: var(--space-md);
+      background: var(--surface-2);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+    }
+
+    .stat-box .num {
+      font-family: var(--font-mono);
+      font-size: var(--text-2xl);
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .stat-box .lbl {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    /* Browser compatibility warning */
+    .compat-warning {
+      background: rgba(243,156,18,0.1);
+      border: 1px solid rgba(243,156,18,0.3);
+      border-radius: var(--radius-sm);
+      padding: var(--space-md) var(--space-lg);
+      font-size: var(--text-sm);
+      color: var(--warning);
+      display: none;
+      margin-bottom: var(--space-lg);
+    }
+
+    .compat-warning.show { display: flex; gap: var(--space-sm); align-items: flex-start; }
+
+    @media (max-width: 768px) {
+      .sensor-mapping { grid-template-columns: 1fr; }
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="agent-layout">
+
+    <!-- Header -->
+    <div class="agent-header">
+      <img src="../assets/images/logo.png"
+           alt="FCHAN"
+           style="height:40px;margin:0 auto var(--space-md);">
+      <h1>🔌 Arduino Agent</h1>
+      <p>Connect your Arduino sensors directly from your browser.
+         No installation required.</p>
+    </div>
+
+    <!-- Browser compatibility warning -->
+    <div class="compat-warning" id="compatWarning">
+      <i data-lucide="alert-triangle"
+         style="width:18px;height:18px;flex-shrink:0"></i>
+      <div>
+        <strong>Browser not supported.</strong>
+        Web Serial API requires Chrome or Edge (version 89+).
+        Please switch browsers to use this feature.
+      </div>
+    </div>
+
+    <!-- Step 1: Login -->
+    <div class="step-card" id="step1">
+      <div class="step-number">1</div>
+      <div class="step-title">
+        <i data-lucide="user" style="width:20px;height:20px;color:var(--primary)"></i>
+        Login to Your FCHAN Account
+      </div>
+
+      <div id="loginSection">
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-control"
+                 id="agentEmail" placeholder="you@example.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" class="form-control"
+                 id="agentPassword" placeholder="••••••••">
+        </div>
+        <button class="btn btn-primary" onclick="agentLogin()">
+          <i data-lucide="log-in" style="width:16px;height:16px"></i>
+          Login
+        </button>
+      </div>
+
+      <div id="loggedInSection" style="display:none;">
+        <div style="display:flex;align-items:center;gap:var(--space-md);
+                    padding:var(--space-md);background:rgba(39,174,96,0.08);
+                    border-radius:var(--radius-sm);border:1px solid rgba(39,174,96,0.2);">
+          <i data-lucide="check-circle"
+             style="width:20px;height:20px;color:var(--success)"></i>
+          <div>
+            <div style="font-weight:600;color:var(--text)"
+                 id="loggedInName">Logged in</div>
+            <div style="font-size:var(--text-xs);color:var(--text-muted)"
+                 id="loggedInEmail"></div>
+          </div>
+          <button class="btn btn-ghost btn-sm"
+                  onclick="agentLogout()"
+                  style="margin-left:auto;">
+            <i data-lucide="log-out" style="width:14px;height:14px"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Select Farm & Sensors -->
+    <div class="step-card" id="step2">
+      <div class="step-number">2</div>
+      <div class="step-title">
+        <i data-lucide="tree-pine" style="width:20px;height:20px;color:var(--primary)"></i>
+        Select Farm & Map Sensors
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Farm</label>
+        <select class="form-control" id="agentFarm"
+                onchange="loadAgentZones()">
+          <option value="">-- Login first --</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Zone</label>
+        <select class="form-control" id="agentZone"
+                onchange="loadAgentSensors()">
+          <option value="">-- Select farm first --</option>
+        </select>
+      </div>
+
+      <div id="sensorMappingSection" style="display:none;">
+        <p style="font-size:var(--text-sm);color:var(--text-muted);
+                  margin-bottom:var(--space-md);">
+          Map Arduino output labels to your FCHAN sensors.
+          Leave empty to skip that sensor type.
+        </p>
+        <div class="sensor-mapping" id="sensorMappingGrid">
+          <!-- populated by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3: Connect Arduino -->
+    <div class="step-card" id="step3">
+      <div class="step-number">3</div>
+      <div class="step-title">
+        <i data-lucide="usb" style="width:20px;height:20px;color:var(--primary)"></i>
+        Connect Arduino via USB
+      </div>
+
+      <!-- Status bar -->
+      <div class="status-bar">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="statusText" style="font-size:var(--text-sm);
+              color:var(--text-muted);">
+          Not connected
+        </span>
+        <div style="margin-left:auto;display:flex;gap:var(--space-sm);">
+          <button class="btn btn-primary btn-sm"
+                  id="connectBtn"
+                  onclick="connectArduino()">
+            <i data-lucide="usb" style="width:14px;height:14px"></i>
+            Connect Arduino
+          </button>
+          <button class="btn btn-outline btn-sm"
+                  id="disconnectBtn"
+                  onclick="disconnectArduino()"
+                  style="display:none;">
+            <i data-lucide="x" style="width:14px;height:14px"></i>
+            Disconnect
+          </button>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-row">
+        <div class="stat-box">
+          <div class="num" id="statReceived">0</div>
+          <div class="lbl">Lines Received</div>
+        </div>
+        <div class="stat-box">
+          <div class="num" id="statSent">0</div>
+          <div class="lbl">Readings Sent</div>
+        </div>
+        <div class="stat-box">
+          <div class="num" id="statErrors">0</div>
+          <div class="lbl">Errors</div>
+        </div>
+        <div class="stat-box">
+          <div class="num" id="statUptime">0:00</div>
+          <div class="lbl">Uptime</div>
+        </div>
+      </div>
+
+      <!-- Serial terminal -->
+      <div class="serial-terminal" id="terminal">
+        <div class="serial-line info">
+          FCHAN Arduino Agent ready.
+          Connect your Arduino and click "Connect Arduino".
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;
+                  margin-top:var(--space-sm);">
+        <button class="btn btn-ghost btn-sm" onclick="clearTerminal()">
+          <i data-lucide="trash-2" style="width:14px;height:14px"></i>
+          Clear
+        </button>
+        <label style="display:flex;align-items:center;
+                      gap:var(--space-sm);font-size:var(--text-sm);
+                      color:var(--text-muted);cursor:pointer;">
+          <input type="checkbox" id="autoScrollCheck" checked>
+          Auto-scroll
+        </label>
+      </div>
+    </div>
+
+    <!-- Instructions -->
+    <div class="step-card">
+      <div class="step-title">
+        <i data-lucide="info" style="width:20px;height:20px;color:var(--info)"></i>
+        Arduino Code Format
+      </div>
+      <p style="font-size:var(--text-sm);color:var(--text-muted);
+                margin-bottom:var(--space-md);">
+        For best results, program your Arduino to print
+        in this format. Any format with a colon separator works.
+      </p>
+      <div style="background:#0d1117;border-radius:var(--radius-sm);
+                  padding:var(--space-lg);font-family:var(--font-mono);
+                  font-size:13px;color:#58a6ff;overflow-x:auto;">
+        <div style="color:#8b949e;">// Recommended Arduino Serial format</div>
+        <div>Serial.print(<span style="color:#a5d6ff">"TEMP:"</span>);</div>
+        <div>Serial.println(temperature);</div>
+        <br>
+        <div>Serial.print(<span style="color:#a5d6ff">"HUM:"</span>);</div>
+        <div>Serial.println(humidity);</div>
+        <br>
+        <div>Serial.print(<span style="color:#a5d6ff">"SOIL:"</span>);</div>
+        <div>Serial.println(soilMoisture);</div>
+        <br>
+        <div>Serial.print(<span style="color:#a5d6ff">"LIGHT:"</span>);</div>
+        <div>Serial.println(lightIntensity);</div>
+        <br>
+        <div style="color:#8b949e;">// Or any label: value format</div>
+        <div style="color:#8b949e;">// e.g. "Temperature: 28.5"</div>
+        <div style="color:#8b949e;">// e.g. "water sensor value :266"</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Toast -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="../js/theme.js"></script>
+  <script src="../js/language.js"></script>
+  <script src="../js/auth.js"></script>
+
+  <script>
+  // ════════════════════════════════════════════════
+  // FCHAN Arduino Agent
+  // Uses Web Serial API — works in Chrome/Edge
+  // ════════════════════════════════════════════════
+
+  // Override API_URL for agent page
+  const AGENT_API = (() => {
+    const h = window.location.hostname;
+    return h === 'localhost' || h === '127.0.0.1'
+      ? 'http://localhost:3000/api'
+      : `http://${h}:3000/api`;
+  })();
+
+  let agentToken   = null;
+  let serialPort   = null;
+  let reader       = null;
+  let isConnected  = false;
+  let sensors      = [];
+  let stats        = { received: 0, sent: 0, errors: 0 };
+  let startTime    = null;
+  let uptimeTimer  = null;
+
+  // Sensor label mappings
+  const SENSOR_MAP = {
+    'temp': 'temperature', 'temperature': 'temperature',
+    'hum': 'humidity', 'humidity': 'humidity',
+    'soil': 'soil_moisture', 'soil_moisture': 'soil_moisture',
+    'moisture': 'soil_moisture', 'water sensor value': 'soil_moisture',
+    'water': 'soil_moisture',
+    'ph': 'soil_ph', 'soil_ph': 'soil_ph',
+    'light': 'light', 'lux': 'light',
+    'intencity': 'light', 'intensity': 'light',
+    'co2': 'co2',
+    'wind': 'wind',
+    'rain': 'rainfall', 'rainfall': 'rainfall',
+    'distance': 'distance', 'dist': 'distance', 'e': 'distance'
+  };
+
+  // ── INIT ─────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', () => {
+    ThemeManager.init();
+    LanguageManager.init();
+    lucide.createIcons();
+
+    // Check Web Serial API support
+    if (!('serial' in navigator)) {
+      document.getElementById('compatWarning')
+        .classList.add('show');
+      document.getElementById('connectBtn').disabled = true;
+    }
+
+    // Check if already logged in
+    const token = localStorage.getItem('fchan_token');
+    const user  = localStorage.getItem('fchan_user');
+    if (token && user) {
+      agentToken = token;
+      showLoggedIn(JSON.parse(user));
+      loadAgentFarms();
+    }
+  });
+
+  // ── AUTH ──────────────────────────────────────────
+  async function agentLogin() {
+    const email    = document.getElementById('agentEmail').value.trim();
+    const password = document.getElementById('agentPassword').value;
+
+    if (!email || !password) {
+      showToast('Email and password required', 'error');
+      return;
+    }
+
+    try {
+      const res  = await fetch(`${AGENT_API}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        agentToken = data.token;
+        localStorage.setItem('fchan_token', data.token);
+        localStorage.setItem('fchan_user', JSON.stringify(data.user));
+        showLoggedIn(data.user);
+        await loadAgentFarms();
+        showToast('Logged in successfully', 'success');
+      } else {
+        showToast(data.message, 'error');
+      }
+    } catch (e) {
+      showToast('Connection error', 'error');
+    }
+  }
+
+  function showLoggedIn(user) {
+    document.getElementById('loginSection').style.display    = 'none';
+    document.getElementById('loggedInSection').style.display = 'block';
+    document.getElementById('loggedInName').textContent  = user.name;
+    document.getElementById('loggedInEmail').textContent = user.email;
+  }
+
+  function agentLogout() {
+    agentToken = null;
+    localStorage.removeItem('fchan_token');
+    localStorage.removeItem('fchan_user');
+    document.getElementById('loginSection').style.display    = 'block';
+    document.getElementById('loggedInSection').style.display = 'none';
+    document.getElementById('agentFarm').innerHTML =
+      '<option value="">-- Login first --</option>';
+  }
+
+  // ── API HELPER ────────────────────────────────────
+  async function apiRequest(endpoint, options = {}) {
+    const res = await fetch(`${AGENT_API}${endpoint}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${agentToken}`
+      },
+      ...options
+    });
+    return res.json();
+  }
+
+  // ── LOAD FARMS ────────────────────────────────────
+  async function loadAgentFarms() {
+    const data = await apiRequest('/farm');
+    if (!data || !data.farms) return;
+
+    const sel = document.getElementById('agentFarm');
+    sel.innerHTML = '<option value="">-- Select farm --</option>' +
+      data.farms.map(f =>
+        `<option value="${f.id}">${f.name}</option>`
+      ).join('');
+  }
+
+  // ── LOAD ZONES ────────────────────────────────────
+  async function loadAgentZones() {
+    const farmId = document.getElementById('agentFarm').value;
+    if (!farmId) return;
+
+    const data = await apiRequest(`/farm/${farmId}/zones`);
+    if (!data || !data.zones) return;
+
+    const sel = document.getElementById('agentZone');
+    sel.innerHTML = '<option value="">-- Select zone --</option>' +
+      data.zones.map(z =>
+        `<option value="${z.id}">${z.name}</option>`
+      ).join('');
+  }
+
+  // ── LOAD SENSORS ──────────────────────────────────
+  async function loadAgentSensors() {
+    const zoneId = document.getElementById('agentZone').value;
+    if (!zoneId) return;
+
+    const data = await apiRequest(`/sensors/zone/${zoneId}`);
+    if (!data || !data.sensors) return;
+
+    sensors = data.sensors;
+
+    const grid = document.getElementById('sensorMappingGrid');
+    document.getElementById('sensorMappingSection').style.display = 'block';
+
+    grid.innerHTML = sensors.map(s => `
+      <div class="mapping-item">
+        <div class="mapping-label">${s.type.replace('_',' ')}</div>
+        <div style="font-weight:600;color:var(--text);
+                    font-size:var(--text-sm);margin-bottom:4px;">
+          ${s.name}
+        </div>
+        <div style="font-size:var(--text-xs);color:var(--text-muted);
+                    font-family:var(--font-mono);
+                    overflow:hidden;text-overflow:ellipsis;">
+          Key: ${s.api_key ? s.api_key.substring(0,16)+'...' : 'N/A'}
+        </div>
+        <div style="font-size:var(--text-xs);color:var(--success);
+                    margin-top:4px;display:flex;align-items:center;
+                    gap:4px;">
+          <i data-lucide="check-circle"
+             style="width:12px;height:12px"></i>
+          Ready to receive data
+        </div>
+      </div>
+    `).join('');
+
+    lucide.createIcons();
+    termLog('Sensors loaded. Ready to connect Arduino.', 'info');
+  }
+
+  // ── CONNECT ARDUINO ───────────────────────────────
+  async function connectArduino() {
+    if (!('serial' in navigator)) {
+      showToast('Web Serial not supported. Use Chrome/Edge.', 'error');
+      return;
+    }
+
+    try {
+      // Request port from user
+      serialPort = await navigator.serial.requestPort();
+      await serialPort.open({ baudRate: 9600 });
+
+      isConnected = true;
+      startTime   = Date.now();
+      stats       = { received: 0, sent: 0, errors: 0 };
+
+      // Update UI
+      setStatus('connected', 'Connected to Arduino');
+      document.getElementById('connectBtn').style.display    = 'none';
+      document.getElementById('disconnectBtn').style.display = 'block';
+
+      // Start uptime counter
+      uptimeTimer = setInterval(updateUptime, 1000);
+
+      termLog('Arduino connected!', 'success');
+      termLog('Listening for sensor data...', 'info');
+
+      // Start reading
+      readSerial();
+
+    } catch (err) {
+      if (err.name !== 'NotFoundError') {
+        termLog(`Connection error: ${err.message}`, 'error');
+        showToast('Failed to connect: ' + err.message, 'error');
+      }
+    }
+  }
+
+  // ── READ SERIAL DATA ──────────────────────────────
+  async function readSerial() {
+    const textDecoder = new TextDecoderStream();
+    serialPort.readable.pipeTo(textDecoder.writable);
+    reader = textDecoder.readable.getReader();
+
+    let buffer = '';
+
+    try {
+      while (isConnected) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        buffer += value;
+
+        // Process complete lines
+        while (buffer.includes('\n')) {
+          const newlineIdx = buffer.indexOf('\n');
+          const line = buffer.substring(0, newlineIdx).trim();
+          buffer = buffer.substring(newlineIdx + 1);
+
+          if (line) {
+            stats.received++;
+            updateStats();
+            termLog(`${line}`, 'received');
+            await processLine(line);
+          }
+        }
+      }
+    } catch (err) {
+      if (isConnected) {
+        termLog(`Read error: ${err.message}`, 'error');
+        stats.errors++;
+        updateStats();
+      }
+    }
+  }
+
+  // ── PROCESS SERIAL LINE ───────────────────────────
+  async function processLine(line) {
+    // Clean up the line
+    const cleaned = line
+      .replace(/ cm$/i, '').replace(/ °C$/i, '')
+      .replace(/ %$/i, '').replace(/ lux$/i, '')
+      .trim();
+
+    if (!cleaned.includes(':')) return;
+
+    const parts      = cleaned.rsplit ? cleaned.rsplit(':', 1) :
+                       cleaned.split(':');
+    const lastColon  = cleaned.lastIndexOf(':');
+    const label      = cleaned.substring(0, lastColon).trim().toLowerCase();
+    const valueStr   = cleaned.substring(lastColon + 1).trim();
+
+    const value = parseFloat(valueStr);
+    if (isNaN(value)) return;
+
+    // Find matching sensor type
+    const sensorType = SENSOR_MAP[label];
+    if (!sensorType) {
+      termLog(`Unknown label: "${label}"`, 'info');
+      return;
+    }
+
+    // Find sensor with matching type
+    const sensor = sensors.find(s => s.type === sensorType);
+    if (!sensor) {
+      termLog(`No sensor registered for: ${sensorType}`, 'info');
+      return;
+    }
+
+    if (!sensor.api_key) {
+      termLog(`No API key for: ${sensor.name}`, 'info');
+      return;
+    }
+
+    // Send to FCHAN
+    await sendToFCHAN(sensor.api_key, value, sensorType, sensor.name);
+  }
+
+  // ── SEND TO FCHAN ─────────────────────────────────
+  async function sendToFCHAN(apiKey, value, type, sensorName) {
+    try {
+      const res = await fetch(
+        `${AGENT_API}/sensors/readings/ingest`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          api_key:     apiKey,
+          value:       value,
+          recorded_at: new Date().toISOString()
+        })
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        stats.sent++;
+        termLog(
+          `${sensorName}: ${value} → saved to FCHAN`,
+          'success'
+        );
+      } else {
+        stats.errors++;
+        termLog(`API error: ${data.message}`, 'error');
+      }
+    } catch (err) {
+      stats.errors++;
+      termLog(`Send error: ${err.message}`, 'error');
+    }
+    updateStats();
+  }
+
+  // ── DISCONNECT ────────────────────────────────────
+  async function disconnectArduino() {
+    isConnected = false;
+    clearInterval(uptimeTimer);
+
+    try {
+      if (reader) await reader.cancel();
+      if (serialPort) await serialPort.close();
+    } catch (e) {}
+
+    setStatus('', 'Not connected');
+    document.getElementById('connectBtn').style.display    = 'block';
+    document.getElementById('disconnectBtn').style.display = 'none';
+    termLog('Arduino disconnected', 'info');
+  }
+
+  // ── UI HELPERS ────────────────────────────────────
+  function setStatus(state, text) {
+    const dot = document.getElementById('statusDot');
+    dot.className = `status-dot ${state}`;
+    document.getElementById('statusText').textContent = text;
+  }
+
+  function termLog(msg, type = 'info') {
+    const term = document.getElementById('terminal');
+    const line = document.createElement('div');
+    const time = new Date().toLocaleTimeString();
+    line.className = `serial-line ${type}`;
+    line.textContent = `[${time}] ${msg}`;
+    term.appendChild(line);
+
+    if (document.getElementById('autoScrollCheck').checked) {
+      term.scrollTop = term.scrollHeight;
+    }
+  }
+
+  function clearTerminal() {
+    document.getElementById('terminal').innerHTML =
+      '<div class="serial-line info">Terminal cleared.</div>';
+  }
+
+  function updateStats() {
+    document.getElementById('statReceived').textContent =
+      stats.received;
+    document.getElementById('statSent').textContent =
+      stats.sent;
+    document.getElementById('statErrors').textContent =
+      stats.errors;
+  }
+
+  function updateUptime() {
+    if (!startTime) return;
+    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    const mins    = Math.floor(elapsed / 60);
+    const secs    = elapsed % 60;
+    document.getElementById('statUptime').textContent =
+      `${mins}:${secs.toString().padStart(2,'0')}`;
+  }
+
+  // ── TOAST ─────────────────────────────────────────
+  function showToast(message, type = 'info') {
+    const container = document.getElementById('toastContainer');
+    const toast     = document.createElement('div');
+    toast.className = `toast ${type}`;
+    const icons = {
+      success: 'check-circle', error: 'x-circle',
+      warning: 'alert-triangle', info: 'info'
+    };
+    toast.innerHTML = `
+      <i data-lucide="${icons[type]||'info'}"
+         style="width:18px;height:18px;flex-shrink:0;
+                color:var(--${type==='error'?'danger':type})"></i>
+      <span>${message}</span>
+    `;
+    container.appendChild(toast);
+    lucide.createIcons();
+    setTimeout(() => toast.classList.add('show'), 10);
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => toast.remove(), 400);
+    }, 4000);
+  }
+  </script>
+
+</body>
+</html>

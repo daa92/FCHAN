@@ -151,3 +151,18 @@ CREATE TABLE IF NOT EXISTS notifications (
 	FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
 	FOREIGN KEY (alert_id) REFERENCES alerts (id) ON DELETE CASCADE
 );
+
+
+ALTER TABLE sensors
+MODIFY COLUMN type ENUM(
+  'temperature','humidity','soil_moisture',
+  'soil_ph','light','co2','wind','rainfall','distance'
+) NOT NULL;
+
+ALTER TABLE alert_thresholds
+MODIFY COLUMN sensor_type ENUM(
+  'temperature','humidity','soil_moisture',
+  'soil_ph','light','co2','wind','rainfall','distance'
+) NOT NULL;
+
+EXIT;

@@ -818,7 +818,8 @@ async function downloadReport(farmId, farmName) {
   try {
     const token    = Auth.getToken();
     const response = await fetch(
-      `http://localhost:3000/api/reports/farm/${farmId}`, {
+      `http://localhost:3000/api/reports/farm/${farmId}`
+       /*`http://10.95.173.12:3000/api/reports/farm/${farmId}`*/, {
       headers: { Authorization: `Bearer ${token}` }
     });
 

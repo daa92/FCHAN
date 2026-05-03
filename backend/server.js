@@ -23,10 +23,20 @@ const io = socketio(server, {
 app.use(helmet());         // security headers
 //app.use(cors());           // allow frontend to talk to backend
 //correct version since backend = 3000 and frontent = 8080
-app.use(cors({
+/*app.use(cors({
   origin: ['http://localhost:8080', 'http://192.168.100.40:8080'],
+  //origin: ['http://localhost:8080', 'http://10.95.173.12:8080'],
+  credentials: true
+}));*/
+
+app.use(cors({
+  origin: function(origin, callback) {
+    // Allow all origins in development
+    callback(null, true);
+  },
   credentials: true
 }));
+
 app.use(morgan('dev'));     // log every request in terminal
 app.use(express.json());   // parse incoming JSON data
 
@@ -88,7 +98,8 @@ app.use((err, req, res, next) => {
 
 // ─── START SERVER ─────────────────────────────────────
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
+//server.listen(PORT, () => {
+server.listen (PORT, '0.0.0.0', () => {
   console.log(`FCHAN server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV}`);
   startAlertsEngine(io); // start alert
