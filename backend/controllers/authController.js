@@ -1,6 +1,9 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { sendEmail } = require('../services/email');
+const crypto = require('crypto');
+const db = require('../config/db');
 
 // ─── REGISTER ─────────────────────────────────────────
 const register = async (req, res) => {
@@ -53,6 +56,16 @@ const register = async (req, res) => {
       role: role || 'farmer'
     });
 
+    // Generate verification token
+    const verifyToken = crypto.randomBytes(32).toString('hex');
+    const verifyExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    // Save token to database
+    await User.setResetToken(email, verifyToken, verifyExpires);
+
+    // Send verification email
+    await sendEmail(email, 'verification', name, verifyToken);
+
     // Generate JWT token
     const token = jwt.sign(
       { id: userId, email, role: role || 'farmer' },
@@ -60,7 +73,7 @@ const register = async (req, res) => {
       { expiresIn: process.env.JWT_EXPIRES_IN }
     );
 
-    return res.status(201).json({
+    /*return res.status(201).json({
       success: true,
       message: 'Registration successful.',
       token,
@@ -70,6 +83,18 @@ const register = async (req, res) => {
         email,
         role: role || 'farmer'
       }
+    });*/
+    return res.status(201).json({
+  	success: true,
+  	message: 'Registration successful. Please check your email to verify your account.',
+  	token,
+  	user: {
+    		id: userId,
+    		name,
+    		email,
+    		role: role || 'farmer',
+    		email_verified: false
+  	}
     });
 
   } catch (err) {
@@ -252,10 +277,51 @@ const resetPassword = async (req, res) => {
   }
 };
 
+
+const verifyEmail = async (req, res) => {
+  try {
+    const { token } = req.query;
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        message: 'Verification token is required.'
+      });
+    }
+
+    const user = await User.findByResetToken(token);
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired verification token.'
+      });
+    }
+
+    await User.verifyEmail(user.id);
+    await db.execute(
+      'UPDATE users SET reset_token = NULL, reset_token_expires = NULL WHERE id = ?',
+      [user.id]
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'Email verified successfully! You can now login.'
+    });
+
+  } catch (err) {
+    console.error('VerifyEmail error:', err.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error.'
+    });
+  }
+};
+
+
 module.exports = {
   register,
   login,
   getMe,
   forgotPassword,
-  resetPassword
+  resetPassword,
+  verifyEmail
 };

@@ -1,3 +1,4 @@
+const { verifyEmail } = require('../controllers/authController');
 const express = require('express');
 const router = express.Router();
 const {
@@ -26,6 +27,9 @@ router.post('/reset-password', resetPassword);
 
 // ─── PROTECTED ROUTES ─────────────────────────────────
 // (token required)
+
+// GET /api/auth/verify?token=xxx
+router.get('/verify', verifyEmail);
 
 // GET /api/auth/me
 router.get('/me', auth, getMe); // This means: before running getMe, run auth first. If token is invalid → stops here and returns 401. If valid → continues to getMe.
