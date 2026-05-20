@@ -31,6 +31,7 @@ const templates = {
       <html>
       <head>
         <meta charset="UTF-8">
+	<link rel="icon" type="image/png" href="../assets/images/logo.png">
         <style>
           body { font-family: Arial, sans-serif; background: #f0f4f8; margin: 0; padding: 0; }
           .container { max-width: 600px; margin: 40px auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
@@ -179,6 +180,64 @@ const templates = {
     `
   })
 };
+
+
+collaboratorInvite: (inviterName, farmName, token) => ({
+  subject: `${inviterName} invited you to collaborate on FCHAN`,
+  html: `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <style>
+        body { font-family: Arial, sans-serif; background: #f0f4f8; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 40px auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        .header { background: linear-gradient(135deg, #1a5276, #27ae60); padding: 40px; text-align: center; }
+        .header h1 { color: white; font-size: 32px; margin: 0; }
+        .header p { color: rgba(255,255,255,0.8); margin: 8px 0 0; }
+        .body { padding: 40px; }
+        .body p { color: #7f8c8d; line-height: 1.7; margin-bottom: 16px; }
+        .farm-box { background: #eafaf1; border: 1px solid #a9dfbf; border-radius: 8px; padding: 16px 24px; margin: 20px 0; text-align: center; }
+        .farm-box h3 { color: #1a5276; margin: 0; font-size: 20px; }
+        .btn-row { display: flex; gap: 16px; justify-content: center; margin: 30px 0; }
+        .btn-accept { padding: 14px 28px; background: linear-gradient(135deg, #27ae60, #1a5276); color: white; text-decoration: none; border-radius: 50px; font-weight: bold; }
+        .btn-decline { padding: 14px 28px; background: #f8f9fa; color: #7f8c8d; text-decoration: none; border-radius: 50px; font-weight: bold; border: 1px solid #e9ecef; }
+        .footer { background: #f8f9fa; padding: 20px 40px; text-align: center; color: #bdc3c7; font-size: 12px; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>FCHAN</h1>
+          <p>Farm Collaboration Invitation</p>
+        </div>
+        <div class="body">
+          <p>Hello!</p>
+          <p><strong>${inviterName}</strong> has invited you to collaborate on their farm on FCHAN — the Farm Intelligence Platform.</p>
+          <div class="farm-box">
+            <p style="margin:0;color:#7f8c8d;font-size:12px;">Farm</p>
+            <h3>${farmName}</h3>
+          </div>
+          <p>As a collaborator, you'll be able to view farm data, sensor readings, plant forecasts and alerts.</p>
+          <div class="btn-row">
+            <a href="${process.env.APP_URL}/pages/collaborate.html?token=${token}&action=accept" class="btn-accept">
+              Accept Invitation
+            </a>
+            <a href="${process.env.APP_URL}/pages/collaborate.html?token=${token}&action=decline" class="btn-decline">
+              Decline
+            </a>
+          </div>
+          <p style="font-size:13px;color:#95a5a6;">This invitation expires in 7 days. If you don't have an FCHAN account, you'll need to create one first.</p>
+        </div>
+        <div class="footer">
+          <p>© 2026 FCHAN — Farm Intelligence Platform</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `
+});
+
 
 // ── SEND EMAIL ────────────────────────────────────
 const sendEmail = async (to, templateName, ...args) => {

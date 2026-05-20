@@ -2,6 +2,14 @@ const Sensor = require('../models/Sensor');
 const Reading = require('../models/Reading');
 const crypto = require('crypto');
 
+
+const formatForMySQL = (date) => {
+  return new Date(date).toISOString()
+    .slice(0, 19).replace('T', ' ');
+};
+
+
+
 // ─── SENSORS ──────────────────────────────────────────
 
 // GET /api/farm/:farmId/zones/:zoneId/sensors
@@ -160,6 +168,9 @@ const getStats = async (req, res) => {
 // Manual entry (by user via GUI)
 const createReading = async (req, res) => {
   try {
+    
+    console.log('CreateReading called, params:', req.params);
+    console.log('CreateReading body:', req.body);
     const sensor = await Sensor.findById(req.params.id);
     if (!sensor) {
       return res.status(404).json({ success: false, message: 'Sensor not found.' });
@@ -168,12 +179,21 @@ const createReading = async (req, res) => {
     if (value === undefined || value === null) {
       return res.status(400).json({ success: false, message: 'Value is required.' });
     }
-    const readingId = await Reading.create({
-      sensor_id: req.params.id,
-      value,
-      entered_by: 'manual',
-      recorded_at: recorded_at || new Date()
-    });
+    
+
+    const formatForMySQL = (date) => {
+  return new Date(date).toISOString()
+    .slice(0, 19).replace('T', ' ');
+};
+
+const readingId = await Reading.create({
+  sensor_id: req.params.id,
+  value,
+  entered_by: 'manual',
+  recorded_at: recorded_at
+    ? formatForMySQL(recorded_at)
+    : formatForMySQL(new Date())
+});
 
     // Update sensor last seen
     await Sensor.updateLastSeen(req.params.id);
@@ -218,11 +238,13 @@ const ingestReading = async (req, res) => {
 
     // Save reading
     await Reading.create({
-      sensor_id: sensor.id,
-      value,
-      entered_by: 'auto',
-      recorded_at: recorded_at || new Date()
-    });
+  sensor_id: sensor.id,
+  value,
+  entered_by: 'auto',
+  recorded_at: recorded_at
+    ? formatForMySQL(recorded_at)
+    : formatForMySQL(new Date())
+});
 
     // Update sensor last seen
     await Sensor.updateLastSeen(sensor.id);

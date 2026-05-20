@@ -1,0 +1,17 @@
+-- COLLABORATOR INVITATIONS
+CREATE TABLE IF NOT EXISTS collaborators (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  farm_id INT NOT NULL,
+  invited_by INT NOT NULL,
+  invited_email VARCHAR(150) NOT NULL,
+  user_id INT DEFAULT NULL,
+  role ENUM('viewer','editor') DEFAULT 'viewer',
+  status ENUM('pending','accepted','declined') DEFAULT 'pending',
+  token VARCHAR(255) NOT NULL,
+  token_expires DATETIME NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (farm_id) REFERENCES farms(id) ON DELETE CASCADE,
+  FOREIGN KEY (invited_by) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);

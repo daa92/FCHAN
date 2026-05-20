@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FCHAN — Collaboration Invite</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="icon" type="image/png" href="../assets/images/logo.png">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+      padding: var(--space-lg);
+    }
+
+    .collab-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 48px;
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+      box-shadow: var(--shadow-xl);
+    }
+
+    .collab-icon {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto var(--space-lg);
+      font-size: 40px;
+    }
+  </style>
+</head>
+<body>
+  <div class="collab-card">
+    <div class="collab-icon" id="collabIcon">🌾</div>
+    <h2 id="collabTitle">Processing invitation...</h2>
+    <p id="collabMsg" style="color:var(--text-muted);
+                              margin-bottom:var(--space-xl);">
+      Please wait...
+    </p>
+    <div id="collabAction"></div>
+  </div>
+
+  <script src="../js/theme.js"></script>
+  <script src="../js/language.js"></script>
+  <script src="../js/auth.js"></script>
+
+  <script>
+    ThemeManager.init();
+    LanguageManager.init();
+
+    const API = (() => {
+      const h = window.location.hostname;
+      return h === 'localhost' || h === '127.0.0.1'
+        ? 'http://localhost:3000/api'
+        : `http://${h}:3000/api`;
+    })();
+
+    async function processInvite() {
+      const params = new URLSearchParams(window.location.search);
+      const token  = params.get('token');
+      const action = params.get('action');
+
+      if (!token || !action) {
+        show('Invalid Link', 'This invitation link is invalid.');
+        return;
+      }
+
+      // Check if logged in
+      const savedToken = localStorage.getItem('fchan_token');
+      if (!savedToken) {
+        // Redirect to login, then come back
+        localStorage.setItem('fchan_redirect_after_login',
+          window.location.href);
+        show('Login Required',
+          'Please login or create an account to accept this invitation.',
+          `<a href="index.html" class="btn btn-primary">
+             Login / Register
+           </a>`
+        );
+        return;
+      }
+
+      if (action === 'decline') {
+        try {
+          const res  = await fetch(
+            `${API}/collaborators/decline?token=${token}`, {
+            headers: { Authorization: `Bearer ${savedToken}` }
+          });
+          const data = await res.json();
+          show('Invitation Declined',
+            'You have declined the farm collaboration invitation.',
+            `<a href="dashboard.html" class="btn btn-outline">
+               Go to Dashboard
+             </a>`
+          );
+        } catch (e) {
+          show('Error', 'Could not process. Please try again.');
+        }
+        return;
+      }
+
+      // Accept
+      try {
+        const res  = await fetch(
+          `${API}/collaborators/accept?token=${token}`, {
+          headers: { Authorization: `Bearer ${savedToken}` }
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          show('Invitation Accepted!',
+            data.message,
+            `<a href="farm.html?id=${data.farm_id}"
+                class="btn btn-primary">
+               View Farm
+             </a>`
+          );
+        } else {
+          show('Error', data.message,
+            `<a href="dashboard.html" class="btn btn-outline">
+               Dashboard
+             </a>`
+          );
+        }
+      } catch (e) {
+        show('Connection Error',
+          'Could not connect. Please try again.');
+      }
+    }
+
+    function show(icon, title, msg, actionHTML = '') {
+      document.getElementById('collabIcon').textContent  = icon;
+      document.getElementById('collabTitle').textContent = title;
+      document.getElementById('collabMsg').textContent   = msg;
+      document.getElementById('collabAction').innerHTML  = actionHTML;
+    }
+
+    processInvite();
+  </script>
+</body>
+</html>

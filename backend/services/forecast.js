@@ -68,6 +68,14 @@ const getForecast = async (plant, sensors) => {
         plant_id: plant.id
       };
     }
+    // If no planting date, use today as estimate
+    /*const plantedAt = plant.planted_at
+      ? new Date(plant.planted_at)
+      : new Date();
+
+    const plantedAtNote = !plant.planted_at
+      ? 'Planting date not set — using today as estimate'
+      : null;*/
 
     // 2. Get sensor readings averages
     const sensorData = {};

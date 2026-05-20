@@ -414,6 +414,10 @@
   	<span class="nav-icon"><i data-lucide="usb"></i></span>
   	<span class="nav-label">Arduino Agent</span>
     </div>
+    <div class="user-avatar" id="userAvatar"
+     onclick="openProfileModal()"
+     style="cursor:pointer;"
+     title="My Profile">D</div>
     </nav>
 
     <div class="sidebar-footer">
@@ -441,7 +445,7 @@
       <!-- User info -->
       <div style="display:flex; align-items:center;
                   gap:var(--space-sm); padding: 8px;">
-        <div class="user-avatar" id="userAvatar">D</div>
+	      <!--<div class="user-avatar" id="userAvatar">D</div>-->
         <div style="flex:1; min-width:0;" class="nav-label">
           <div style="font-size:var(--text-sm); font-weight:600;
                       color:var(--text); white-space:nowrap;
@@ -683,6 +687,24 @@
 //Auth.requireAuth();
 
 // ── INIT ──────────────────────────────────────────
+/*document.addEventListener('DOMContentLoaded', async () => {
+  ThemeManager.init();
+  LanguageManager.init();
+  lucide.createIcons();
+
+  setGreeting();
+  loadUser();
+  await loadDashboard();
+  connectSocket();
+
+ setupModalCloseListeners();
+
+  // Fix sidebar avatar click
+  const avatar = document.getElementById('userAvatar');
+  if (avatar) {
+    avatar.addEventListener('click', openProfileModal);
+  }
+});*/
 document.addEventListener('DOMContentLoaded', async () => {
   ThemeManager.init();
   LanguageManager.init();
@@ -692,6 +714,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   loadUser();
   await loadDashboard();
   connectSocket();
+
+  setupModalCloseListeners();
+
+  // Attach click handler to avatar
+  const avatar = document.getElementById('userAvatar');
+  if (avatar) {
+    avatar.addEventListener('click', openProfileModal);
+  }
 });
 
 // ── GREETING ──────────────────────────────────────
@@ -722,13 +752,30 @@ function setGreeting() {
 }
 
 // ── LOAD USER ─────────────────────────────────────
-function loadUser() {
+/*function loadUser() {
   const user = Auth.getUser();
   if (!user) return;
   document.getElementById('userName').textContent = user.name;
   document.getElementById('userRole').textContent = user.role;
   document.getElementById('userAvatar').textContent =
-    user.name.charAt(0).toUpperCase();
+    user.name.charAt(0).toUpperCase(),
+    //.addEventListener('click', openProfileModal);
+  document.getElementById('userAvatar')
+  .addEventListener('click', openProfileModal);
+}*/
+// ── LOAD USER ─────────────────────────────────────
+function loadUser() {
+  const user = Auth.getUser();
+  if (!user) return;
+
+  document.getElementById('userName').textContent = user.name;
+  document.getElementById('userRole').textContent = user.role || 'farmer';
+
+  // Update the main avatar (the one in sidebar nav)
+  const mainAvatar = document.getElementById('userAvatar');
+  if (mainAvatar) {
+    mainAvatar.textContent = user.name.charAt(0).toUpperCase();
+  }
 }
 
 // ── LOAD DASHBOARD DATA ───────────────────────────
@@ -1083,7 +1130,299 @@ function timeAgo(dateStr) {
   if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
   return Math.floor(diff/86400) + 'd ago';
 }
+
+
+function openModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) modal.style.display = 'flex';   // or 'block'
+}
+
+function closeModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) modal.style.display = 'none';
+}
+
+
+// ── PROFILE FUNCTIONS ─────────────────────────────
+function openProfileModal() {
+  const user = Auth.getUser();
+  if (!user) return;
+  document.getElementById('profileAvatar').textContent =
+    user.name.charAt(0).toUpperCase();
+  document.getElementById('profileName').textContent  = user.name;
+  document.getElementById('profileEmail').textContent = user.email;
+  document.getElementById('profileRole').textContent  = user.role || 'farmer';
+  document.getElementById('editName').value  = user.name;
+  document.getElementById('editEmail').value = user.email;
+  switchProfileTab('info');
+  //openModal('openProfileModal');
+  openModal ('profileModal');
+  lucide.createIcons();
+}
+
+
+function switchProfileTab(tab) {
+  ['info','password','danger'].forEach(t => {
+    const tabNum = t === 'info' ? '1' : t === 'password' ? '2' : '3';
+    const tabBtn = document.getElementById(`profileTab${tabNum}`);
+    const tabContent = document.getElementById(`profileTab${t.charAt(0).toUpperCase() + t.slice(1)}`);
+    
+    if (tabBtn) {
+      tabBtn.style.background = t === tab ? 'var(--surface)' : 'none';
+      tabBtn.style.color = (t === tab) 
+        ? (t === 'danger' ? 'var(--danger)' : 'var(--primary)') 
+        : 'var(--text-muted)';
+    }
+    if (tabContent) tabContent.style.display = (t === tab) ? 'block' : 'none';
+  });
+}
+
+
+// Close modals when clicking overlay
+function setupModalCloseListeners() {
+  const profileModal = document.getElementById('profileModal');
+  const deleteModal = document.getElementById('deleteAccountModal');
+
+  if (profileModal) {
+    profileModal.addEventListener('click', function(e) {
+      if (e.target === this) closeModal('profileModal');
+    });
+  }
+
+  if (deleteModal) {
+    deleteModal.addEventListener('click', function(e) {
+      if (e.target === this) closeModal('deleteAccountModal');
+    });
+  }
+}
+
+
+async function updateProfile() {
+  const name  = document.getElementById('editName').value.trim();
+  const email = document.getElementById('editEmail').value.trim();
+
+  if (!name || !email) {
+    showToast('Name and email are required', 'error');
+    return;
+  }
+
+  const data = await Auth.request('/auth/profile', {
+    method: 'PUT',
+    body: JSON.stringify({ name, email })
+  });
+
+  if (data && data.success) {
+    // Update stored user
+    const user = Auth.getUser();
+    user.name  = name;
+    user.email = email;
+    Auth.setUser(user);
+    loadUser();
+    showToast('Profile updated successfully', 'success');
+    closeModal('profileModal');
+  } else {
+    showToast(data ? data.message : 'Error updating profile', 'error');
+  }
+}
+
+async function changePassword() {
+  const current = document.getElementById('currentPassword').value;
+  const newPwd  = document.getElementById('newPassword').value;
+  const confirm = document.getElementById('confirmNewPassword').value;
+
+  if (!current || !newPwd || !confirm) {
+    showToast('All fields are required', 'error');
+    return;
+  }
+
+  if (newPwd.length < 6) {
+    showToast('Password must be at least 6 characters', 'error');
+    return;
+  }
+
+  if (newPwd !== confirm) {
+    showToast('New passwords do not match', 'error');
+    return;
+  }
+
+  const data = await Auth.request('/auth/change-password', {
+    method: 'PUT',
+    body: JSON.stringify({
+      current_password: current,
+      new_password: newPwd
+    })
+  });
+
+  if (data && data.success) {
+    showToast('Password changed successfully', 'success');
+    document.getElementById('currentPassword').value = '';
+    document.getElementById('newPassword').value = '';
+    document.getElementById('confirmNewPassword').value = '';
+    closeModal('openProfileModal');
+  } else {
+    showToast(data ? data.message : 'Error changing password', 'error');
+  }
+}
+
+async function confirmDeleteAccount() {
+  const password = document.getElementById('deletePassword').value;
+  if (!password) {
+    showToast('Password is required', 'error');
+    return;
+  }
+
+  const data = await Auth.request('/auth/account', {
+    method: 'DELETE',
+    body: JSON.stringify({ password })
+  });
+
+  if (data && data.success) {
+    Auth.removeToken();
+    window.location.replace('/pages/index.html');
+  } else {
+    showToast(data ? data.message : 'Error deleting account', 'error');
+  }
+}
+
+function openDeleteAccountConfirm() {
+  closeModal('profileModal');
+  document.getElementById('deletePassword').value = '';
+  document.getElementById('deleteError').style.display = 'none';
+  openModal('deleteAccountModal');
+}
+
+async function confirmDeleteAccount() {
+  const password = document.getElementById('deletePassword').value;
+  if (!password) {
+    document.getElementById('deleteError').textContent =
+      'Password is required.';
+    document.getElementById('deleteError').style.display = 'block';
+    return;
+  }
+
+  const data = await Auth.request('/auth/account', {
+    method: 'DELETE',
+    body: JSON.stringify({ password })
+  });
+
+  if (data && data.success) {
+    Auth.removeToken();
+    window.location.replace('/pages/index.html');
+  } else {
+    document.getElementById('deleteError').textContent =
+      data ? data.message : 'Error deleting account.';
+    document.getElementById('deleteError').style.display = 'block';
+  }
+}
+
+
+document.addEventListener('click', function(e) {
+  if (e.target.classList.contains('modal-overlay') &&
+      e.target.classList.contains('open')) {
+    e.target.classList.remove('open');
+  }
+});
+
 </script>
+
+<!-- ══ PROFILE MODAL ═══════════════════════════════ -->
+<!-- Profile Modal -->
+<div class="modal-overlay" id="profileModal">
+  <div class="modal" style="max-width:500px;">
+    <div class="modal-header">
+      <h3>My Profile</h3>
+      <button class="modal-close" onclick="closeModal('profileModal')">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+    <div style="text-align:center;padding:var(--space-lg) 0;
+                border-bottom:1px solid var(--border);
+                margin-bottom:var(--space-lg);">
+      <div class="user-avatar"
+           style="width:72px;height:72px;font-size:32px;
+                  margin:0 auto var(--space-md);"
+           id="profileAvatar">D</div>
+      <h3 id="profileName">Name</h3>
+      <p id="profileEmail" style="color:var(--text-muted);font-size:var(--text-sm);">email</p>
+      <span class="badge badge-primary" id="profileRole" style="margin-top:8px;">farmer</span>
+    </div>
+    <!-- Tabs -->
+    <div style="display:flex;gap:4px;background:var(--surface-2);
+                padding:4px;border-radius:var(--radius-sm);
+                margin-bottom:var(--space-lg);border:1px solid var(--border);">
+      <button id="profileTab1" onclick="switchProfileTab('info')"
+              style="flex:1;padding:8px;border-radius:4px;font-size:var(--text-sm);
+                     font-weight:500;cursor:pointer;border:none;
+                     background:var(--surface);color:var(--primary);">
+        Edit Profile
+      </button>
+      <button id="profileTab2" onclick="switchProfileTab('password')"
+              style="flex:1;padding:8px;border-radius:4px;font-size:var(--text-sm);
+                     font-weight:500;cursor:pointer;border:none;
+                     background:none;color:var(--text-muted);">
+        Change Password
+      </button>
+      <button id="profileTab3" onclick="switchProfileTab('danger')"
+              style="flex:1;padding:8px;border-radius:4px;font-size:var(--text-sm);
+                     font-weight:500;cursor:pointer;border:none;
+                     background:none;color:var(--danger);">
+        Danger Zone
+      </button>
+    </div>
+    <!-- Tab Info -->
+    <div id="profileTabInfo">
+      <div class="form-group">
+        <label class="form-label">Full Name</label>
+        <input type="text" class="form-control" id="editName">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input type="email" class="form-control" id="editEmail">
+      </div>
+      <button class="btn btn-primary btn-full" onclick="updateProfile()">
+        <i data-lucide="save" style="width:16px;height:16px"></i>
+        Save Changes
+      </button>
+    </div>
+    <!-- Tab Password -->
+    <div id="profileTabPassword" style="display:none;">
+      <div class="form-group">
+        <label class="form-label">Current Password</label>
+        <input type="password" class="form-control" id="currentPassword">
+      </div>
+      <div class="form-group">
+        <label class="form-label">New Password</label>
+        <input type="password" class="form-control" id="newPassword">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Confirm New Password</label>
+        <input type="password" class="form-control" id="confirmNewPassword">
+      </div>
+      <button class="btn btn-primary btn-full" onclick="changePassword()">
+        <i data-lucide="lock" style="width:16px;height:16px"></i>
+        Change Password
+      </button>
+    </div>
+    <!-- Tab Danger -->
+    <div id="profileTabDanger" style="display:none;">
+      <div style="background:rgba(231,76,60,0.05);border:1px solid rgba(231,76,60,0.2);
+                  border-radius:var(--radius-md);padding:var(--space-lg);">
+        <h4 style="color:var(--danger);margin-bottom:var(--space-sm);">Delete Account</h4>
+        <p style="font-size:var(--text-sm);color:var(--text-muted);margin-bottom:var(--space-md);">
+          Permanently deletes your account and ALL your data. Cannot be undone.
+        </p>
+        <div class="form-group">
+          <label class="form-label">Confirm with your password</label>
+          <input type="password" class="form-control" id="deletePassword">
+        </div>
+        <button class="btn btn-danger btn-full" onclick="confirmDeleteAccount()">
+          <i data-lucide="trash-2" style="width:16px;height:16px"></i>
+          Delete My Account Forever
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>

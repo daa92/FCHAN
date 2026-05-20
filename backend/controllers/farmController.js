@@ -190,13 +190,16 @@ const getPlants = async (req, res) => {
 // POST /api/farms/:farmId/zones/:zoneId/plants
 const createPlant = async (req, res) => {
   try {
-    const { name, species, variety, quantity, planted_at, growth_stage, notes } = req.body;
+    const { name, species_id, species, variety, quantity, planted_at, growth_stage, notes } = req.body;
+    console.log('Plant creation data:', req.body); // debug
     if (!name) {
       return res.status(400).json({ success: false, message: 'Plant name is required.' });
     }
     const plantId = await Plant.create({
       zone_id: req.params.zoneId,
-      name, species, variety, quantity,
+      name,
+      species_id: species_id || null,
+      species, variety, quantity,
       planted_at, growth_stage, notes
     });
     const plant = await Plant.findById(plantId);

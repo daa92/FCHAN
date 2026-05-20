@@ -58,7 +58,7 @@ const register = async (req, res) => {
 
     // Generate verification token
     const verifyToken = crypto.randomBytes(32).toString('hex');
-    const verifyExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const verifyExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
     // Save token to database
     await User.setResetToken(email, verifyToken, verifyExpires);
@@ -136,6 +136,15 @@ const login = async (req, res) => {
         message: 'Invalid email or password.'
       });
     }
+    // Check if email is verified
+    if (!user.email_verified) {
+      return res.status(403).json({
+      success: false,
+      message: 'Please verify your email before logging in. Check your inbox.',
+      email_verified: false,
+      resend_available: true
+    });
+}
 
     // Generate JWT token
     const token = jwt.sign(
@@ -164,6 +173,55 @@ const login = async (req, res) => {
     });
   }
 };
+
+
+const resendVerification = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required.'
+      });
+    }
+
+    const user = await User.findByEmail(email);
+    if (!user) {
+      return res.status(200).json({
+        success: true,
+        message: 'If that email exists, a verification link has been sent.'
+      });
+    }
+
+    if (user.email_verified) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is already verified.'
+      });
+    }
+
+    // Generate new token
+    const crypto = require('crypto');
+    const verifyToken   = crypto.randomBytes(32).toString('hex');
+    const verifyExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    await User.setResetToken(email, verifyToken, verifyExpires);
+    await sendEmail(email, 'verification', user.name, verifyToken);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Verification email sent. Please check your inbox.'
+    });
+
+  } catch (err) {
+    console.error('ResendVerification error:', err.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error.'
+    });
+  }
+};
+
 
 // ─── GET CURRENT USER ─────────────────────────────────
 const getMe = async (req, res) => {
@@ -317,11 +375,117 @@ const verifyEmail = async (req, res) => {
 };
 
 
+const deleteAccount = async (req, res) => {
+  try {
+    const { password } = req.body;
+    if (!password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password is required to delete your account.'
+      });
+    }
+
+    // Get full user with password
+    const user = await User.findByEmail(req.user.email);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found.'
+      });
+    }
+
+    // Verify password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: 'Incorrect password.'
+      });
+    }
+
+    // Delete account (cascades to farms, zones, plants, sensors etc.)
+    await User.deleteAccount(req.user.id);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Account deleted successfully.'
+    });
+
+  } catch (err) {
+    console.error('DeleteAccount error:', err.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error.'
+    });
+  }
+};
+
+const updateProfile = async (req, res) => {
+  try {
+    const { name, email } = req.body;
+    if (!name || !email) {
+      return res.status(400).json({
+        success: false, message: 'Name and email required.'
+      });
+    }
+    await db.execute(
+      'UPDATE users SET name = ?, email = ? WHERE id = ?',
+      [name, email, req.user.id]
+    );
+    return res.status(200).json({
+      success: true, message: 'Profile updated.'
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false, message: 'Internal server error.'
+    });
+  }
+};
+
+const changePasswordHandler = async (req, res) => {
+  try {
+    const { current_password, new_password } = req.body;
+    if (!current_password || !new_password) {
+      return res.status(400).json({
+        success: false, message: 'Both passwords required.'
+      });
+    }
+    if (new_password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be at least 6 characters.'
+      });
+    }
+    const user = await User.findByEmail(req.user.email);
+    const isMatch = await bcrypt.compare(current_password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false, message: 'Current password is incorrect.'
+      });
+    }
+    const salt   = await bcrypt.genSalt(10);
+    const hashed = await bcrypt.hash(new_password, salt);
+    await User.updatePassword(req.user.id, hashed);
+    return res.status(200).json({
+      success: true, message: 'Password changed successfully.'
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false, message: 'Internal server error.'
+    });
+  }
+};
+
+
 module.exports = {
   register,
   login,
   getMe,
   forgotPassword,
   resetPassword,
-  verifyEmail
+  verifyEmail,
+  resendVerification,
+  deleteAccount,
+  updateProfile,
+  changePasswordHandler
 };

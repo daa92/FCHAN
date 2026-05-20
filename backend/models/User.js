@@ -61,6 +61,13 @@ class User {
       [id]
     );
   }
+  static async deleteAccount(id) {
+   const [result] = await db.execute(
+     'DELETE FROM users WHERE id = ?',
+     [id]
+   );
+   return result.affectedRows;
+  }
 
 }
 

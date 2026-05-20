@@ -871,22 +871,52 @@
       btn.classList.remove('loading');
       btn.disabled = false;
 
-      if (result.success) {
-        // Show success overlay
-        document.getElementById('successTitle').textContent =
-          LanguageManager.t('welcome_back') + ', ' + result.user.name + '!';
-        document.getElementById('successMsg').textContent =
-          'Redirecting to dashboard...';
-        document.getElementById('successOverlay').classList.add('show');
-
-        // Redirect after 1.5s
-        setTimeout(() => {
-          window.location.href = 'dashboard.html';
-        }, 1500);
-      } else {
-        showError('loginError', result.message);
-      }
+      
+     if (result.success) {
+    document.getElementById('successTitle').textContent =
+      LanguageManager.t('welcome_back') + ', ' + result.user.name + '!';
+    document.getElementById('successMsg').textContent =
+      'Redirecting to dashboard...';
+    document.getElementById('successOverlay').classList.add('show');
+    setTimeout(() => {
+      window.location.replace('/pages/dashboard.html');
+    }, 1500);
+  } else {
+    // Handle email not verified specially
+    if (result.email_verified === false) {
+      document.getElementById('loginErrorMsg').innerHTML =
+        result.message +
+        ' <span style="text-decoration:underline;cursor:pointer;' +
+        'color:#a9dfbf;" onclick="resendVerificationEmail(\'' +
+        document.getElementById('loginEmail').value + '\')">' +
+        'Resend email</span>';
+      document.getElementById('loginError').classList.add('show');
+    } else {
+      showError('loginError', result.message);
     }
+  }
+}
+
+
+async function resendVerificationEmail(email) {
+  try {
+    const hostname = window.location.hostname;
+    const apiUrl = hostname === 'localhost' || hostname === '127.0.0.1'
+      ? 'http://localhost:3000/api'
+      : `http://${hostname}:3000/api`;
+
+    const response = await fetch(`${apiUrl}/auth/resend-verification`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const data = await response.json();
+    alert(data.message);
+  } catch (e) {
+    alert('Connection error. Please try again.');
+  }
+}
+
 
     // ── HANDLE REGISTER ────────────────────────────────
     async function handleRegister() {

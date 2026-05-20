@@ -62,6 +62,8 @@ const { startAlertsEngine } = require('./services/alerts');
 const speciesRoutes = require('./routes/species'); // forecast engine implementation_phase6
 const forecastRoutes = require('./routes/forecast');
 const reportsRoutes = require('./routes/reports'); // pdf report_phase7
+const collaboratorRoutes = require('./routes/collaborators');
+
 
 
 app.get('/', (req, res) => {
@@ -79,6 +81,7 @@ app.use('/api/alerts', alertRoutes);
 app.use('/api/species', speciesRoutes);
 app.use('/api/forecast', forecastRoutes);
 app.use('/api/reports', reportsRoutes);
+app.use('/api/collaborators', collaboratorRoutes);
 // ─── 404 HANDLER ──────────────────────────────────────
 app.use((req, res) => {
   res.status(404).json({
@@ -104,12 +107,5 @@ server.listen (PORT, '0.0.0.0', () => {
   console.log(`Environment: ${process.env.NODE_ENV}`);
   startAlertsEngine(io); // start alert
 });
-
-// ─── START ALERT ─────────────────────────────────────
-/*server.listen(PORT, () => {
-  console.log(`FCHAN server running on port ${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV}`);
-  startAlertsEngine(io);
-});*/
 
 

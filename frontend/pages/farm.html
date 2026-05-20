@@ -645,6 +645,10 @@
           <i data-lucide="bell" style="width:16px;height:16px"></i>
           Alerts
         </button>
+	<button class="tab-btn" onclick="switchTab('collaborators')">
+  <i data-lucide="users" style="width:16px;height:16px"></i>
+  Collaborators
+</button>
       </div>
 
       <!-- Tab: Zones -->
@@ -708,6 +712,25 @@
       </div>
 
     </div>
+
+    <!-- Tab: Collaborators -->
+<div class="tab-content" id="tab-collaborators">
+  <div class="section-header">
+    <h3>Farm Collaborators</h3>
+    <button class="btn btn-primary btn-sm"
+            onclick="openModal('inviteModal')">
+      <i data-lucide="user-plus"></i>
+      Invite Collaborator
+    </button>
+  </div>
+
+  <!-- Pending/Active collaborators list -->
+  <div id="collaboratorsList">
+    <div style="text-align:center;padding:40px;color:var(--text-muted);">
+      Loading collaborators...
+    </div>
+  </div>
+</div>
 
   </main>
 </div>
@@ -1414,10 +1437,15 @@ function switchTab(tab) {
     c.classList.remove('active');
   });
 
-  const tabs = ['zones', 'sensors', 'alerts'];
+  const tabs = ['zones', 'sensors', 'alerts', 'collaborators'];
   const idx = tabs.indexOf(tab);
   document.querySelectorAll('.tab-btn')[idx].classList.add('active');
   document.getElementById(`tab-${tab}`).classList.add('active');
+
+  // Load collaborators when tab is opened
+  if (tab === 'collaborators' && currentFarmId) {
+    loadCollaborators(currentFarmId);
+  }
 }
 
 // ── CREATE FARM ───────────────────────────────────
@@ -1733,6 +1761,117 @@ function showToast(message, type = 'info') {
 }
 
 
+// ── COLLABORATORS ─────────────────────────────────
+async function loadCollaborators(farmId) {
+  const data = await Auth.request(`/collaborators/farm/${farmId}`);
+  const list = document.getElementById('collaboratorsList');
+
+  if (!data || !data.collaborators || data.collaborators.length === 0) {
+    list.innerHTML = `
+      <div class="empty-state" style="padding:40px;">
+        <i data-lucide="users"
+           style="width:48px;height:48px;color:var(--text-light)"></i>
+        <h3>No collaborators yet</h3>
+        <p>Invite someone to collaborate on this farm</p>
+      </div>
+    `;
+    lucide.createIcons();
+    return;
+  }
+
+  const statusColors = {
+    pending:  'var(--warning)',
+    accepted: 'var(--success)',
+    declined: 'var(--danger)'
+  };
+
+  list.innerHTML = `
+    <div class="table-wrapper">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Email</th>
+            <th>Name</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Invited</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data.collaborators.map(c => `
+            <tr>
+              <td>${c.invited_email}</td>
+              <td>${c.user_name || '—'}</td>
+              <td><span class="badge badge-info">${c.role}</span></td>
+              <td>
+                <span class="badge"
+                      style="background:${statusColors[c.status]}20;
+                             color:${statusColors[c.status]}">
+                  ${c.status}
+                </span>
+              </td>
+              <td>${new Date(c.created_at).toLocaleDateString()}</td>
+              <td>
+                <button class="btn btn-ghost btn-sm"
+                        style="color:var(--danger);"
+                        onclick="removeCollaborator(${c.id})">
+                  <i data-lucide="trash-2"
+                     style="width:14px;height:14px"></i>
+                </button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+  lucide.createIcons();
+}
+
+async function inviteCollaborator() {
+  const email = document.getElementById('inviteEmail').value.trim();
+  const role  = document.getElementById('inviteRole').value;
+
+  if (!email) {
+    showToast('Email is required', 'error');
+    return;
+  }
+
+  const data = await Auth.request('/collaborators/invite', {
+    method: 'POST',
+    body: JSON.stringify({
+      farm_id: currentFarmId,
+      email,
+      role
+    })
+  });
+
+  if (data && data.success) {
+    closeModal('inviteModal');
+    showToast(data.message, 'success');
+    document.getElementById('inviteEmail').value = '';
+    await loadCollaborators(currentFarmId);
+  } else {
+    showToast(data ? data.message : 'Error sending invitation', 'error');
+  }
+}
+
+async function removeCollaborator(collaboratorId) {
+  if (!confirm('Remove this collaborator?')) return;
+  const data = await Auth.request(`/collaborators/${collaboratorId}`, {
+    method: 'DELETE'
+  });
+  if (data && data.success) {
+    showToast('Collaborator removed', 'success');
+    await loadCollaborators(currentFarmId);
+  } else {
+    showToast('Error removing collaborator', 'error');
+  }
+}
+
+
+
 function goToZone(farmId, zoneId) {
   window.location.href = `zone.html?farmId=${farmId}&zoneId=${zoneId}`;
 }
@@ -1746,6 +1885,47 @@ function timeAgo(dateStr) {
   return Math.floor(diff/86400) + 'd ago';
 }
 </script>
+
+
+<!-- ══ INVITE COLLABORATOR MODAL ═════════════════════ -->
+<div class="modal-overlay" id="inviteModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Invite Collaborator</h3>
+      <button class="modal-close" onclick="closeModal('inviteModal')">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+    <p style="font-size:var(--text-sm);color:var(--text-muted);
+              margin-bottom:var(--space-lg);">
+      Enter the email address of the person you want to invite.
+      They will receive an email with instructions to join your farm.
+    </p>
+    <div class="form-group">
+      <label class="form-label">Email Address *</label>
+      <input type="email" class="form-control"
+             id="inviteEmail"
+             placeholder="collaborator@example.com">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Role</label>
+      <select class="form-control" id="inviteRole">
+        <option value="viewer">Viewer (can view data only)</option>
+        <option value="editor">Editor (can add data)</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:var(--space-md);
+                justify-content:flex-end;margin-top:var(--space-lg);">
+      <button class="btn btn-outline"
+              onclick="closeModal('inviteModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="inviteCollaborator()">
+        <i data-lucide="send"></i>
+        Send Invitation
+      </button>
+    </div>
+  </div>
+</div>
+
 
 </body>
 </html>

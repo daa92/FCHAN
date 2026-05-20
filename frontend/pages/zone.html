@@ -1061,22 +1061,22 @@ async function loadLatestReading(sensor) {
     `/sensors/${sensor.id}/readings/latest`
   );
 
-  if (data && data.reading) {
-    const val = parseFloat(data.reading.value).toFixed(1);
+  if (!data || !data.reading) {
     const el = document.getElementById(`sval-${sensor.id}`);
-    if (el) {
-      el.innerHTML = `${val}<span class="unit">${sensor.unit || ''}</span>`;
-    }
+    if (el) el.innerHTML = `—<span class="unit">${sensor.unit || ''}</span>`;
     const te = document.getElementById(`stime-${sensor.id}`);
-    if (te) te.textContent = timeAgo(data.reading.recorded_at);
-
-    // Check thresholds — color the card
-    // (basic visual feedback)
-    const card = document.getElementById(`scard-${sensor.id}`);
-    if (card) {
-      card.classList.remove('warning', 'critical');
-    }
+    if (te) te.textContent = 'No data yet';
+    return;
   }
+
+  const val = parseFloat(data.reading.value).toFixed(1);
+  const el  = document.getElementById(`sval-${sensor.id}`);
+  if (el) {
+    el.innerHTML = `${val}<span class="unit">${sensor.unit || ''}</span>`;
+  }
+  const te = document.getElementById(`stime-${sensor.id}`);
+  if (te) te.textContent = timeAgo(data.reading.recorded_at);
+
 }
 
 // ── RENDER CHARTS ─────────────────────────────────
@@ -1609,16 +1609,22 @@ async function createPlant() {
     return;
   }
 
+  // FIX: Parse species_id as integer
+  const speciesVal = document.getElementById('plantSpecies').value;
+  const species_id = speciesVal ? parseInt(speciesVal) : null;
+  
+  console.log('Creating plant with species_id:', species_id); // debug
+
   const data = await Auth.request(
     `/farm/${farmId}/zones/${zoneId}/plants`, {
     method: 'POST',
     body: JSON.stringify({
       name,
-      species_id: document.getElementById('plantSpecies').value || null,
-      quantity:   document.getElementById('plantQuantity').value || 1,
+      species_id,
+      quantity: parseInt(document.getElementById('plantQuantity').value) || 1,
       growth_stage: document.getElementById('plantStage').value,
       planted_at: document.getElementById('plantDate').value || null,
-      notes:      document.getElementById('plantNotes').value.trim()
+      notes: document.getElementById('plantNotes').value.trim()
     })
   });
 

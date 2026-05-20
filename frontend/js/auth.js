@@ -48,9 +48,7 @@ const Auth = {
   // ── REDIRECT IF NOT LOGGED IN ────────────────────
   requireAuth() {
     if (!this.isLoggedIn()) {
-      //window.location.href = 'index.html';
-      //window.location.href = '/pages/index.html';
-      window.location.replace = '/pages/index.html';
+      window.location.replace('/pages/index.html');
       return false;
     }
     return true;
@@ -67,31 +65,30 @@ const Auth = {
 
   // ── LOGIN ────────────────────────────────────────
   async login(email, password) {
-    try {
-      const response = await fetch(`${API_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        this.setToken(data.token);
-        this.setUser(data.user);
-	window.location.replace('/pages/dashboard.html');
-        return { success: true, user: data.user };
-      }
-
-      return { success: false, message: data.message };
-
-    } catch (err) {
-      return {
-        success: false,
-        message: 'Connection error. Please check your internet connection.'
-      };
+  try {
+    const response = await fetch(`${API_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await response.json();
+    if (data.success) {
+      this.setToken(data.token);
+      this.setUser(data.user);
+      return { success: true, user: data.user };
     }
-  },
+    return {
+      success: false,
+      message: data.message,
+      email_verified: data.email_verified
+    };
+  } catch (err) {
+    return {
+      success: false,
+      message: 'Connection error. Please check your internet connection.'
+    };
+  }
+},
 
   // ── REGISTER ─────────────────────────────────────
   async register(name, email, password) {
@@ -107,7 +104,12 @@ const Auth = {
       if (data.success) {
         this.setToken(data.token);
         this.setUser(data.user);
-	window.location.replace('/pages/dashboard.html');
+
+	this.removeToken();
+        window.location.replace('/pages/index.html'); // for security, is better to check first your email
+	      						// and after get you back to the login page.
+	      						// if you don't verify your email account after 24 hours
+	      						// we delete it from the database
         return { success: true, user: data.user };
       }
 
@@ -217,3 +219,5 @@ if (window.location.pathname.includes('/pages/index.html') ||
     }
   });
 })();
+
+
