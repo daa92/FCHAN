@@ -513,9 +513,17 @@
         <span class="nav-label"
               data-i18n="about">About</span>
       </div>
-      <div class="nav-item" onclick="navigate('agent.html')">
+      <div class="nav-item" onclick="openFeedbackModal()">
+        <span class="nav-icon"><i data-lucide="message-square"></i></span>
+        <span class="nav-label">Feedback</span>
+      </div>
+      <div class="nav-item" onclick="navigate('chat.html')">
+        <span class="nav-icon"><i data-lucide="message-circle"></i></span>
+        <span class="nav-label">Messages</span>
+      </div>
+      <div class="nav-item" onclick="openArduinoBridge()">
   	<span class="nav-icon"><i data-lucide="usb"></i></span>
-  	<span class="nav-label">Arduino Agent</span>
+  	<span class="nav-label">Arduino Bridge</span>
     </div>
     </nav>
     <div class="sidebar-footer">
@@ -1385,5 +1393,7 @@ function timeAgo(dateStr) {
 }
 </script>
 
+<script src="../js/arduino-bridge-drawer.js"></script>
+<script src="../js/feedback.js"></script>
 </body>
 </html>

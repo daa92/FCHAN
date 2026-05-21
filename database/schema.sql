@@ -1,168 +1,187 @@
+-- =============================================
+-- Farm Management System - MySQL Schema
+-- =============================================
+
+SET FOREIGN_KEY_CHECKS = 0;
+
 -- USERS TABLE
 CREATE TABLE IF NOT EXISTS users (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(100) NOT NULL,
-  email VARCHAR(150) NOT NULL UNIQUE,
-  password VARCHAR(255) NOT NULL,
-  role ENUM('admin', 'farmer', 'worker') DEFAULT 'farmer',
-  email_verified BOOLEAN DEFAULT FALSE,
-  reset_token VARCHAR(255) DEFAULT NULL,
-  reset_token_expires DATETIME DEFAULT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(150) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    role ENUM('admin', 'farmer', 'worker') DEFAULT 'farmer',
+    email_verified BOOLEAN DEFAULT FALSE,
+    reset_token VARCHAR(255) DEFAULT NULL,
+    reset_token_expires DATETIME DEFAULT NULL,
+    avatar TEXT DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- FARMS TABLE
 CREATE TABLE IF NOT EXISTS farms (
-	id INT AUTO_INCREMENT PRIMARY KEY,
-	user_id INT NOT NULL,
-	name VARCHAR(150) NOT NULL,
-	description TEXT DEFAULT NULL,
-	country VARCHAR(100) DEFAULT NULL,
-	city VARCHAR(100) DEFAULT NULL,
-	latitude DECIMAL(10,8) DEFAULT NULL,
-	longitude DECIMAL(11,8) DEFAULT NULL,
-	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-	updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-	FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
-);
-
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    name VARCHAR(150) NOT NULL,
+    description TEXT DEFAULT NULL,
+    image_data TEXT DEFAULT NULL,
+    country VARCHAR(100) DEFAULT NULL,
+    city VARCHAR(100) DEFAULT NULL,
+    latitude DECIMAL(10,8) DEFAULT NULL,
+    longitude DECIMAL(11,8) DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ZONES TABLE
 CREATE TABLE IF NOT EXISTS zones (
-	id INT AUTO_INCREMENT PRIMARY KEY,
-	farm_id INT NOT NULL,
-	name VARCHAR(150) NOT NULL,
-	description TEXT DEFAULT NULL,
-	area_sqm DECIMAL(10,2) DEFAULT NULL,
-	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-	updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-	FOREIGN KEY (farm_id) REFERENCES farms (id) ON DELETE CASCADE
-);
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    farm_id INT NOT NULL,
+    name VARCHAR(150) NOT NULL,
+    description TEXT DEFAULT NULL,
+    area_sqm DECIMAL(10,2) DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (farm_id) REFERENCES farms(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- PLANTS TABLE
 CREATE TABLE IF NOT EXISTS plants (
-	id INT AUTO_INCREMENT PRIMARY KEY,
-	zone_id INT NOT NULL,
-	name VARCHAR(150) NOT NULL,
-	species VARCHAR(150) DEFAULT NULL,
-	variety VARCHAR(150) DEFAULT NULL,
-	quantity INT DEFAULT 1,
-	planted_at DATE DEFAULT NULL,
-	expected_harvest_at DATE DEFAULT NULL,
-	growth_stage ENUM('seedling','vegetative','flowering','harvest') DEFAULT 'seedling',
-	notes TEXT DEFAULT NULL,
-	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-	updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-	FOREIGN KEY (zone_id) REFERENCES zones (id) ON DELETE CASCADE
-);
-
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    zone_id INT NOT NULL,
+    name VARCHAR(150) NOT NULL,
+    species VARCHAR(150) DEFAULT NULL,
+    variety VARCHAR(150) DEFAULT NULL,
+    quantity INT DEFAULT 1,
+    planted_at DATE DEFAULT NULL,
+    expected_harvest_at DATE DEFAULT NULL,
+    growth_stage ENUM('seedling','vegetative','flowering','harvest') DEFAULT 'seedling',
+    notes TEXT DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (zone_id) REFERENCES zones(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- SENSORS TABLE
 CREATE TABLE IF NOT EXISTS sensors (
-	id INT AUTO_INCREMENT PRIMARY KEY,
-	zone_id INT NOT NULL,
-	name VARCHAR(150) NOT NULL,
-	type ENUM('temperature','humidity','soil_moisture','soil_ph','light','co2','wind','rainfall') NOT NULL,
-	unit VARCHAR(20) DEFAULT NULL,
-	connection_type ENUM('wifi','bluetooth','usb','manual') DEFAULT 'manual',
-	api_key VARCHAR(255) DEFAULT NULL,
-	is_active BOOLEAN DEFAULT TRUE,
-	last_seen_at TIMESTAMP DEFAULT NULL,
-	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-	updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-	FOREIGN KEY (zone_id) REFERENCES zones (id) ON DELETE CASCADE
-);
-
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    zone_id INT NOT NULL,
+    name VARCHAR(150) NOT NULL,
+    type ENUM('temperature','humidity','soil_moisture','soil_ph','light','co2','wind','rainfall','distance') NOT NULL,
+    unit VARCHAR(20) DEFAULT NULL,
+    connection_type ENUM('wifi','bluetooth','usb','manual') DEFAULT 'manual',
+    api_key VARCHAR(255) DEFAULT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    last_seen_at TIMESTAMP NULL DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (zone_id) REFERENCES zones(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- READINGS TABLE
 CREATE TABLE IF NOT EXISTS readings (
-	id INT AUTO_INCREMENT PRIMARY KEY,
-	sensor_id INT NOT NULL,
-	value DECIMAL(10,4) NOT NULL,
-	entered_by ENUM('auto','manual') DEFAULT 'manual',
-	recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-	FOREIGN KEY (sensor_id) REFERENCES sensors (id) ON DELETE CASCADE
-);
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    sensor_id INT NOT NULL,
+    value DECIMAL(10,4) NOT NULL,
+    entered_by ENUM('auto','manual') DEFAULT 'manual',
+    recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (sensor_id) REFERENCES sensors(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
--- ALERT_THRESHOLDS TABLE
+-- ALERT THRESHOLDS
 CREATE TABLE IF NOT EXISTS alert_thresholds (
-	id INT AUTO_INCREMENT PRIMARY KEY,
-	zone_id INT NOT NULL,
-	sensor_type ENUM('temperature','humidity','soil_moisture','soil_ph','light','co2','wind','rainfall') NOT NULL,
-	min_value DECIMAL(10,4) DEFAULT NULL,
-	max_value DECIMAL(10,4) DEFAULT NULL,
-	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-	updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-	FOREIGN KEY (zone_id) REFERENCES zones (id) ON DELETE CASCADE
-);
-
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    zone_id INT NOT NULL,
+    sensor_type ENUM('temperature','humidity','soil_moisture','soil_ph','light','co2','wind','rainfall','distance') NOT NULL,
+    min_value DECIMAL(10,4) DEFAULT NULL,
+    max_value DECIMAL(10,4) DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (zone_id) REFERENCES zones(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ALERTS TABLE
 CREATE TABLE IF NOT EXISTS alerts (
-	id INT AUTO_INCREMENT PRIMARY KEY,
-	farm_id INT NOT NULL,
-	zone_id INT DEFAULT NULL,
-	plant_id INT DEFAULT NULL,
-	sensor_id INT DEFAULT NULL,
-	type VARCHAR(100) NOT NULL,
-	severity ENUM('info','warning','critical') DEFAULT 'warning',
-	message TEXT NOT NULL,
-	is_read BOOLEAN DEFAULT FALSE,
-	is_resolved BOOLEAN DEFAULT FALSE,
-	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-	FOREIGN KEY (farm_id) REFERENCES farms (id) ON DELETE CASCADE,
-	FOREIGN KEY (zone_id) REFERENCES zones (id) ON DELETE CASCADE,
-	FOREIGN KEY (plant_id) REFERENCES plants (id) ON DELETE CASCADE,
-	FOREIGN KEY (sensor_id) REFERENCES sensors (id) ON DELETE CASCADE
-);
-
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    farm_id INT NOT NULL,
+    zone_id INT DEFAULT NULL,
+    plant_id INT DEFAULT NULL,
+    sensor_id INT DEFAULT NULL,
+    type VARCHAR(100) NOT NULL,
+    severity ENUM('info','warning','critical') DEFAULT 'warning',
+    message TEXT NOT NULL,
+    is_read BOOLEAN DEFAULT FALSE,
+    is_resolved BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (farm_id) REFERENCES farms(id) ON DELETE CASCADE,
+    FOREIGN KEY (zone_id) REFERENCES zones(id) ON DELETE CASCADE,
+    FOREIGN KEY (plant_id) REFERENCES plants(id) ON DELETE CASCADE,
+    FOREIGN KEY (sensor_id) REFERENCES sensors(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- TASKS TABLE
 CREATE TABLE IF NOT EXISTS tasks (
-	id INT AUTO_INCREMENT PRIMARY KEY,
-	farm_id INT NOT NULL,
-	zone_id INT DEFAULT NULL,
-	plant_id INT DEFAULT NULL,
-	title VARCHAR(200) NOT NULL,
-	description TEXT DEFAULT NULL,
-	due_at TIMESTAMP DEFAULT NULL,
-	completed_at TIMESTAMP DEFAULT NULL,
-	assigned_to INT DEFAULT NULL,
-	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-	updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-	FOREIGN KEY (farm_id) REFERENCES farms (id) ON DELETE CASCADE,
-        FOREIGN KEY (zone_id) REFERENCES zones (id) ON DELETE CASCADE,
-        FOREIGN KEY (plant_id) REFERENCES plants (id) ON DELETE CASCADE,
-	FOREIGN KEY (assigned_to) REFERENCES users (id) ON DELETE SET NULL
-);
-
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    farm_id INT NOT NULL,
+    zone_id INT DEFAULT NULL,
+    plant_id INT DEFAULT NULL,
+    title VARCHAR(200) NOT NULL,
+    description TEXT DEFAULT NULL,
+    due_at TIMESTAMP NULL DEFAULT NULL,
+    completed_at TIMESTAMP NULL DEFAULT NULL,
+    assigned_to INT DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (farm_id) REFERENCES farms(id) ON DELETE CASCADE,
+    FOREIGN KEY (zone_id) REFERENCES zones(id) ON DELETE CASCADE,
+    FOREIGN KEY (plant_id) REFERENCES plants(id) ON DELETE CASCADE,
+    FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- NOTIFICATIONS TABLE
 CREATE TABLE IF NOT EXISTS notifications (
-	id INT AUTO_INCREMENT PRIMARY KEY,
-	user_id INT NOT NULL,
-	alert_id INT DEFAULT NULL,
-	message TEXT NOT NULL,
-	is_read BOOLEAN DEFAULT FALSE,
-	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-	FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
-	FOREIGN KEY (alert_id) REFERENCES alerts (id) ON DELETE CASCADE
-);
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    alert_id INT DEFAULT NULL,
+    message TEXT NOT NULL,
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (alert_id) REFERENCES alerts(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- CHAT TABLES
+CREATE TABLE IF NOT EXISTS chat_rooms (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    created_by INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-ALTER TABLE sensors
-MODIFY COLUMN type ENUM(
-  'temperature','humidity','soil_moisture',
-  'soil_ph','light','co2','wind','rainfall','distance'
-) NOT NULL;
+CREATE TABLE IF NOT EXISTS chat_room_members (
+    room_id INT NOT NULL,
+    user_id INT NOT NULL,
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (room_id, user_id),
+    FOREIGN KEY (room_id) REFERENCES chat_rooms(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-ALTER TABLE alert_thresholds
-MODIFY COLUMN sensor_type ENUM(
-  'temperature','humidity','soil_moisture',
-  'soil_ph','light','co2','wind','rainfall','distance'
-) NOT NULL;
+CREATE TABLE IF NOT EXISTS chat_messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    sender_id INT NOT NULL,
+    recipient_id INT DEFAULT NULL,
+    room_id VARCHAR(100) DEFAULT NULL,
+    message TEXT NOT NULL,
+    type ENUM('broadcast','private','multicast') DEFAULT 'broadcast',
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (recipient_id) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-EXIT;
+SET FOREIGN_KEY_CHECKS = 1;

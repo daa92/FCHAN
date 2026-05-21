@@ -1,7 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const { sendEmail } = require('../services/email');
+const { sendEmail, getAppUrl } = require('../services/email');
 const crypto = require('crypto');
 const db = require('../config/db');
 
@@ -64,7 +64,7 @@ const register = async (req, res) => {
     await User.setResetToken(email, verifyToken, verifyExpires);
 
     // Send verification email
-    await sendEmail(email, 'verification', name, verifyToken);
+    await sendEmail(email, 'verification', name, verifyToken, getAppUrl(req));
 
     // Generate JWT token
     const token = jwt.sign(
@@ -73,17 +73,6 @@ const register = async (req, res) => {
       { expiresIn: process.env.JWT_EXPIRES_IN }
     );
 
-    /*return res.status(201).json({
-      success: true,
-      message: 'Registration successful.',
-      token,
-      user: {
-        id: userId,
-        name,
-        email,
-        role: role || 'farmer'
-      }
-    });*/
     return res.status(201).json({
   	success: true,
   	message: 'Registration successful. Please check your email to verify your account.',
@@ -206,7 +195,7 @@ const resendVerification = async (req, res) => {
     const verifyExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     await User.setResetToken(email, verifyToken, verifyExpires);
-    await sendEmail(email, 'verification', user.name, verifyToken);
+    await sendEmail(email, 'verification', user.name, verifyToken, getAppUrl(req));
 
     return res.status(200).json({
       success: true,
@@ -422,20 +411,41 @@ const deleteAccount = async (req, res) => {
 
 const updateProfile = async (req, res) => {
   try {
-    const { name, email } = req.body;
+    const { name, email, avatar } = req.body;
     if (!name || !email) {
       return res.status(400).json({
         success: false, message: 'Name and email required.'
       });
     }
-    await db.execute(
-      'UPDATE users SET name = ?, email = ? WHERE id = ?',
-      [name, email, req.user.id]
+
+    // avatar is a base64 data URL (e.g. "data:image/jpeg;base64,...")
+    // We allow null to clear it, or a string to set it
+    if (avatar !== undefined) {
+      await db.execute(
+        'UPDATE users SET name = ?, email = ?, avatar = ? WHERE id = ?',
+        [name, email, avatar || null, req.user.id]
+      );
+    } else {
+      await db.execute(
+        'UPDATE users SET name = ?, email = ? WHERE id = ?',
+        [name, email, req.user.id]
+      );
+    }
+
+    // Return updated user so frontend can refresh localStorage
+    const [rows] = await db.execute(
+      'SELECT id, name, email, role, email_verified, avatar FROM users WHERE id = ?',
+      [req.user.id]
     );
+    const updatedUser = rows[0] || {};
+
     return res.status(200).json({
-      success: true, message: 'Profile updated.'
+      success: true,
+      message: 'Profile updated.',
+      user: updatedUser
     });
   } catch (err) {
+    console.error('UpdateProfile error:', err.message);
     return res.status(500).json({
       success: false, message: 'Internal server error.'
     });

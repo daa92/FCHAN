@@ -1,32 +1,32 @@
-const express = require('express');
-const router = express.Router();
+const express    = require('express');
+const router     = express.Router();
 const {
   getFarms, getFarm, createFarm, updateFarm, deleteFarm,
   getZones, createZone, updateZone, deleteZone,
   getPlants, createPlant, updatePlant, deletePlant
 } = require('../controllers/farmController');
-const { auth } = require('../middleware/auth');
+const { auth }     = require('../middleware/auth');
+const farmAccess   = require('../middleware/farmAccess');
 
-// All routes require authentication
 router.use(auth);
 
 // ─── FARMS ────────────────────────────────────────────
-router.get('/', getFarms);
-router.get('/:id', getFarm);
-router.post('/', createFarm);
-router.put('/:id', updateFarm);
-router.delete('/:id', deleteFarm);
+router.get('/',    getFarms);
+router.post('/',   createFarm);
+router.get('/:id',    farmAccess(false), getFarm);
+router.put('/:id',    farmAccess(false), updateFarm);   // ownership checked inside controller
+router.delete('/:id', farmAccess(false), deleteFarm);  // ownership checked inside controller
 
 // ─── ZONES ────────────────────────────────────────────
-router.get('/:farmId/zones', getZones);
-router.post('/:farmId/zones', createZone);
-router.put('/:farmId/zones/:zoneId', updateZone);
-router.delete('/:farmId/zones/:zoneId', deleteZone);
+router.get( '/:farmId/zones',              farmAccess(false), getZones);
+router.post('/:farmId/zones',              farmAccess(true),  createZone);
+router.put( '/:farmId/zones/:zoneId',      farmAccess(true),  updateZone);
+router.delete('/:farmId/zones/:zoneId',    farmAccess(true),  deleteZone);
 
 // ─── PLANTS ───────────────────────────────────────────
-router.get('/:farmId/zones/:zoneId/plants', getPlants);
-router.post('/:farmId/zones/:zoneId/plants', createPlant);
-router.put('/:farmId/zones/:zoneId/plants/:plantId', updatePlant);
-router.delete('/:farmId/zones/:zoneId/plants/:plantId', deletePlant);
+router.get(   '/:farmId/zones/:zoneId/plants',            farmAccess(false), getPlants);
+router.post(  '/:farmId/zones/:zoneId/plants',            farmAccess(true),  createPlant);
+router.put(   '/:farmId/zones/:zoneId/plants/:plantId',   farmAccess(true),  updatePlant);
+router.delete('/:farmId/zones/:zoneId/plants/:plantId',   farmAccess(true),  deletePlant);
 
 module.exports = router;

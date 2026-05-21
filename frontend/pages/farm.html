@@ -494,9 +494,17 @@
         <span class="nav-icon"><i data-lucide="info"></i></span>
         <span class="nav-label" data-i18n="about">About</span>
       </div>
-      <div class="nav-item" onclick="navigate('agent.html')">
+      <div class="nav-item" onclick="openFeedbackModal()">
+        <span class="nav-icon"><i data-lucide="message-square"></i></span>
+        <span class="nav-label">Feedback</span>
+      </div>
+      <div class="nav-item" onclick="navigate('chat.html')">
+        <span class="nav-icon"><i data-lucide="message-circle"></i></span>
+        <span class="nav-label">Messages</span>
+      </div>
+      <div class="nav-item" onclick="openArduinoBridge()">
   	<span class="nav-icon"><i data-lucide="usb"></i></span>
-  	<span class="nav-label">Arduino Agent</span>
+  	<span class="nav-label">Arduino Bridge</span>
     </div>
     </nav>
     <div class="sidebar-footer">
@@ -775,6 +783,26 @@
         <i data-lucide="x"></i>
       </button>
     </div>
+
+    <!-- Farm image upload -->
+    <div class="form-group">
+      <label class="form-label">Farm Photo</label>
+      <div id="farmImagePreview"
+           onclick="document.getElementById('farmImageInput').click()"
+           style="width:100%;height:140px;border-radius:var(--radius-md);
+                  border:2px dashed var(--border);display:flex;flex-direction:column;
+                  align-items:center;justify-content:center;cursor:pointer;
+                  gap:8px;color:var(--text-muted);overflow:hidden;
+                  background:var(--surface-2);transition:all 0.2s;position:relative;"
+           onmouseenter="this.style.borderColor='var(--primary)'"
+           onmouseleave="this.style.borderColor='var(--border)'">
+        <i data-lucide="image" style="width:28px;height:28px;"></i>
+        <span style="font-size:12px;">Click to upload a photo, or leave blank for default</span>
+      </div>
+      <input type="file" id="farmImageInput" accept="image/*"
+             style="display:none;" onchange="handleFarmImageChange(event,'farmImagePreview')">
+    </div>
+
     <div class="form-group">
       <label class="form-label">Farm Name *</label>
       <input type="text" class="form-control"
@@ -949,8 +977,14 @@ function loadUser() {
   if (!user) return;
   document.getElementById('userName').textContent = user.name;
   document.getElementById('userRole').textContent = user.role;
-  document.getElementById('userAvatar').textContent =
-    user.name.charAt(0).toUpperCase();
+  const av = document.getElementById('userAvatar');
+  if (av) {
+    if (user.avatar) {
+      av.innerHTML = `<img src="${user.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+    } else {
+      av.textContent = user.name.charAt(0).toUpperCase();
+    }
+  }
 }
 
 // ── LOAD ALL FARMS ────────────────────────────────
@@ -976,15 +1010,11 @@ function renderFarmsList(farms) {
   if (farms.length === 0) {
     list.innerHTML = `
       <div class="empty-state" style="grid-column:1/-1">
-        <i data-lucide="tree-pine"
-           style="width:60px;height:60px;
-                  color:var(--text-light)"></i>
+        <i data-lucide="tree-pine" style="width:60px;height:60px;color:var(--text-light)"></i>
         <h3>${LanguageManager.t('no_farms')}</h3>
         <p>Create your first farm to get started</p>
-        <button class="btn btn-primary"
-                onclick="openModal('addFarmModal')">
-          <i data-lucide="plus"></i>
-          ${LanguageManager.t('add_farm')}
+        <button class="btn btn-primary" onclick="openModal('addFarmModal')">
+          <i data-lucide="plus"></i> ${LanguageManager.t('add_farm')}
         </button>
       </div>
     `;
@@ -992,71 +1022,56 @@ function renderFarmsList(farms) {
     return;
   }
 
-  list.innerHTML = farms.map(farm => `
+  list.innerHTML = farms.map(farm => {
+    const isOwner    = !farm.collab_role;
+    const collabRole = farm.collab_role;
+    const canEdit    = isOwner || collabRole === 'editor';
+    const imgSrc     = farm.image_data || '../assets/images/hero-farm.jpg';
+    return `
     <div class="farm-list-card">
-      <div class="farm-list-banner">
-        <img src="../assets/images/hero-farm.jpg"
-             alt="${farm.name}"
-             onerror="this.style.display='none'">
+      <div class="farm-list-banner" style="position:relative;overflow:hidden;">
+        <img src="${imgSrc}" alt="${farm.name}"
+             style="width:100%;height:100%;object-fit:cover;display:block;"
+             onerror="this.src='../assets/images/hero-farm.jpg'">
         <div class="farm-list-banner-overlay"></div>
+        ${collabRole ? `<div style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.65);
+            color:white;font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px;
+            border:1px solid rgba(255,255,255,0.25);">${collabRole === 'editor' ? '✏️ Editor' : '👁 Viewer'}</div>` : ''}
         <div class="farm-list-banner-content">
           <h3>${farm.name}</h3>
-          <p>
-            <i data-lucide="map-pin"
-               style="width:11px;height:11px"></i>
-            ${farm.city || ''}
-            ${farm.city && farm.country ? ', ' : ''}
-            ${farm.country || 'No location'}
+          <p><i data-lucide="map-pin" style="width:11px;height:11px"></i>
+            ${farm.city || ''}${farm.city && farm.country ? ', ' : ''}${farm.country || 'No location'}
           </p>
         </div>
       </div>
       <div class="farm-list-body">
-        ${farm.description
-          ? `<p style="font-size:var(--text-sm);
-                       color:var(--text-muted);
-                       margin-bottom:var(--space-md);">
-               ${farm.description}
-             </p>`
-          : ''}
+        ${farm.description ? `<p style="font-size:var(--text-sm);color:var(--text-muted);margin-bottom:var(--space-md);">${farm.description}</p>` : ''}
         <div class="farm-list-stats">
-          <div class="farm-list-stat">
-            <div class="v" id="farmZones-${farm.id}">—</div>
-            <div class="l">Zones</div>
-          </div>
-          <div class="farm-list-stat">
-            <div class="v" id="farmPlants-${farm.id}">—</div>
-            <div class="l">Plants</div>
-          </div>
-          <div class="farm-list-stat">
-            <div class="v" id="farmSensors-${farm.id}">—</div>
-            <div class="l">Sensors</div>
-          </div>
+          <div class="farm-list-stat"><div class="v" id="farmZones-${farm.id}">—</div><div class="l">Zones</div></div>
+          <div class="farm-list-stat"><div class="v" id="farmPlants-${farm.id}">—</div><div class="l">Plants</div></div>
+          <div class="farm-list-stat"><div class="v" id="farmSensors-${farm.id}">—</div><div class="l">Sensors</div></div>
         </div>
         <div class="farm-list-actions">
-          <button class="btn btn-primary btn-sm"
-                  style="flex:1"
-                  onclick="loadFarmDetail(${farm.id})">
-            <i data-lucide="eye"></i>
-            View
+          <button class="btn btn-primary btn-sm" style="flex:1" onclick="loadFarmDetail(${farm.id})">
+            <i data-lucide="eye"></i> View
           </button>
-          <button class="btn btn-outline btn-sm"
-                  onclick="openEditFarmModalDirect(${farm.id})">
-            <i data-lucide="edit-2"></i>
-          </button>
-          <button class="btn btn-outline btn-sm"
-                  style="color:var(--danger);
-                         border-color:var(--danger);"
-                  onclick="openDeleteFarmConfirmDirect(${farm.id})">
-            <i data-lucide="trash-2"></i>
-          </button>
+          ${canEdit ? `<button class="btn btn-outline btn-sm" onclick="openEditFarmModalDirect(${farm.id})"><i data-lucide="edit-2"></i></button>` : ''}
+          ${isOwner ? `<button class="btn btn-outline btn-sm" style="color:var(--danger);border-color:var(--danger);" onclick="openDeleteFarmConfirmDirect(${farm.id})"><i data-lucide="trash-2"></i></button>` : ''}
         </div>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('') + `
+    <div class="farm-list-card" onclick="openModal('addFarmModal')"
+         style="cursor:pointer;border:2px dashed var(--border);display:flex;flex-direction:column;
+                align-items:center;justify-content:center;min-height:220px;gap:12px;
+                color:var(--text-muted);transition:all 0.2s;"
+         onmouseenter="this.style.borderColor='var(--primary)';this.style.color='var(--primary)'"
+         onmouseleave="this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'">
+      <i data-lucide="plus-circle" style="width:36px;height:36px;"></i>
+      <span style="font-size:14px;font-weight:500;">Add Farm</span>
+    </div>`;
 
   lucide.createIcons();
-
-  // Load stats for each farm
   farms.forEach(farm => loadFarmStats(farm.id));
 }
 
@@ -1449,6 +1464,42 @@ function switchTab(tab) {
 }
 
 // ── CREATE FARM ───────────────────────────────────
+// ── FARM IMAGE HANDLER ────────────────────────────
+function handleFarmImageChange(event, previewId) {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) {
+    showToast('Image too large — max 5 MB', 'error'); return;
+  }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas  = document.createElement('canvas');
+      const MAX     = 800;
+      const ratio   = Math.min(MAX / img.width, MAX / img.height, 1);
+      canvas.width  = Math.round(img.width  * ratio);
+      canvas.height = Math.round(img.height * ratio);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+      // Store on input element for retrieval
+      event.target._dataUrl = dataUrl;
+      // Show preview
+      const preview = document.getElementById(previewId);
+      if (preview) {
+        preview.innerHTML = `<img src="${dataUrl}"
+          style="width:100%;height:100%;object-fit:cover;border-radius:var(--radius-md);">
+          <div style="position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,0.6);
+               color:white;font-size:10px;padding:2px 8px;border-radius:8px;">
+            Click to change
+          </div>`;
+      }
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
 async function createFarm() {
   const name = document.getElementById('farmName').value.trim();
   if (!name) {
@@ -1456,33 +1507,31 @@ async function createFarm() {
     return;
   }
 
-  /*const data = await Auth.request('/api/farm', {
-    method: 'POST',
-    body: JSON.stringify({
-      name,
-      country: document.getElementById('farmCountry').value.trim(),
-      city:    document.getElementById('farmCity').value.trim(),
-      description: document.getElementById('farmDesc').value.trim()
-    })
-  });*/
+  const imageInput = document.getElementById('farmImageInput');
+  const image_data = imageInput && imageInput._dataUrl ? imageInput._dataUrl : null;
+
   const data = await Auth.request('/farm', {
     method: 'POST',
     body: JSON.stringify({
       name,
-      country: document.getElementById('farmCountry').value.trim(),
-      city:    document.getElementById('farmCity').value.trim(),
-      description: document.getElementById('farmDesc').value.trim()
+      country:     document.getElementById('farmCountry').value.trim(),
+      city:        document.getElementById('farmCity').value.trim(),
+      description: document.getElementById('farmDesc').value.trim(),
+      image_data
     })
   });
-
 
   if (data && data.success) {
     closeModal('addFarmModal');
     showToast(LanguageManager.t('farm_created'), 'success');
-    document.getElementById('farmName').value = '';
+    document.getElementById('farmName').value    = '';
     document.getElementById('farmCountry').value = '';
-    document.getElementById('farmCity').value = '';
-    document.getElementById('farmDesc').value = '';
+    document.getElementById('farmCity').value    = '';
+    document.getElementById('farmDesc').value    = '';
+    if (imageInput) { imageInput._dataUrl = null; imageInput.value = ''; }
+    const preview = document.getElementById('farmImagePreview');
+    if (preview) preview.innerHTML = `<i data-lucide="image" style="width:28px;height:28px;"></i><span style="font-size:12px;">Click to upload a photo, or leave blank for default</span>`;
+    lucide.createIcons();
     await loadAllFarms();
   } else {
     showToast(data ? data.message : 'Error', 'error');
@@ -1927,5 +1976,7 @@ function timeAgo(dateStr) {
 </div>
 
 
+<script src="../js/arduino-bridge-drawer.js"></script>
+<script src="../js/feedback.js"></script>
 </body>
 </html>

@@ -1,0 +1,1399 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FCHAN — Arduino Bridge</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="icon" type="image/png" href="../assets/images/logo.png">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+  <style>
+    /* ── PAGE LAYOUT ───────────────────────────────── */
+    body {
+      min-height: 100vh;
+      background: var(--bg);
+      font-family: var(--font-body);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .bridge-header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: var(--space-md) var(--space-xl);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-md);
+      box-shadow: var(--shadow-sm);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .bridge-header-left {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+    }
+
+    .bridge-logo {
+      font-family: var(--font-heading);
+      font-weight: 700;
+      font-size: var(--text-lg);
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .bridge-logo i { width:22px; height:22px; }
+
+    .bridge-title {
+      font-size: var(--text-base);
+      color: var(--text-muted);
+      border-left: 1px solid var(--border);
+      padding-left: var(--space-md);
+    }
+
+    .bridge-main {
+      flex: 1;
+      max-width: 900px;
+      width: 100%;
+      margin: 0 auto;
+      padding: var(--space-xl) var(--space-md);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-lg);
+    }
+
+    /* ── MODE TABS ──────────────────────────────────── */
+    .mode-tabs {
+      display: flex;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 6px;
+      gap: 4px;
+    }
+
+    .mode-tab {
+      flex: 1;
+      padding: var(--space-sm) var(--space-md);
+      border-radius: var(--radius-md);
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: var(--font-body);
+      font-size: var(--text-sm);
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all var(--transition-fast);
+    }
+
+    .mode-tab.active {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 2px 8px rgba(39,174,96,0.3);
+    }
+
+    .mode-tab:not(.active):hover {
+      background: var(--surface-2);
+      color: var(--text);
+    }
+
+    .mode-tab i { width: 15px; height: 15px; }
+
+    .mode-tab .unsupported-badge {
+      font-size: 9px;
+      background: var(--warning);
+      color: white;
+      border-radius: var(--radius-full);
+      padding: 1px 5px;
+      margin-left: 2px;
+    }
+
+    /* ── CARDS ──────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-xl);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .card-title {
+      font-family: var(--font-heading);
+      font-size: var(--text-lg);
+      font-weight: 600;
+      margin: 0 0 var(--space-md) 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card-title i { width: 20px; height: 20px; color: var(--primary); }
+
+    /* ── STATUS INDICATOR ───────────────────────────── */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      padding: var(--space-sm) var(--space-md);
+      border-radius: var(--radius-md);
+      font-size: var(--text-sm);
+      font-weight: 500;
+    }
+
+    .status-bar.disconnected {
+      background: rgba(127,140,141,0.1);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+
+    .status-bar.connecting {
+      background: rgba(243,156,18,0.1);
+      color: var(--warning);
+      border: 1px solid rgba(243,156,18,0.3);
+    }
+
+    .status-bar.connected {
+      background: rgba(39,174,96,0.1);
+      color: var(--success);
+      border: 1px solid rgba(39,174,96,0.3);
+    }
+
+    .status-bar.error {
+      background: rgba(231,76,60,0.1);
+      color: var(--danger);
+      border: 1px solid rgba(231,76,60,0.3);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      flex-shrink: 0;
+    }
+
+    .status-bar.connected .status-dot {
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.5; transform: scale(1.3); }
+    }
+
+    /* ── CONFIG FORM ────────────────────────────────── */
+    .config-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-md);
+      margin-bottom: var(--space-md);
+    }
+
+    @media (max-width: 600px) {
+      .config-grid { grid-template-columns: 1fr; }
+      .mode-tab .label { display: none; }
+    }
+
+    .api-key-row {
+      display: flex;
+      gap: var(--space-sm);
+      align-items: center;
+    }
+
+    .api-key-row input { flex: 1; font-family: var(--font-mono); font-size: 12px; }
+
+    /* ── ACTION BUTTONS ─────────────────────────────── */
+    .btn-row {
+      display: flex;
+      gap: var(--space-sm);
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .btn-connect {
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: var(--radius-md);
+      padding: 10px 20px;
+      font-family: var(--font-body);
+      font-size: var(--text-sm);
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all var(--transition-fast);
+    }
+
+    .btn-connect:hover { background: var(--primary-dark); transform: translateY(-1px); }
+    .btn-connect:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .btn-connect i { width: 16px; height: 16px; }
+
+    .btn-disconnect {
+      background: transparent;
+      color: var(--danger);
+      border: 1px solid var(--danger);
+      border-radius: var(--radius-md);
+      padding: 10px 20px;
+      font-family: var(--font-body);
+      font-size: var(--text-sm);
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all var(--transition-fast);
+    }
+
+    .btn-disconnect:hover { background: rgba(231,76,60,0.08); }
+    .btn-disconnect i { width: 16px; height: 16px; }
+
+    .btn-clear {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 10px 16px;
+      font-family: var(--font-body);
+      font-size: var(--text-sm);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-clear:hover { background: var(--surface-2); color: var(--text); }
+    .btn-clear i { width: 14px; height: 14px; }
+
+    /* ── LIVE LOG ────────────────────────────────────── */
+    .log-box {
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: var(--radius-md);
+      height: 260px;
+      overflow-y: auto;
+      padding: var(--space-md);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.7;
+    }
+
+    .log-entry { margin: 0; white-space: pre-wrap; word-break: break-all; }
+    .log-entry.info    { color: #8b949e; }
+    .log-entry.rx      { color: #79c0ff; }
+    .log-entry.ok      { color: #56d364; }
+    .log-entry.warn    { color: #d29922; }
+    .log-entry.err     { color: #f85149; }
+    .log-entry.sent    { color: #bc8cff; }
+
+    /* ── READINGS GRID ───────────────────────────────── */
+    .readings-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: var(--space-sm);
+      margin-top: var(--space-md);
+    }
+
+    .reading-chip {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: var(--space-sm) var(--space-md);
+      text-align: center;
+    }
+
+    .reading-chip .r-type {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .reading-chip .r-val {
+      font-size: 22px;
+      font-weight: 700;
+      font-family: var(--font-heading);
+      color: var(--text);
+      line-height: 1;
+    }
+
+    .reading-chip .r-unit {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* ── WIFI SECTION ───────────────────────────────── */
+    .code-block {
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: var(--radius-md);
+      padding: var(--space-md);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: #c9d1d9;
+      overflow-x: auto;
+      white-space: pre;
+      position: relative;
+      line-height: 1.7;
+    }
+
+    .code-copy-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      color: #8b949e;
+      font-size: 11px;
+      padding: 4px 10px;
+      cursor: pointer;
+      font-family: var(--font-body);
+      transition: all 0.15s;
+    }
+
+    .code-copy-btn:hover { background: #30363d; color: white; }
+
+    /* ── COMPAT BANNER ──────────────────────────────── */
+    .compat-banner {
+      background: rgba(243,156,18,0.08);
+      border: 1px solid rgba(243,156,18,0.3);
+      border-radius: var(--radius-md);
+      padding: var(--space-md);
+      display: flex;
+      gap: var(--space-sm);
+      align-items: flex-start;
+    }
+
+    .compat-banner i { width:18px; height:18px; color:var(--warning); flex-shrink:0; margin-top:1px; }
+    .compat-banner p { margin: 0; font-size: var(--text-sm); color: var(--text-muted); line-height: 1.5; }
+    .compat-banner strong { color: var(--text); }
+
+    /* ── FALLBACK SECTION ───────────────────────────── */
+    .fallback-section {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: var(--space-md);
+    }
+
+    .fallback-section h4 {
+      font-size: var(--text-sm);
+      font-weight: 600;
+      margin: 0 0 var(--space-sm) 0;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* ── HIDDEN ─────────────────────────────────────── */
+    .hidden { display: none !important; }
+
+    /* ── COUNTER ────────────────────────────────────── */
+    .counter-row {
+      display: flex;
+      gap: var(--space-lg);
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      margin-top: var(--space-sm);
+    }
+
+    .counter-row span strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    /* ── SEND TEST ──────────────────────────────────── */
+    .test-row {
+      display: flex;
+      gap: var(--space-sm);
+      align-items: center;
+      margin-top: var(--space-md);
+    }
+
+    .test-row input {
+      width: 100px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══ HEADER ════════════════════════════════════ -->
+<header class="bridge-header">
+  <div class="bridge-header-left">
+    <div class="bridge-logo">
+      <i data-lucide="activity"></i> FCHAN
+    </div>
+    <div class="bridge-title">Arduino Bridge</div>
+  </div>
+  <div style="display:flex;gap:var(--space-sm);align-items:center;">
+    <button onclick="toggleTheme()" class="btn btn-outline btn-sm" title="Toggle theme">
+      <i data-lucide="moon" id="themeIcon" style="width:14px;height:14px;"></i>
+    </button>
+    <a href="zone.html" class="btn btn-outline btn-sm" title="Back to Zone">
+      <i data-lucide="arrow-left" style="width:14px;height:14px;"></i>
+      Back
+    </a>
+  </div>
+</header>
+
+<!-- ══ MAIN ══════════════════════════════════════ -->
+<main class="bridge-main">
+
+  <!-- Mode tabs -->
+  <div class="mode-tabs" id="modeTabs">
+    <button class="mode-tab" id="tab-usb" onclick="switchMode('usb')">
+      <i data-lucide="usb"></i>
+      <span class="label">USB Serial</span>
+      <span class="unsupported-badge hidden" id="usb-badge">?</span>
+    </button>
+    <button class="mode-tab" id="tab-bluetooth" onclick="switchMode('bluetooth')">
+      <i data-lucide="bluetooth"></i>
+      <span class="label">Bluetooth BLE</span>
+      <span class="unsupported-badge hidden" id="bt-badge">?</span>
+    </button>
+    <button class="mode-tab" id="tab-wifi" onclick="switchMode('wifi')">
+      <i data-lucide="wifi"></i>
+      <span class="label">WiFi / HTTP</span>
+    </button>
+    <button class="mode-tab" id="tab-manual" onclick="switchMode('manual')">
+      <i data-lucide="edit-3"></i>
+      <span class="label">Manual</span>
+    </button>
+  </div>
+
+  <!-- ── Config card ──────────────────────────── -->
+  <div class="card">
+    <h3 class="card-title">
+      <i data-lucide="settings"></i>
+      Configuration
+    </h3>
+
+    <div class="config-grid">
+      <div class="form-group">
+        <label class="form-label">FCHAN API URL</label>
+        <input type="text" class="form-control" id="cfgApiUrl"
+               placeholder="http://localhost:3000/api">
+      </div>
+      <div class="form-group">
+        <label class="form-label">API Key (sensor)</label>
+        <div class="api-key-row">
+          <input type="text" class="form-control" id="cfgApiKey"
+                 placeholder="Paste your sensor API key">
+          <button class="btn btn-outline btn-sm" onclick="pasteKey()" title="Paste">
+            <i data-lucide="clipboard" style="width:14px;height:14px;"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- USB extra: baud rate -->
+    <div class="form-group hidden" id="baudRow">
+      <label class="form-label">Baud Rate</label>
+      <select class="form-control" id="cfgBaud" style="max-width:160px;">
+        <option value="9600" selected>9600 (default)</option>
+        <option value="115200">115200</option>
+        <option value="57600">57600</option>
+        <option value="38400">38400</option>
+        <option value="19200">19200</option>
+        <option value="4800">4800</option>
+      </select>
+    </div>
+
+    <!-- BT extra: service UUID hint -->
+    <div class="form-group hidden" id="btUuidRow">
+      <label class="form-label">BLE Service UUID
+        <span style="font-weight:400;color:var(--text-muted);">(optional — leave blank to auto-detect)</span>
+      </label>
+      <input type="text" class="form-control" id="cfgBtUuid"
+             placeholder="6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
+             style="font-family:var(--font-mono);font-size:12px;">
+    </div>
+
+  </div>
+
+  <!-- ── USB Panel ─────────────────────────────── -->
+  <div class="card" id="panel-usb">
+    <h3 class="card-title">
+      <i data-lucide="usb"></i>
+      USB Serial Connection
+    </h3>
+
+    <!-- Compat warning if Web Serial not supported -->
+    <div class="compat-banner hidden" id="usbCompatWarn">
+      <i data-lucide="alert-triangle"></i>
+      <p>
+        <strong>Web Serial API not supported in this browser.</strong>
+        It requires <strong>Chrome 89+</strong>, <strong>Edge 89+</strong>, or <strong>Opera 75+</strong>.
+        Firefox and Safari do not support it yet.<br><br>
+        Use the <strong>Python fallback</strong> below, or switch to a supported browser.
+      </p>
+    </div>
+
+    <div id="usbControls">
+      <div class="status-bar disconnected" id="usbStatus" style="margin-bottom:var(--space-md);">
+        <span class="status-dot"></span>
+        <span id="usbStatusText">Disconnected — click Connect to choose your Arduino port</span>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-connect" id="usbConnectBtn" onclick="usbConnect()">
+          <i data-lucide="plug"></i> Connect Arduino
+        </button>
+        <button class="btn-disconnect hidden" id="usbDisconnectBtn" onclick="usbDisconnect()">
+          <i data-lucide="plug-zap"></i> Disconnect
+        </button>
+        <button class="btn-clear" onclick="clearLog()">
+          <i data-lucide="trash-2"></i> Clear Log
+        </button>
+      </div>
+
+      <div class="counter-row" id="usbCounters">
+        <span>Received: <strong id="cntRx">0</strong></span>
+        <span>Sent to API: <strong id="cntSent">0</strong></span>
+        <span>Errors: <strong id="cntErr">0</strong></span>
+      </div>
+    </div>
+
+    <div style="margin-top:var(--space-md);">
+      <div style="font-size:var(--text-xs);color:var(--text-muted);margin-bottom:6px;">
+        Live Serial Log — your Arduino should output lines like <code style="background:var(--surface-2);padding:1px 4px;border-radius:3px;">TEMP:28.5</code>
+      </div>
+      <div class="log-box" id="usbLog"></div>
+    </div>
+
+    <!-- Python fallback -->
+    <div class="fallback-section" style="margin-top:var(--space-lg);">
+      <h4>Python Fallback (any OS, any browser)</h4>
+      <p style="font-size:var(--text-xs);color:var(--text-muted);margin:0 0 var(--space-sm) 0;">
+        If Web Serial isn't available, run this script on your computer — it bridges your Arduino to FCHAN via HTTP.
+      </p>
+      <div class="code-block" id="pythonCode"><button class="code-copy-btn" onclick="copyCode('pythonCode')">Copy</button>
+<span style="color:#ff7b72">#!/usr/bin/env python3</span>
+<span style="color:#8b949e"># FCHAN Arduino USB Bridge — pip install pyserial requests</span>
+import serial, requests, time
+from datetime import datetime, timezone
+
+API_URL = "<span id="pyApiUrl" style="color:#79c0ff">http://localhost:3000/api</span>"
+API_KEY = "<span id="pyApiKey" style="color:#79c0ff">YOUR_API_KEY</span>"
+PORT    = "/dev/ttyUSB0"   <span style="color:#8b949e"># Windows: "COM3"</span>
+BAUD    = 9600
+
+SENSOR_MAP = {
+    'temp':'temperature','temperature':'temperature','tmp':'temperature',
+    'hum':'humidity','humidity':'humidity',
+    'soil':'soil_moisture','moisture':'soil_moisture','water sensor value':'soil_moisture',
+    'ph':'soil_ph','soil_ph':'soil_ph',
+    'light':'light','lux':'light','intencity':'light','intensity':'light','ldr':'light',
+    'co2':'co2','wind':'wind','rain':'rainfall','rainfall':'rainfall',
+}
+
+def send(value, stype):
+    r = requests.post(f"{API_URL}/sensors/readings/ingest",
+                      json={"api_key": API_KEY, "value": float(value),
+                            "recorded_at": datetime.now(timezone.utc).isoformat()}, timeout=5)
+    print("✓" if r.json().get("success") else "✗", stype, value)
+
+with serial.Serial(PORT, BAUD, timeout=2) as s:
+    print("Connected. Listening…")
+    while True:
+        line = s.readline().decode(errors='ignore').strip()
+        if ':' not in line: continue
+        label, val = line.rsplit(':', 1)
+        stype = SENSOR_MAP.get(label.strip().lower())
+        if stype:
+            try: send(float(val.strip()), stype)
+            except: pass
+</div>
+    </div>
+  </div>
+
+  <!-- ── Bluetooth Panel ───────────────────────── -->
+  <div class="card hidden" id="panel-bluetooth">
+    <h3 class="card-title">
+      <i data-lucide="bluetooth"></i>
+      Bluetooth BLE Connection
+    </h3>
+
+    <div class="compat-banner hidden" id="btCompatWarn">
+      <i data-lucide="alert-triangle"></i>
+      <p>
+        <strong>Web Bluetooth API not supported in this browser.</strong>
+        It works in <strong>Chrome</strong> and <strong>Edge</strong> on Android, Windows, macOS, and Linux (requires a Bluetooth adapter).
+        It is <strong>not available</strong> on iOS/Safari or Firefox.<br><br>
+        Use the <strong>Python fallback</strong> below instead.
+      </p>
+    </div>
+
+    <div id="btControls">
+      <div class="status-bar disconnected" id="btStatus" style="margin-bottom:var(--space-md);">
+        <span class="status-dot"></span>
+        <span id="btStatusText">Disconnected — click Scan to find your Arduino BLE device</span>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-connect" id="btConnectBtn" onclick="btConnect()">
+          <i data-lucide="bluetooth"></i> Scan &amp; Connect
+        </button>
+        <button class="btn-disconnect hidden" id="btDisconnectBtn" onclick="btDisconnect()">
+          <i data-lucide="bluetooth-off"></i> Disconnect
+        </button>
+        <button class="btn-clear" onclick="clearBtLog()">
+          <i data-lucide="trash-2"></i> Clear Log
+        </button>
+      </div>
+    </div>
+
+    <div style="margin-top:var(--space-md);">
+      <div class="log-box" id="btLog"></div>
+    </div>
+
+    <!-- Python BT fallback -->
+    <div class="fallback-section" style="margin-top:var(--space-lg);">
+      <h4>Python Fallback (any OS — classic Bluetooth / HC-05)</h4>
+      <div class="code-block"><button class="code-copy-btn" onclick="copyCode(this.nextSibling.id)">Copy</button>
+<span style="color:#8b949e"># pip install pyserial requests  (HC-05 appears as serial port)</span>
+import serial, requests, time
+API_URL = "<span id="pyBtApiUrl" style="color:#79c0ff">http://localhost:3000/api</span>"
+API_KEY = "<span id="pyBtApiKey" style="color:#79c0ff">YOUR_API_KEY</span>"
+PORT    = "/dev/rfcomm0"  <span style="color:#8b949e"># pair HC-05 first; Windows: COM port</span>
+
+<span style="color:#8b949e"># Same parsing logic as USB reader — reuse the USB script above</span>
+</div>
+    </div>
+  </div>
+
+  <!-- ── WiFi Panel ────────────────────────────── -->
+  <div class="card hidden" id="panel-wifi">
+    <h3 class="card-title">
+      <i data-lucide="wifi"></i>
+      WiFi / HTTP (ESP32 / Any Network Device)
+    </h3>
+
+    <p style="font-size:var(--text-sm);color:var(--text-muted);margin:0 0 var(--space-lg) 0;">
+      Your ESP32 sends readings directly to the FCHAN API over the network — no bridge needed.
+      Copy the sketch below, paste your WiFi credentials and API key, then upload.
+    </p>
+
+    <!-- Test connection -->
+    <div style="margin-bottom:var(--space-lg);">
+      <div class="status-bar disconnected" id="wifiStatus" style="margin-bottom:var(--space-md);">
+        <span class="status-dot"></span>
+        <span id="wifiStatusText">Not tested</span>
+      </div>
+      <div class="test-row">
+        <input type="number" class="form-control" id="wifiTestVal"
+               placeholder="28.5" step="0.1">
+        <button class="btn-connect" onclick="wifiTestSend()">
+          <i data-lucide="send"></i> Send Test Reading
+        </button>
+      </div>
+    </div>
+
+    <!-- Arduino sketch -->
+    <div style="font-size:var(--text-sm);font-weight:600;margin-bottom:var(--space-sm);">
+      Arduino / ESP32 Sketch
+    </div>
+    <div class="code-block" id="wifiSketch"><button class="code-copy-btn" onclick="copyCode('wifiSketch')">Copy</button>
+<span style="color:#8b949e">// FCHAN WiFi Sensor — ESP32 / ESP8266
+// Install: WiFi.h (built-in), HTTPClient.h (built-in), ArduinoJson</span>
+<span style="color:#ff7b72">#include</span> &lt;WiFi.h&gt;
+<span style="color:#ff7b72">#include</span> &lt;HTTPClient.h&gt;
+<span style="color:#ff7b72">#include</span> &lt;ArduinoJson.h&gt;
+<span style="color:#ff7b72">#include</span> &lt;DHT.h&gt;   <span style="color:#8b949e">// for DHT11/22</span>
+
+<span style="color:#ff7b72">const char</span>* ssid     = <span style="color:#a5d6ff">"YOUR_WIFI_SSID"</span>;
+<span style="color:#ff7b72">const char</span>* password = <span style="color:#a5d6ff">"YOUR_WIFI_PASSWORD"</span>;
+<span style="color:#ff7b72">const char</span>* apiUrl   = <span style="color:#a5d6ff" id="skApiUrl">http://YOUR_SERVER:3000/api/sensors/readings/ingest</span>;
+<span style="color:#ff7b72">const char</span>* apiKey   = <span style="color:#a5d6ff" id="skApiKey">"YOUR_API_KEY"</span>;
+
+<span style="color:#ff7b72">#define</span> DHT_PIN  <span style="color:#79c0ff">4</span>
+<span style="color:#ff7b72">#define</span> DHT_TYPE DHT22
+DHT dht(DHT_PIN, DHT_TYPE);
+
+<span style="color:#ff7b72">void</span> sendReading(<span style="color:#ff7b72">float</span> value) {
+  <span style="color:#ff7b72">if</span> (WiFi.status() != WL_CONNECTED) <span style="color:#ff7b72">return</span>;
+  HTTPClient http;
+  http.begin(apiUrl);
+  http.addHeader(<span style="color:#a5d6ff">"Content-Type"</span>, <span style="color:#a5d6ff">"application/json"</span>);
+  String body = <span style="color:#a5d6ff">"{\"api_key\":\""</span> + String(apiKey) +
+                <span style="color:#a5d6ff">"\",\"value\":"</span>   + String(value) + <span style="color:#a5d6ff">"}"</span>;
+  <span style="color:#ff7b72">int</span> code = http.POST(body);
+  http.end();
+}
+
+<span style="color:#ff7b72">void</span> setup() {
+  Serial.begin(9600);
+  dht.begin();
+  WiFi.begin(ssid, password);
+  <span style="color:#ff7b72">while</span> (WiFi.status() != WL_CONNECTED) { delay(500); Serial.print(<span style="color:#a5d6ff">"."</span>); }
+  Serial.println(<span style="color:#a5d6ff">"\nConnected: "</span> + WiFi.localIP().toString());
+}
+
+<span style="color:#ff7b72">void</span> loop() {
+  <span style="color:#ff7b72">float</span> temp = dht.readTemperature();
+  <span style="color:#ff7b72">if</span> (!isnan(temp)) sendReading(temp);
+  delay(<span style="color:#79c0ff">30000</span>);  <span style="color:#8b949e">// send every 30 seconds</span>
+}
+</div>
+  </div>
+
+  <!-- ── Manual Panel ──────────────────────────── -->
+  <div class="card hidden" id="panel-manual">
+    <h3 class="card-title">
+      <i data-lucide="edit-3"></i>
+      Manual Reading Entry
+    </h3>
+
+    <p style="font-size:var(--text-sm);color:var(--text-muted);margin:0 0 var(--space-lg) 0;">
+      Send a single reading to the FCHAN API directly from this page.
+      Useful for testing or one-off entries.
+    </p>
+
+    <div class="config-grid">
+      <div class="form-group">
+        <label class="form-label">Value</label>
+        <input type="number" class="form-control" id="manualVal"
+               placeholder="28.5" step="0.01">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Timestamp</label>
+        <input type="datetime-local" class="form-control" id="manualTs">
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-connect" onclick="manualSend()">
+        <i data-lucide="send"></i> Send Reading
+      </button>
+    </div>
+
+    <div class="status-bar disconnected hidden" id="manualStatus"
+         style="margin-top:var(--space-md);">
+      <span class="status-dot"></span>
+      <span id="manualStatusText"></span>
+    </div>
+  </div>
+
+  <!-- ── Live Readings ─────────────────────────── -->
+  <div class="card" id="liveReadingsCard">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-md);">
+      <h3 class="card-title" style="margin:0;">
+        <i data-lucide="activity"></i>
+        Live Readings
+      </h3>
+      <span style="font-size:var(--text-xs);color:var(--text-muted);" id="lastUpdate">—</span>
+    </div>
+    <div class="readings-grid" id="readingsGrid">
+      <div style="color:var(--text-muted);font-size:var(--text-sm);grid-column:1/-1;">
+        No readings received yet.
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ── SCRIPTS ─────────────────────────────────── -->
+<script>
+// ════════════════════════════════════════════════════
+// FCHAN Arduino Bridge — Universal Connection Manager
+// Supports: Web Serial (USB), Web Bluetooth, WiFi/HTTP, Manual
+// ════════════════════════════════════════════════════
+
+// ── State ─────────────────────────────────────────
+let currentMode    = 'usb';
+let usbPort        = null;
+let usbReader      = null;
+let usbWriter      = null;
+let btDevice       = null;
+let btChar         = null;
+let isUsbConnected = false;
+let isBtConnected  = false;
+let counters       = { rx: 0, sent: 0, err: 0 };
+let latestReadings = {};
+
+// Sensor type parser (same mapping as Python reader)
+const SENSOR_MAP = {
+  'temp':'temperature','temperature':'temperature','tmp':'temperature','t':'temperature',
+  'hum':'humidity','humidity':'humidity','h':'humidity','rh':'humidity',
+  'soil':'soil_moisture','soil_moisture':'soil_moisture','moisture':'soil_moisture',
+  'water sensor value':'soil_moisture','water':'soil_moisture','sm':'soil_moisture',
+  'ph':'soil_ph','soil_ph':'soil_ph','soil_ph':'soil_ph',
+  'light':'light','lux':'light','intencity':'light','intensity':'light',
+  'light intensity':'light','ldr':'light','brightness':'light',
+  'co2':'co2','carbon':'co2',
+  'wind':'wind','wind speed':'wind',
+  'rain':'rainfall','rainfall':'rainfall',
+  'distance':'distance','dist':'distance',
+};
+
+const SENSOR_UNITS = {
+  temperature:'°C', humidity:'%', soil_moisture:'%', soil_ph:'pH',
+  light:'lux', co2:'ppm', wind:'m/s', rainfall:'mm',
+};
+
+const SENSOR_COLORS = {
+  temperature:'#e74c3c', humidity:'#3498db', soil_moisture:'#27ae60',
+  soil_ph:'#9b59b6', light:'#f39c12', co2:'#1abc9c',
+  wind:'#95a5a6', rainfall:'#2980b9',
+};
+
+// ── Init ───────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  lucide.createIcons();
+
+  // Theme
+  const saved = localStorage.getItem('fchan_theme') || 'light';
+  document.documentElement.setAttribute('data-theme', saved);
+  updateThemeIcon(saved);
+
+  // Read URL params
+  const p = new URLSearchParams(window.location.search);
+  if (p.get('apiUrl'))  document.getElementById('cfgApiUrl').value = p.get('apiUrl');
+  if (p.get('apiKey'))  document.getElementById('cfgApiKey').value = p.get('apiKey');
+
+  const mode = p.get('mode') || 'usb';
+  switchMode(mode);
+
+  // Check browser capabilities
+  checkCompat();
+
+  // Set manual timestamp default
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  document.getElementById('manualTs').value = now.toISOString().slice(0, 16);
+
+  // Sync URL/key into sketch placeholders
+  document.getElementById('cfgApiUrl').addEventListener('input', syncSketches);
+  document.getElementById('cfgApiKey').addEventListener('input', syncSketches);
+  syncSketches();
+});
+
+// ── Browser Capability Check ───────────────────────
+function checkCompat() {
+  if (!('serial' in navigator)) {
+    document.getElementById('usbCompatWarn').classList.remove('hidden');
+    document.getElementById('usbConnectBtn').disabled = true;
+    document.getElementById('usb-badge').textContent = '!';
+    document.getElementById('usb-badge').classList.remove('hidden');
+  }
+  if (!('bluetooth' in navigator)) {
+    document.getElementById('btCompatWarn').classList.remove('hidden');
+    document.getElementById('btConnectBtn').disabled = true;
+    document.getElementById('bt-badge').textContent = '!';
+    document.getElementById('bt-badge').classList.remove('hidden');
+  }
+}
+
+// ── Mode Switch ────────────────────────────────────
+function switchMode(mode) {
+  currentMode = mode;
+  ['usb','bluetooth','wifi','manual'].forEach(m => {
+    document.getElementById(`tab-${m}`).classList.toggle('active', m === mode);
+    document.getElementById(`panel-${m}`).classList.toggle('hidden', m !== mode);
+  });
+  document.getElementById('baudRow').classList.toggle('hidden', mode !== 'usb');
+  document.getElementById('btUuidRow').classList.toggle('hidden', mode !== 'bluetooth');
+  lucide.createIcons();
+}
+
+// ── Config helpers ─────────────────────────────────
+function getApiUrl() {
+  return (document.getElementById('cfgApiUrl').value || 'http://localhost:3000/api').replace(/\/$/, '');
+}
+
+function getApiKey() {
+  return document.getElementById('cfgApiKey').value.trim();
+}
+
+async function pasteKey() {
+  try {
+    const text = await navigator.clipboard.readText();
+    document.getElementById('cfgApiKey').value = text;
+    syncSketches();
+  } catch { showToast('Cannot read clipboard — paste manually', 'warn'); }
+}
+
+function syncSketches() {
+  const url = getApiUrl();
+  const key = getApiKey();
+
+  // Python USB
+  const pyUrl = document.getElementById('pyApiUrl');
+  const pyKey = document.getElementById('pyApiKey');
+  if (pyUrl) pyUrl.textContent = url;
+  if (pyKey) pyKey.textContent = key || 'YOUR_API_KEY';
+
+  // Python BT
+  const pyBtUrl = document.getElementById('pyBtApiUrl');
+  const pyBtKey = document.getElementById('pyBtApiKey');
+  if (pyBtUrl) pyBtUrl.textContent = url;
+  if (pyBtKey) pyBtKey.textContent = key || 'YOUR_API_KEY';
+
+  // WiFi sketch
+  const skUrl = document.getElementById('skApiUrl');
+  const skKey = document.getElementById('skApiKey');
+  if (skUrl) skUrl.textContent = `"${url}/sensors/readings/ingest"`;
+  if (skKey) skKey.textContent = `"${key || 'YOUR_API_KEY'}"`;
+}
+
+// ════════════════════════════════════════════════════
+// USB SERIAL (Web Serial API)
+// ════════════════════════════════════════════════════
+
+async function usbConnect() {
+  if (!('serial' in navigator)) {
+    addLog('usbLog', 'err', 'Web Serial API not available in this browser.');
+    return;
+  }
+
+  try {
+    setUsbStatus('connecting', 'Requesting port access…');
+    usbPort = await navigator.serial.requestPort();
+    const baud = parseInt(document.getElementById('cfgBaud').value) || 9600;
+    await usbPort.open({ baudRate: baud });
+
+    setUsbStatus('connected', `Connected at ${baud} baud — listening for sensor data`);
+    isUsbConnected = true;
+    document.getElementById('usbConnectBtn').classList.add('hidden');
+    document.getElementById('usbDisconnectBtn').classList.remove('hidden');
+
+    addLog('usbLog', 'ok', `✓ Port opened at ${baud} baud. Waiting for data…`);
+    addLog('usbLog', 'info', 'Arduino should output: TEMP:28.5 or SOIL:65.0 etc.');
+
+    usbPort.addEventListener('disconnect', () => {
+      addLog('usbLog', 'warn', '⚠ Arduino disconnected');
+      usbCleanup();
+    });
+
+    // Start reading
+    usbReadLoop();
+
+  } catch (err) {
+    if (err.name === 'NotFoundError') {
+      setUsbStatus('disconnected', 'No port selected.');
+      addLog('usbLog', 'warn', 'No port selected — click Connect and choose your Arduino.');
+    } else {
+      setUsbStatus('error', `Error: ${err.message}`);
+      addLog('usbLog', 'err', `Connection error: ${err.message}`);
+    }
+  }
+}
+
+async function usbReadLoop() {
+  const decoder = new TextDecoderStream();
+  usbPort.readable.pipeTo(decoder.writable);
+  const lineReader = decoder.readable.pipeThrough(new TransformStream(new LineBreakTransformer())).getReader();
+  usbReader = lineReader;
+
+  try {
+    while (isUsbConnected) {
+      const { value, done } = await lineReader.read();
+      if (done) break;
+      if (!value) continue;
+
+      counters.rx++;
+      updateCounters();
+      addLog('usbLog', 'rx', `← ${value}`);
+
+      const parsed = parseLine(value);
+      if (parsed) {
+        const { stype, val } = parsed;
+        addLog('usbLog', 'sent', `→ API: ${stype} = ${val}`);
+        const ok = await sendReading(val);
+        if (ok) {
+          counters.sent++;
+          addLog('usbLog', 'ok', `✓ Sent ${stype}: ${val}`);
+          updateLiveReading(stype, val);
+        } else {
+          counters.err++;
+          addLog('usbLog', 'err', `✗ API error`);
+        }
+        updateCounters();
+      } else {
+        addLog('usbLog', 'info', `  (unknown format — ignored)`);
+      }
+    }
+  } catch (err) {
+    if (isUsbConnected) {
+      addLog('usbLog', 'err', `Read error: ${err.message}`);
+      usbCleanup();
+    }
+  }
+}
+
+async function usbDisconnect() {
+  isUsbConnected = false;
+  if (usbReader) { try { await usbReader.cancel(); } catch {} }
+  if (usbPort)   { try { await usbPort.close(); }   catch {} }
+  usbCleanup();
+  addLog('usbLog', 'info', 'Disconnected.');
+}
+
+function usbCleanup() {
+  isUsbConnected = false;
+  usbPort = null;
+  usbReader = null;
+  setUsbStatus('disconnected', 'Disconnected');
+  document.getElementById('usbConnectBtn').classList.remove('hidden');
+  document.getElementById('usbDisconnectBtn').classList.add('hidden');
+}
+
+function setUsbStatus(type, text) {
+  const bar  = document.getElementById('usbStatus');
+  const span = document.getElementById('usbStatusText');
+  bar.className = `status-bar ${type}`;
+  span.textContent = text;
+}
+
+// ════════════════════════════════════════════════════
+// BLUETOOTH BLE (Web Bluetooth API)
+// ════════════════════════════════════════════════════
+
+// Known Nordic UART UUIDs (used by HM-10, HC-08, Adafruit BLE, etc.)
+const NORDIC_UART_SERVICE = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+const NORDIC_UART_RX_CHAR = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
+
+async function btConnect() {
+  if (!('bluetooth' in navigator)) {
+    addLog('btLog', 'err', 'Web Bluetooth API not available.');
+    return;
+  }
+
+  try {
+    setBtStatus('connecting', 'Scanning for BLE devices…');
+    addLog('btLog', 'info', 'Opening Bluetooth device picker…');
+
+    const customUuid = document.getElementById('cfgBtUuid').value.trim().toLowerCase();
+    const serviceUuid = customUuid || NORDIC_UART_SERVICE;
+
+    btDevice = await navigator.bluetooth.requestDevice({
+      filters: [{ services: [serviceUuid] }],
+      optionalServices: [serviceUuid]
+    }).catch(() => {
+      // Fallback: accept any device
+      return navigator.bluetooth.requestDevice({ acceptAllDevices: true });
+    });
+
+    addLog('btLog', 'info', `Connecting to ${btDevice.name || btDevice.id}…`);
+
+    const server  = await btDevice.gatt.connect();
+    const service = await server.getPrimaryService(serviceUuid)
+      .catch(() => server.getPrimaryService(0xFFE0)) // HM-10 fallback
+      .catch(() => { throw new Error('No known UART service found on device.'); });
+
+    btChar = await service.getCharacteristic(NORDIC_UART_RX_CHAR)
+      .catch(() => service.getCharacteristic(0xFFE1)) // HM-10 TX char
+      .catch(() => { throw new Error('No known TX characteristic found.'); });
+
+    await btChar.startNotifications();
+    btChar.addEventListener('characteristicvaluechanged', btOnData);
+
+    btDevice.addEventListener('gattserverdisconnected', () => {
+      addLog('btLog', 'warn', '⚠ BLE device disconnected');
+      btCleanup();
+    });
+
+    isBtConnected = true;
+    setBtStatus('connected', `Connected to ${btDevice.name || 'BLE Device'}`);
+    document.getElementById('btConnectBtn').classList.add('hidden');
+    document.getElementById('btDisconnectBtn').classList.remove('hidden');
+    addLog('btLog', 'ok', `✓ Receiving notifications from ${btDevice.name || 'device'}`);
+
+  } catch (err) {
+    if (err.name === 'NotFoundError') {
+      setBtStatus('disconnected', 'No device selected.');
+      addLog('btLog', 'warn', 'No device selected.');
+    } else {
+      setBtStatus('error', `Error: ${err.message}`);
+      addLog('btLog', 'err', `BT error: ${err.message}`);
+    }
+  }
+}
+
+let btBuffer = '';
+function btOnData(event) {
+  const value = event.target.value;
+  const text  = new TextDecoder().decode(value);
+  btBuffer   += text;
+
+  // Process complete lines
+  const lines = btBuffer.split('\n');
+  btBuffer = lines.pop(); // keep incomplete last chunk
+
+  lines.forEach(async line => {
+    line = line.trim();
+    if (!line) return;
+    addLog('btLog', 'rx', `← ${line}`);
+    const parsed = parseLine(line);
+    if (parsed) {
+      const { stype, val } = parsed;
+      const ok = await sendReading(val);
+      if (ok) {
+        addLog('btLog', 'ok', `✓ Sent ${stype}: ${val}`);
+        updateLiveReading(stype, val);
+      } else {
+        addLog('btLog', 'err', `✗ API error for ${stype}`);
+      }
+    }
+  });
+}
+
+async function btDisconnect() {
+  if (btDevice && btDevice.gatt.connected) {
+    try { btDevice.gatt.disconnect(); } catch {}
+  }
+  btCleanup();
+  addLog('btLog', 'info', 'Disconnected.');
+}
+
+function btCleanup() {
+  isBtConnected = false;
+  btDevice = null;
+  btChar = null;
+  setBtStatus('disconnected', 'Disconnected');
+  document.getElementById('btConnectBtn').classList.remove('hidden');
+  document.getElementById('btDisconnectBtn').classList.add('hidden');
+}
+
+function setBtStatus(type, text) {
+  const bar  = document.getElementById('btStatus');
+  const span = document.getElementById('btStatusText');
+  bar.className = `status-bar ${type}`;
+  span.textContent = text;
+}
+
+// ════════════════════════════════════════════════════
+// WIFI TEST SEND
+// ════════════════════════════════════════════════════
+
+async function wifiTestSend() {
+  const val = parseFloat(document.getElementById('wifiTestVal').value);
+  if (isNaN(val)) { showToast('Enter a numeric value', 'warn'); return; }
+
+  setWifiStatus('connecting', 'Sending…');
+  const ok = await sendReading(val);
+  if (ok) {
+    setWifiStatus('connected', `✓ Test reading (${val}) sent successfully`);
+    updateLiveReading('test', val);
+  } else {
+    setWifiStatus('error', '✗ Failed — check API URL and API key');
+  }
+}
+
+function setWifiStatus(type, text) {
+  const bar  = document.getElementById('wifiStatus');
+  const span = document.getElementById('wifiStatusText');
+  bar.className = `status-bar ${type}`;
+  span.textContent = text;
+}
+
+// ════════════════════════════════════════════════════
+// MANUAL SEND
+// ════════════════════════════════════════════════════
+
+async function manualSend() {
+  const val = parseFloat(document.getElementById('manualVal').value);
+  const ts  = document.getElementById('manualTs').value;
+  if (isNaN(val)) { showToast('Enter a numeric value', 'warn'); return; }
+
+  const status = document.getElementById('manualStatus');
+  const text   = document.getElementById('manualStatusText');
+  status.className = 'status-bar connecting';
+  status.classList.remove('hidden');
+  text.textContent = 'Sending…';
+
+  const ok = await sendReading(val, ts ? new Date(ts).toISOString() : null);
+  status.className = ok ? 'status-bar connected' : 'status-bar error';
+  text.textContent = ok ? `✓ Sent value: ${val}` : '✗ Error — check API URL and API key';
+  if (ok) updateLiveReading('manual', val);
+}
+
+// ════════════════════════════════════════════════════
+// SHARED: Parse + Send
+// ════════════════════════════════════════════════════
+
+function parseLine(line) {
+  line = line.trim();
+  if (!line || !line.includes(':')) return null;
+
+  // Strip common units
+  line = line.replace(/\s*(°C|%|lux|ppm|pH|cm|m\/s|mm)\s*$/i, '');
+
+  const parts = line.rsplit ? line.rsplit(':', 1) : line.split(':');
+  if (parts.length < 2) return null;
+
+  const label = parts.slice(0, -1).join(':').trim().toLowerCase();
+  const rawVal = parts[parts.length - 1].trim();
+
+  const val = parseFloat(rawVal);
+  if (isNaN(val)) return null;
+
+  const stype = SENSOR_MAP[label];
+  return stype ? { stype, val } : null;
+}
+
+// Polyfill rsplit
+String.prototype.rsplit = function(sep, maxsplit) {
+  const split = this.split(sep);
+  return maxsplit
+    ? [ split.slice(0, -maxsplit).join(sep) ].concat(split.slice(-maxsplit))
+    : split;
+};
+
+async function sendReading(value, timestamp) {
+  const url = getApiUrl();
+  const key = getApiKey();
+
+  if (!key) {
+    showToast('No API key configured', 'warn');
+    return false;
+  }
+
+  try {
+    const body = { api_key: key, value: parseFloat(value) };
+    if (timestamp) body.recorded_at = timestamp;
+    else body.recorded_at = new Date().toISOString();
+
+    const res  = await fetch(`${url}/sensors/readings/ingest`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    return !!(data && data.success);
+  } catch (err) {
+    console.error('Send error:', err);
+    return false;
+  }
+}
+
+// ════════════════════════════════════════════════════
+// UI HELPERS
+// ════════════════════════════════════════════════════
+
+function addLog(logId, type, text) {
+  const box = document.getElementById(logId);
+  if (!box) return;
+  const p = document.createElement('p');
+  p.className = `log-entry ${type}`;
+  const ts = new Date().toLocaleTimeString();
+  p.textContent = `[${ts}] ${text}`;
+  box.appendChild(p);
+  // Keep max 200 lines
+  while (box.children.length > 200) box.removeChild(box.firstChild);
+  box.scrollTop = box.scrollHeight;
+}
+
+function clearLog() {
+  document.getElementById('usbLog').innerHTML = '';
+  counters = { rx: 0, sent: 0, err: 0 };
+  updateCounters();
+}
+
+function clearBtLog() {
+  document.getElementById('btLog').innerHTML = '';
+}
+
+function updateCounters() {
+  document.getElementById('cntRx').textContent   = counters.rx;
+  document.getElementById('cntSent').textContent = counters.sent;
+  document.getElementById('cntErr').textContent  = counters.err;
+}
+
+function updateLiveReading(stype, val) {
+  latestReadings[stype] = { val, ts: new Date() };
+  renderReadings();
+  document.getElementById('lastUpdate').textContent =
+    'Last: ' + new Date().toLocaleTimeString();
+}
+
+function renderReadings() {
+  const grid = document.getElementById('readingsGrid');
+  if (!Object.keys(latestReadings).length) {
+    grid.innerHTML = '<div style="color:var(--text-muted);font-size:var(--text-sm);grid-column:1/-1;">No readings received yet.</div>';
+    return;
+  }
+
+  grid.innerHTML = Object.entries(latestReadings).map(([type, { val }]) => `
+    <div class="reading-chip" style="border-left:3px solid ${SENSOR_COLORS[type] || '#999'};">
+      <div class="r-type">${type.replace('_', ' ')}</div>
+      <div class="r-val" style="color:${SENSOR_COLORS[type] || 'var(--text)'};">
+        ${parseFloat(val).toFixed(1)}
+      </div>
+      <div class="r-unit">${SENSOR_UNITS[type] || ''}</div>
+    </div>
+  `).join('');
+}
+
+function copyCode(elementId) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+  const text = el.innerText.replace(/^Copy\n/, ''); // remove the button text
+  navigator.clipboard.writeText(text).then(() => showToast('Copied!', 'ok'));
+}
+
+function showToast(msg, type) {
+  const colors = { ok:'var(--success)', warn:'var(--warning)', err:'var(--danger)' };
+  const t = document.createElement('div');
+  t.textContent = msg;
+  Object.assign(t.style, {
+    position:'fixed', bottom:'24px', right:'24px', zIndex:9999,
+    background: colors[type] || 'var(--text)',
+    color:'white', padding:'10px 18px',
+    borderRadius:'var(--radius-md)',
+    fontSize:'var(--text-sm)', fontWeight:'600',
+    boxShadow:'var(--shadow-lg)',
+    animation:'fadeIn 0.2s ease'
+  });
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme');
+  const next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('fchan_theme', next);
+  updateThemeIcon(next);
+}
+
+function updateThemeIcon(theme) {
+  const icon = document.getElementById('themeIcon');
+  if (icon) icon.setAttribute('data-lucide', theme === 'dark' ? 'sun' : 'moon');
+  lucide.createIcons();
+}
+
+// ── Web Serial Line Break Transformer ─────────────
+class LineBreakTransformer {
+  constructor() { this.chunks = ''; }
+  transform(chunk, controller) {
+    this.chunks += chunk;
+    const lines = this.chunks.split('\n');
+    this.chunks = lines.pop();
+    lines.forEach(l => controller.enqueue(l));
+  }
+  flush(controller) {
+    controller.enqueue(this.chunks);
+  }
+}
+</script>
+
+</body>
+</html>

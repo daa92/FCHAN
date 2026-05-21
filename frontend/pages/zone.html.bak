@@ -473,17 +473,9 @@
         <span class="nav-icon"><i data-lucide="info"></i></span>
         <span class="nav-label" data-i18n="about">About</span>
       </div>
-      <div class="nav-item" onclick="openFeedbackModal()">
-        <span class="nav-icon"><i data-lucide="message-square"></i></span>
-        <span class="nav-label">Feedback</span>
-      </div>
-      <div class="nav-item" onclick="navigate('chat.html')">
-        <span class="nav-icon"><i data-lucide="message-circle"></i></span>
-        <span class="nav-label">Messages</span>
-      </div>
-      <div class="nav-item" onclick="openArduinoBridge()">
+      <div class="nav-item" onclick="navigate('agent.html')">
   	<span class="nav-icon"><i data-lucide="usb"></i></span>
-  	<span class="nav-label">Arduino Bridge</span>
+  	<span class="nav-label">Arduino Agent</span>
     </div>
     </nav>
     <div class="sidebar-footer">
@@ -769,70 +761,31 @@
     </div>
     <div class="form-group">
       <label class="form-label">Connection Type</label>
-      <select class="form-control" id="sensorConnection"
-              onchange="onConnectionTypeChange()">
-        <option value="manual">Manual (enter readings yourself)</option>
-        <option value="wifi">WiFi / HTTP (ESP32, any network device)</option>
-        <option value="usb">USB Serial (Arduino via cable)</option>
-        <option value="bluetooth">Bluetooth (Arduino BLE)</option>
+      <select class="form-control" id="sensorConnection">
+        <option value="manual">Manual</option>
+        <option value="wifi">WiFi (ESP32)</option>
+        <option value="usb">USB (Arduino)</option>
+        <option value="bluetooth">Bluetooth</option>
       </select>
     </div>
-
-    <!-- Connection type hint -->
-    <div id="connHint" style="
-        background:var(--surface-2);
-        border:1px solid var(--border);
-        border-radius:var(--radius-sm);
-        padding:var(--space-sm) var(--space-md);
-        font-size:var(--text-xs);
-        color:var(--text-muted);
-        margin-bottom:var(--space-md);
-        display:none;">
-    </div>
-
-    <!-- API key section (WiFi / HTTP) -->
-    <div class="form-group" id="apiKeySection" style="display:none;">
-      <label class="form-label">API Key
-        <span style="font-weight:400;color:var(--text-muted);">
-          — paste this in your Arduino/ESP32 sketch
-        </span>
-      </label>
+    <div class="form-group"
+         id="apiKeySection" style="display:none;">
+      <label class="form-label">API Key</label>
       <div style="display:flex;gap:var(--space-sm);">
         <input type="text" class="form-control"
                id="sensorApiKey"
-               placeholder="Created after saving" readonly>
+               placeholder="Auto-generated" readonly>
         <button class="btn btn-outline btn-sm"
-                onclick="copyApiKey()" title="Copy API Key">
+                onclick="copyApiKey()">
           <i data-lucide="copy"></i>
         </button>
       </div>
-      <p style="font-size:var(--text-xs);color:var(--text-muted);margin-top:4px;">
-        Your Arduino sends <code style="background:var(--surface-2);padding:1px 4px;border-radius:3px;">POST /api/sensors/readings/ingest</code>
-        with this key. Save the sensor first to generate it.
+      <p style="font-size:var(--text-xs);
+                color:var(--text-muted);
+                margin-top:4px;">
+        Use this key in your Arduino/ESP32 code
       </p>
     </div>
-
-    <!-- Connect Now hint (USB / BT) -->
-    <div id="connectNowSection" style="display:none;
-         background:linear-gradient(135deg,rgba(39,174,96,0.08),rgba(39,174,96,0.04));
-         border:1px solid rgba(39,174,96,0.3);
-         border-radius:var(--radius-md);
-         padding:var(--space-md);
-         margin-bottom:var(--space-md);">
-      <div style="display:flex;align-items:center;gap:var(--space-sm);margin-bottom:var(--space-sm);">
-        <i data-lucide="zap" style="width:16px;height:16px;color:var(--primary);flex-shrink:0;"></i>
-        <span style="font-size:var(--text-sm);font-weight:600;color:var(--primary);">
-          Browser Bridge Available
-        </span>
-      </div>
-      <p style="font-size:var(--text-xs);color:var(--text-muted);margin:0 0 var(--space-sm) 0;" id="connectNowDesc"></p>
-      <button class="btn btn-outline btn-sm" onclick="openBridgePage()"
-              style="border-color:var(--primary);color:var(--primary);">
-        <i data-lucide="plug" style="width:12px;height:12px;"></i>
-        Open Arduino Bridge
-      </button>
-    </div>
-
     <div style="display:flex;gap:var(--space-md);
                 justify-content:flex-end;
                 margin-top:var(--space-lg);">
@@ -840,7 +793,7 @@
               onclick="closeModal('addSensorModal')">Cancel</button>
       <button class="btn btn-primary"
               onclick="createSensor()">
-        <i data-lucide="plus"></i> Save Sensor
+        <i data-lucide="plus"></i> Add Sensor
       </button>
     </div>
   </div>
@@ -1586,44 +1539,10 @@ async function submitManualReading() {
   }
 }
 
-// ── CONNECTION TYPE CHANGE ────────────────────────
-function onConnectionTypeChange() {
-  const conn  = document.getElementById('sensorConnection').value;
-  const hint  = document.getElementById('connHint');
-  const apiSec = document.getElementById('apiKeySection');
-  const nowSec = document.getElementById('connectNowSection');
-  const nowDesc = document.getElementById('connectNowDesc');
-
-  const HINTS = {
-    manual:    '✏️  You will enter readings manually from the dashboard.',
-    wifi:      '📡  Your ESP32 / Arduino WiFi POSTs readings to the FCHAN API using the API key below.',
-    usb:       '🔌  Connect your Arduino via USB cable. The browser bridge reads Serial data directly — no Python needed.',
-    bluetooth: '📶  Pair your Arduino BLE module. The browser bridge streams readings wirelessly.'
-  };
-
-  hint.textContent = HINTS[conn] || '';
-  hint.style.display = 'block';
-
-  // API key section — only for wifi (already shown after save)
-  apiSec.style.display = (conn === 'wifi') ? 'block' : 'none';
-
-  // Connect Now section — for usb and bluetooth
-  const showBridge = (conn === 'usb' || conn === 'bluetooth');
-  nowSec.style.display = showBridge ? 'block' : 'none';
-  if (showBridge) {
-    nowDesc.textContent = conn === 'usb'
-      ? 'Uses the Web Serial API — works in Chrome, Edge, and Opera on any OS. No drivers, no Python required.'
-      : 'Uses the Web Bluetooth API — works in Chrome and Edge on Android, Windows, macOS, and Linux.';
-  }
-
-  lucide.createIcons();
-}
-
 // ── CREATE SENSOR ─────────────────────────────────
 async function createSensor() {
   const name = document.getElementById('sensorName').value.trim();
   const type = document.getElementById('sensorType').value;
-  const conn = document.getElementById('sensorConnection').value;
 
   if (!name) {
     showToast('Sensor name is required', 'error');
@@ -1637,51 +1556,33 @@ async function createSensor() {
       type,
       unit: document.getElementById('sensorUnit').value.trim() ||
             SENSOR_UNITS[type] || '',
-      connection_type: conn
+      connection_type:
+        document.getElementById('sensorConnection').value
     })
   });
 
   if (data && data.success) {
-    showToast('Sensor saved!', 'success');
-
-    // Show API key inline for WiFi sensors instead of alert()
-    if (data.sensor && data.sensor.api_key && conn === 'wifi') {
-      document.getElementById('sensorApiKey').value = data.sensor.api_key;
-      document.getElementById('apiKeySection').style.display = 'block';
-      showToast('API key generated — copy it now', 'info');
-      // Don't close modal so user can copy the key
-      document.getElementById('sensorName').value = '';
-      await loadSensors();
-      return;
-    }
-
-    // For USB / Bluetooth — offer to open the bridge immediately
-    if ((conn === 'usb' || conn === 'bluetooth') && data.sensor) {
-      closeModal('addSensorModal');
-      document.getElementById('sensorName').value = '';
-      await loadSensors();
-      setTimeout(() => {
-        if (confirm(
-          `Sensor "${name}" created.\n\n` +
-          `Open the Arduino Bridge to start streaming data via ${conn.toUpperCase()}?`
-        )) {
-          openBridgePage(data.sensor.api_key, conn);
-        }
-      }, 200);
-      return;
-    }
-
     closeModal('addSensorModal');
+    showToast('Sensor added successfully', 'success');
+
+    // Show API key if auto type
+    if (data.sensor && data.sensor.api_key) {
+      const conn = document.getElementById('sensorConnection').value;
+      if (conn !== 'manual') {
+        setTimeout(() => {
+          alert(
+            `Your sensor API Key:\n\n${data.sensor.api_key}\n\n` +
+            `Save this key — you'll need it in your Arduino code.`
+          );
+        }, 300);
+      }
+    }
+
     document.getElementById('sensorName').value = '';
     await loadSensors();
   } else {
-    showToast(data ? data.message : 'Error creating sensor', 'error');
+    showToast(data ? data.message : 'Error', 'error');
   }
-}
-
-// ── OPEN BRIDGE PAGE ──────────────────────────────
-function openBridgePage(apiKey, connType) {
-  openArduinoBridge(apiKey, connType);
 }
 
 // ── DELETE SENSOR ─────────────────────────────────
@@ -1789,19 +1690,6 @@ function goBackToFarm() {
 // ── MODAL ─────────────────────────────────────────
 function openModal(id) {
   document.getElementById(id).classList.add('open');
-  // Reset sensor modal state on open
-  if (id === 'addSensorModal') {
-    const hint    = document.getElementById('connHint');
-    const apiSec  = document.getElementById('apiKeySection');
-    const nowSec  = document.getElementById('connectNowSection');
-    if (hint)   hint.style.display   = 'none';
-    if (apiSec) apiSec.style.display = 'none';
-    if (nowSec) nowSec.style.display = 'none';
-    const apiInput = document.getElementById('sensorApiKey');
-    if (apiInput) apiInput.value = '';
-    const connSel = document.getElementById('sensorConnection');
-    if (connSel) connSel.value = 'manual';
-  }
   lucide.createIcons();
 }
 
@@ -1869,7 +1757,5 @@ window.addEventListener('beforeunload', () => {
 });
 </script>
 
-<script src="../js/arduino-bridge-drawer.js"></script>
-<script src="../js/feedback.js"></script>
 </body>
 </html>

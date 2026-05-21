@@ -18,15 +18,26 @@ const getFarms = async (req, res) => {
 // GET /api/farms/:id
 const getFarm = async (req, res) => {
   try {
-    const farm = await Farm.findById(req.params.id);
-    if (!farm) {
-      return res.status(404).json({ success: false, message: 'Farm not found.' });
+    const db = require('../config/db');
+    const farmId = req.params.id;
+    const userId = req.user.id;
+
+    // Check ownership or accepted collaborator
+    const [rows] = await db.execute(
+      `SELECT f.*,
+              CASE WHEN f.user_id = ? THEN 'owner'
+                   WHEN c.user_id IS NOT NULL THEN c.role
+                   ELSE NULL END AS access_role
+       FROM farms f
+       LEFT JOIN collaborators c ON c.farm_id = f.id AND c.user_id = ? AND c.status = 'accepted'
+       WHERE f.id = ? AND (f.user_id = ? OR (c.user_id = ? AND c.status = 'accepted'))`,
+      [userId, userId, farmId, userId, userId]
+    );
+
+    if (!rows.length) {
+      return res.status(404).json({ success: false, message: 'Farm not found or access denied.' });
     }
-    // Make sure farm belongs to logged in user
-    if (farm.user_id !== req.user.id) {
-      return res.status(403).json({ success: false, message: 'Access denied.' });
-    }
-    return res.status(200).json({ success: true, farm });
+    return res.status(200).json({ success: true, farm: rows[0] });
   } catch (err) {
     console.error('GetFarm error:', err.message);
     return res.status(500).json({ success: false, message: 'Internal server error.' });
@@ -36,13 +47,13 @@ const getFarm = async (req, res) => {
 // POST /api/farms
 const createFarm = async (req, res) => {
   try {
-    const { name, description, country, city, latitude, longitude } = req.body;
+    const { name, description, country, city, latitude, longitude, image_data } = req.body;
     if (!name) {
       return res.status(400).json({ success: false, message: 'Farm name is required.' });
     }
     const farmId = await Farm.create({
       user_id: req.user.id,
-      name, description, country, city, latitude, longitude
+      name, description, country, city, latitude, longitude, image_data: image_data || null
     });
     const farm = await Farm.findById(farmId);
     return res.status(201).json({ success: true, message: 'Farm created.', farm });
@@ -62,11 +73,11 @@ const updateFarm = async (req, res) => {
     if (farm.user_id !== req.user.id) {
       return res.status(403).json({ success: false, message: 'Access denied.' });
     }
-    const { name, description, country, city, latitude, longitude } = req.body;
+    const { name, description, country, city, latitude, longitude, image_data } = req.body;
     if (!name) {
       return res.status(400).json({ success: false, message: 'Farm name is required.' });
     }
-    await Farm.update(req.params.id, { name, description, country, city, latitude, longitude });
+    await Farm.update(req.params.id, { name, description, country, city, latitude, longitude, image_data });
     const updatedFarm = await Farm.findById(req.params.id);
     return res.status(200).json({ success: true, message: 'Farm updated.', farm: updatedFarm });
   } catch (err) {
@@ -98,13 +109,7 @@ const deleteFarm = async (req, res) => {
 // GET /api/farms/:farmId/zones
 const getZones = async (req, res) => {
   try {
-    const farm = await Farm.findById(req.params.farmId);
-    if (!farm) {
-      return res.status(404).json({ success: false, message: 'Farm not found.' });
-    }
-    if (farm.user_id !== req.user.id) {
-      return res.status(403).json({ success: false, message: 'Access denied.' });
-    }
+    // Access already checked by farmAccess middleware
     const zones = await Zone.findByFarmId(req.params.farmId);
     return res.status(200).json({ success: true, zones });
   } catch (err) {
@@ -116,13 +121,7 @@ const getZones = async (req, res) => {
 // POST /api/farms/:farmId/zones
 const createZone = async (req, res) => {
   try {
-    const farm = await Farm.findById(req.params.farmId);
-    if (!farm) {
-      return res.status(404).json({ success: false, message: 'Farm not found.' });
-    }
-    if (farm.user_id !== req.user.id) {
-      return res.status(403).json({ success: false, message: 'Access denied.' });
-    }
+    // Access (write) already checked by farmAccess middleware
     const { name, description, area_sqm } = req.body;
     if (!name) {
       return res.status(400).json({ success: false, message: 'Zone name is required.' });

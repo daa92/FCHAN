@@ -2,7 +2,7 @@ const crypto       = require('crypto');
 const Collaborator = require('../models/Collaborator');
 const Farm         = require('../models/Farm');
 const User         = require('../models/User');
-const { sendEmail } = require('../services/email');
+const { sendEmail, getAppUrl } = require('../services/email');
 
 // POST /api/collaborators/invite
 const invite = async (req, res) => {
@@ -54,7 +54,7 @@ const invite = async (req, res) => {
 
     // Send invitation email
     await sendEmail(email, 'collaboratorInvite',
-      req.user.name, farm.name, token
+      req.user.name, farm.name, token, getAppUrl(req)
     );
 
     return res.status(201).json({
@@ -151,8 +151,33 @@ const removeCollaborator = async (req, res) => {
   }
 };
 
+// GET /api/collaborators/my-invitations
+// Returns all pending invitations sent to the logged-in user's email
+const getMyInvitations = async (req, res) => {
+  try {
+    const [rows] = await require('../config/db').execute(
+      `SELECT c.id, c.token, c.role, c.status, c.created_at,
+              f.id AS farm_id, f.name AS farm_name,
+              f.city, f.country,
+              u.name AS invited_by_name
+       FROM collaborators c
+       JOIN farms f ON c.farm_id = f.id
+       JOIN users u ON c.invited_by = u.id
+       WHERE c.invited_email = ?
+         AND c.status = 'pending'
+         AND c.token_expires > NOW()
+       ORDER BY c.created_at DESC`,
+      [req.user.email]
+    );
+    return res.status(200).json({ success: true, invitations: rows });
+  } catch (err) {
+    console.error('GetMyInvitations error:', err.message);
+    return res.status(500).json({ success: false, message: 'Internal server error.' });
+  }
+};
+
 module.exports = {
   invite, getCollaborators,
   acceptInvite, declineInvite,
-  removeCollaborator
+  removeCollaborator, getMyInvitations
 };

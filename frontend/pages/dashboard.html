@@ -410,9 +410,17 @@
         <span class="nav-icon"><i data-lucide="info"></i></span>
         <span class="nav-label" data-i18n="about">About</span>
       </div>
-      <div class="nav-item" onclick="navigate('agent.html')">
+      <div class="nav-item" onclick="openFeedbackModal()">
+        <span class="nav-icon"><i data-lucide="message-square"></i></span>
+        <span class="nav-label">Feedback</span>
+      </div>
+      <div class="nav-item" onclick="navigate('chat.html')">
+        <span class="nav-icon"><i data-lucide="message-circle"></i></span>
+        <span class="nav-label">Messages</span>
+      </div>
+      <div class="nav-item" onclick="openArduinoBridge()">
   	<span class="nav-icon"><i data-lucide="usb"></i></span>
-  	<span class="nav-label">Arduino Agent</span>
+  	<span class="nav-label">Arduino Bridge</span>
     </div>
     <div class="user-avatar" id="userAvatar"
      onclick="openProfileModal()"
@@ -488,6 +496,18 @@
         <div class="realtime-dot" title="Live data"></div>
         <span style="font-size:var(--text-xs);
                      color:var(--text-muted);">Live</span>
+        <button class="btn btn-outline btn-sm"
+                onclick="navigate('chat.html')"
+                style="position:relative;"
+                title="Messages">
+          <i data-lucide="message-circle"></i>
+          <span style="display:none;" id="topbarChatLabel">Messages</span>
+          <span id="topbarChatBadge"
+                style="display:none;position:absolute;top:-6px;right:-6px;
+                       background:var(--primary);color:white;border-radius:50%;
+                       width:16px;height:16px;font-size:9px;
+                       align-items:center;justify-content:center;font-weight:700;">0</span>
+        </button>
         <button class="btn btn-primary btn-sm"
                 onclick="openAddFarmModal()">
           <i data-lucide="plus"></i>
@@ -607,13 +627,16 @@
       <span class="bottom-nav-badge" id="mobileBadge"
             style="display:none">0</span>
     </div>
+    <div class="bottom-nav-item" onclick="navigate('chat.html')"
+         style="position:relative;">
+      <i data-lucide="message-circle" class="nav-icon"></i>
+      <span>Messages</span>
+      <span class="bottom-nav-badge" id="mobileChatBadge"
+            style="display:none">0</span>
+    </div>
     <div class="bottom-nav-item" onclick="navigate('reports.html')">
       <i data-lucide="file-text" class="nav-icon"></i>
       <span data-i18n="reports">Reports</span>
-    </div>
-    <div class="bottom-nav-item" onclick="navigate('about.html')">
-      <i data-lucide="info" class="nav-icon"></i>
-      <span data-i18n="about">About</span>
     </div>
   </div>
 </nav>
@@ -714,8 +737,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   loadUser();
   await loadDashboard();
   connectSocket();
-
   setupModalCloseListeners();
+  checkPendingInvitations();
+  checkUnreadChat();
 
   // Attach click handler to avatar
   const avatar = document.getElementById('userAvatar');
@@ -723,6 +747,66 @@ document.addEventListener('DOMContentLoaded', async () => {
     avatar.addEventListener('click', openProfileModal);
   }
 });
+
+// ── CHECK PENDING INVITATIONS (show badge on avatar) ───
+async function checkPendingInvitations() {
+  try {
+    const data = await Auth.request('/collaborators/my-invitations');
+    if (data && data.success && data.invitations && data.invitations.length > 0) {
+      const avatarWrap = document.getElementById('userAvatar');
+      if (avatarWrap && !document.getElementById('inviteAvatarBadge')) {
+        const parent = avatarWrap.parentElement;
+        parent.style.position = 'relative';
+        const badge = document.createElement('span');
+        badge.id = 'inviteAvatarBadge';
+        badge.textContent = data.invitations.length;
+        Object.assign(badge.style, {
+          position:'absolute', top:'-4px', right:'-4px',
+          background:'var(--primary)', color:'white',
+          borderRadius:'50%', width:'16px', height:'16px',
+          fontSize:'9px', display:'flex', alignItems:'center',
+          justifyContent:'center', fontWeight:'700',
+          border:'2px solid var(--surface)'
+        });
+        parent.appendChild(badge);
+      }
+      showToast(`📬 You have ${data.invitations.length} farm invitation(s) — click your avatar`, 'success');
+    }
+  } catch (e) { /* non-blocking */ }
+}
+
+// ── CHECK UNREAD CHAT MESSAGES ─────────────────────
+async function checkUnreadChat() {
+  try {
+    const data = await Auth.request('/chat/unread');
+    if (!data || !data.success) return;
+    const total = data.unread.reduce((sum, u) => sum + parseInt(u.count || 0), 0);
+    if (total > 0) {
+      // Sidebar badge on the Messages nav item
+      const sidebarChatNav = document.querySelector('.nav-item[onclick*="chat.html"]');
+      if (sidebarChatNav && !sidebarChatNav.querySelector('.chat-unread-badge')) {
+        const b = document.createElement('span');
+        b.className = 'chat-unread-badge';
+        b.textContent = total > 99 ? '99+' : total;
+        Object.assign(b.style, {
+          background:'var(--primary)', color:'white',
+          borderRadius:'10px', padding:'1px 6px',
+          fontSize:'10px', fontWeight:'700',
+          marginLeft:'auto'
+        });
+        sidebarChatNav.style.display = 'flex';
+        sidebarChatNav.style.alignItems = 'center';
+        sidebarChatNav.appendChild(b);
+      }
+      // Mobile bottom nav badge
+      const mobileBadge = document.getElementById('mobileChatBadge');
+      if (mobileBadge) {
+        mobileBadge.textContent    = total > 99 ? '99+' : total;
+        mobileBadge.style.display  = 'inline-flex';
+      }
+    }
+  } catch (e) { /* non-blocking */ }
+}
 
 // ── GREETING ──────────────────────────────────────
 function setGreeting() {
@@ -767,15 +851,9 @@ function setGreeting() {
 function loadUser() {
   const user = Auth.getUser();
   if (!user) return;
-
   document.getElementById('userName').textContent = user.name;
   document.getElementById('userRole').textContent = user.role || 'farmer';
-
-  // Update the main avatar (the one in sidebar nav)
-  const mainAvatar = document.getElementById('userAvatar');
-  if (mainAvatar) {
-    mainAvatar.textContent = user.name.charAt(0).toUpperCase();
-  }
+  renderAvatarElement('userAvatar', user);
 }
 
 // ── LOAD DASHBOARD DATA ───────────────────────────
@@ -1052,8 +1130,17 @@ function openAddFarmModal() {
   document.getElementById('addFarmModal').classList.add('open');
 }
 
+function openModal(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add('open');
+  lucide.createIcons();
+}
+
 function closeModal(id) {
-  document.getElementById(id).classList.remove('open');
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.remove('open');
 }
 
 // Close modal on overlay click
@@ -1132,49 +1219,168 @@ function timeAgo(dateStr) {
 }
 
 
-function openModal(modalId) {
-  const modal = document.getElementById(modalId);
-  if (modal) modal.style.display = 'flex';   // or 'block'
-}
-
-function closeModal(modalId) {
-  const modal = document.getElementById(modalId);
-  if (modal) modal.style.display = 'none';
-}
-
-
 // ── PROFILE FUNCTIONS ─────────────────────────────
 function openProfileModal() {
   const user = Auth.getUser();
   if (!user) return;
-  document.getElementById('profileAvatar').textContent =
-    user.name.charAt(0).toUpperCase();
+
+  // Avatar: show image if stored, else initials
+  renderAvatarElement('profileAvatar', user);
+  renderAvatarElement('userAvatar', user);
+
   document.getElementById('profileName').textContent  = user.name;
   document.getElementById('profileEmail').textContent = user.email;
   document.getElementById('profileRole').textContent  = user.role || 'farmer';
   document.getElementById('editName').value  = user.name;
   document.getElementById('editEmail').value = user.email;
   switchProfileTab('info');
-  //openModal('openProfileModal');
-  openModal ('profileModal');
+  openModal('profileModal');
   lucide.createIcons();
+}
+
+// Render avatar: image if available, else coloured initial
+function renderAvatarElement(elementId, user) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+  if (user.avatar) {
+    el.innerHTML = `<img src="${user.avatar}" alt="avatar"
+      style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+  } else {
+    el.innerHTML = '';
+    el.textContent = (user.name || 'U').charAt(0).toUpperCase();
+  }
 }
 
 
 function switchProfileTab(tab) {
-  ['info','password','danger'].forEach(t => {
-    const tabNum = t === 'info' ? '1' : t === 'password' ? '2' : '3';
-    const tabBtn = document.getElementById(`profileTab${tabNum}`);
-    const tabContent = document.getElementById(`profileTab${t.charAt(0).toUpperCase() + t.slice(1)}`);
-    
-    if (tabBtn) {
-      tabBtn.style.background = t === tab ? 'var(--surface)' : 'none';
-      tabBtn.style.color = (t === tab) 
-        ? (t === 'danger' ? 'var(--danger)' : 'var(--primary)') 
-        : 'var(--text-muted)';
+  const tabs = {
+    info:     { num: '1', color: 'var(--primary)' },
+    password: { num: '2', color: 'var(--primary)' },
+    invites:  { num: '3', color: 'var(--primary)' },
+    danger:   { num: '4', color: 'var(--danger)'  }
+  };
+  Object.keys(tabs).forEach(t => {
+    const btn     = document.getElementById(`profileTab${tabs[t].num}`);
+    const content = document.getElementById(`profileTab${t.charAt(0).toUpperCase() + t.slice(1)}`);
+    if (btn) {
+      btn.style.background = (t === tab) ? 'var(--surface)' : 'none';
+      btn.style.color      = (t === tab) ? tabs[t].color : 'var(--text-muted)';
+      if (t === 'danger') btn.style.color = (t === tab) ? 'var(--danger)' : 'var(--danger)';
     }
-    if (tabContent) tabContent.style.display = (t === tab) ? 'block' : 'none';
+    if (content) content.style.display = (t === tab) ? 'block' : 'none';
   });
+  if (tab === 'invites') loadMyInvitations();
+}
+
+// ── AVATAR HANDLER ────────────────────────────────
+function handleAvatarChange(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) {
+    showToast('Image too large — max 2 MB', 'error');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    // Resize to max 256px before storing
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const MAX = 256;
+      const ratio = Math.min(MAX / img.width, MAX / img.height, 1);
+      canvas.width  = Math.round(img.width  * ratio);
+      canvas.height = Math.round(img.height * ratio);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+      window._pendingAvatar = dataUrl;
+      // Show preview immediately
+      const av = document.getElementById('profileAvatar');
+      av.innerHTML = `<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+      showToast('Photo selected — click Save Changes to apply', 'success');
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── LOAD MY INVITATIONS ───────────────────────────
+async function loadMyInvitations() {
+  const list = document.getElementById('invitesList');
+  list.innerHTML = `<div style="text-align:center;padding:var(--space-xl);color:var(--text-muted);">
+    <i data-lucide="loader" style="width:20px;height:20px;"></i>
+    <p style="margin-top:8px;font-size:var(--text-sm);">Loading...</p>
+  </div>`;
+  lucide.createIcons();
+
+  const data = await Auth.request('/collaborators/my-invitations');
+  if (!data || !data.success) {
+    list.innerHTML = `<p style="color:var(--text-muted);font-size:var(--text-sm);text-align:center;padding:var(--space-lg);">Could not load invitations.</p>`;
+    return;
+  }
+
+  const invites = data.invitations || [];
+  // Update badge
+  const badge = document.getElementById('inviteTabBadge');
+  if (badge) {
+    badge.textContent   = invites.length;
+    badge.style.display = invites.length ? 'inline-block' : 'none';
+  }
+
+  if (!invites.length) {
+    list.innerHTML = `<div style="text-align:center;padding:var(--space-xl);color:var(--text-muted);">
+      <i data-lucide="mail" style="width:32px;height:32px;opacity:0.3;"></i>
+      <p style="margin-top:8px;font-size:var(--text-sm);">No pending invitations.</p>
+    </div>`;
+    lucide.createIcons();
+    return;
+  }
+
+  list.innerHTML = invites.map(inv => `
+    <div style="background:var(--surface-2);border:1px solid var(--border);
+                border-radius:var(--radius-md);padding:var(--space-md);
+                display:flex;align-items:center;justify-content:space-between;gap:var(--space-md);">
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:600;font-size:var(--text-sm);
+                    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+          ${escHtml(inv.farm_name)}
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">
+          Invited by <strong>${escHtml(inv.invited_by_name)}</strong>
+          · Role: <span style="color:var(--primary);">${inv.role}</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0;">
+        <button class="btn btn-primary btn-sm"
+                onclick="respondInvite('${inv.token}','accept',this)">
+          ✓ Accept
+        </button>
+        <button class="btn btn-outline btn-sm"
+                style="color:var(--danger);border-color:var(--danger);"
+                onclick="respondInvite('${inv.token}','decline',this)">
+          ✗ Decline
+        </button>
+      </div>
+    </div>
+  `).join('');
+  lucide.createIcons();
+}
+
+async function respondInvite(token, action, btn) {
+  btn.disabled = true;
+  btn.textContent = '...';
+  const data = await Auth.request(`/collaborators/${action}?token=${token}`);
+  if (data && data.success) {
+    showToast(action === 'accept' ? '✓ Joined farm!' : 'Invitation declined', 'success');
+    loadMyInvitations();
+    if (action === 'accept') setTimeout(() => navigate('farm.html'), 1200);
+  } else {
+    showToast('Error — ' + (data ? data.message : 'unknown'), 'error');
+    btn.disabled = false;
+  }
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 
@@ -1206,18 +1412,26 @@ async function updateProfile() {
     return;
   }
 
+  // Collect pending avatar from hidden field (set by avatar picker)
+  const pendingAvatar = window._pendingAvatar !== undefined
+    ? window._pendingAvatar
+    : Auth.getUser().avatar;
+
   const data = await Auth.request('/auth/profile', {
     method: 'PUT',
-    body: JSON.stringify({ name, email })
+    body: JSON.stringify({ name, email, avatar: pendingAvatar })
   });
 
   if (data && data.success) {
-    // Update stored user
+    // Merge updated fields into stored user
     const user = Auth.getUser();
-    user.name  = name;
-    user.email = email;
+    user.name   = name;
+    user.email  = email;
+    if (pendingAvatar !== undefined) user.avatar = pendingAvatar;
     Auth.setUser(user);
+    window._pendingAvatar = undefined;
     loadUser();
+    renderAvatarElement('profileAvatar', user);
     showToast('Profile updated successfully', 'success');
     closeModal('profileModal');
   } else {
@@ -1258,11 +1472,17 @@ async function changePassword() {
     document.getElementById('currentPassword').value = '';
     document.getElementById('newPassword').value = '';
     document.getElementById('confirmNewPassword').value = '';
-    closeModal('openProfileModal');
+    closeModal('profileModal');
   } else {
     showToast(data ? data.message : 'Error changing password', 'error');
   }
 }
+
+function openDeleteAccountConfirm() {
+  openModal('profileModal');
+  setTimeout(() => switchProfileTab('danger'), 50);
+}
+
 
 async function confirmDeleteAccount() {
   const password = document.getElementById('deletePassword').value;
@@ -1284,37 +1504,6 @@ async function confirmDeleteAccount() {
   }
 }
 
-function openDeleteAccountConfirm() {
-  closeModal('profileModal');
-  document.getElementById('deletePassword').value = '';
-  document.getElementById('deleteError').style.display = 'none';
-  openModal('deleteAccountModal');
-}
-
-async function confirmDeleteAccount() {
-  const password = document.getElementById('deletePassword').value;
-  if (!password) {
-    document.getElementById('deleteError').textContent =
-      'Password is required.';
-    document.getElementById('deleteError').style.display = 'block';
-    return;
-  }
-
-  const data = await Auth.request('/auth/account', {
-    method: 'DELETE',
-    body: JSON.stringify({ password })
-  });
-
-  if (data && data.success) {
-    Auth.removeToken();
-    window.location.replace('/pages/index.html');
-  } else {
-    document.getElementById('deleteError').textContent =
-      data ? data.message : 'Error deleting account.';
-    document.getElementById('deleteError').style.display = 'block';
-  }
-}
-
 
 document.addEventListener('click', function(e) {
   if (e.target.classList.contains('modal-overlay') &&
@@ -1328,63 +1517,94 @@ document.addEventListener('click', function(e) {
 <!-- ══ PROFILE MODAL ═══════════════════════════════ -->
 <!-- Profile Modal -->
 <div class="modal-overlay" id="profileModal">
-  <div class="modal" style="max-width:500px;">
+  <div class="modal" style="max-width:480px;">
     <div class="modal-header">
       <h3>My Profile</h3>
       <button class="modal-close" onclick="closeModal('profileModal')">
         <i data-lucide="x"></i>
       </button>
     </div>
+
+    <!-- Avatar + identity header -->
     <div style="text-align:center;padding:var(--space-lg) 0;
-                border-bottom:1px solid var(--border);
-                margin-bottom:var(--space-lg);">
-      <div class="user-avatar"
-           style="width:72px;height:72px;font-size:32px;
-                  margin:0 auto var(--space-md);"
-           id="profileAvatar">D</div>
-      <h3 id="profileName">Name</h3>
-      <p id="profileEmail" style="color:var(--text-muted);font-size:var(--text-sm);">email</p>
-      <span class="badge badge-primary" id="profileRole" style="margin-top:8px;">farmer</span>
+                border-bottom:1px solid var(--border);margin-bottom:var(--space-lg);">
+      <div style="position:relative;display:inline-block;margin-bottom:10px;">
+        <div class="user-avatar"
+             style="width:80px;height:80px;font-size:30px;margin:0 auto;
+                    cursor:pointer;overflow:hidden;"
+             id="profileAvatar"
+             onclick="document.getElementById('avatarFileInput').click()"
+             title="Click to change photo"></div>
+        <div onclick="document.getElementById('avatarFileInput').click()"
+             style="position:absolute;bottom:0;right:0;background:var(--primary);
+                    border-radius:50%;width:24px;height:24px;display:flex;
+                    align-items:center;justify-content:center;
+                    cursor:pointer;border:2px solid var(--surface);">
+          <i data-lucide="camera" style="width:12px;height:12px;color:white;"></i>
+        </div>
+      </div>
+      <input type="file" id="avatarFileInput" accept="image/jpeg,image/png,image/webp"
+             style="display:none;" onchange="handleAvatarChange(event)">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">
+        Tap photo to change · JPG/PNG, max 2 MB
+      </div>
+      <h3 id="profileName" style="margin:0 0 4px;"></h3>
+      <p id="profileEmail" style="color:var(--text-muted);font-size:var(--text-sm);margin:0 0 8px;"></p>
+      <span class="badge badge-primary" id="profileRole">farmer</span>
     </div>
+
     <!-- Tabs -->
-    <div style="display:flex;gap:4px;background:var(--surface-2);
-                padding:4px;border-radius:var(--radius-sm);
-                margin-bottom:var(--space-lg);border:1px solid var(--border);">
+    <div style="display:flex;gap:4px;background:var(--surface-2);padding:4px;
+                border-radius:var(--radius-sm);margin-bottom:var(--space-lg);
+                border:1px solid var(--border);">
       <button id="profileTab1" onclick="switchProfileTab('info')"
-              style="flex:1;padding:8px;border-radius:4px;font-size:var(--text-sm);
-                     font-weight:500;cursor:pointer;border:none;
+              style="flex:1;padding:8px;border-radius:4px;font-size:12px;
+                     font-weight:600;cursor:pointer;border:none;
                      background:var(--surface);color:var(--primary);">
-        Edit Profile
+        ✏️ Profile
       </button>
       <button id="profileTab2" onclick="switchProfileTab('password')"
-              style="flex:1;padding:8px;border-radius:4px;font-size:var(--text-sm);
-                     font-weight:500;cursor:pointer;border:none;
+              style="flex:1;padding:8px;border-radius:4px;font-size:12px;
+                     font-weight:600;cursor:pointer;border:none;
                      background:none;color:var(--text-muted);">
-        Change Password
+        🔒 Password
       </button>
-      <button id="profileTab3" onclick="switchProfileTab('danger')"
-              style="flex:1;padding:8px;border-radius:4px;font-size:var(--text-sm);
-                     font-weight:500;cursor:pointer;border:none;
+      <button id="profileTab3" onclick="switchProfileTab('invites')"
+              style="flex:1;padding:8px;border-radius:4px;font-size:12px;
+                     font-weight:600;cursor:pointer;border:none;
+                     background:none;color:var(--text-muted);position:relative;">
+        📬 Invites
+        <span id="inviteTabBadge"
+              style="display:none;position:absolute;top:2px;right:4px;
+                     background:var(--primary);color:white;border-radius:50%;
+                     width:15px;height:15px;font-size:9px;line-height:15px;
+                     text-align:center;">0</span>
+      </button>
+      <button id="profileTab4" onclick="switchProfileTab('danger')"
+              style="flex:1;padding:8px;border-radius:4px;font-size:12px;
+                     font-weight:600;cursor:pointer;border:none;
                      background:none;color:var(--danger);">
-        Danger Zone
+        ⚠️ Delete
       </button>
     </div>
-    <!-- Tab Info -->
+
+    <!-- Tab: Edit Info -->
     <div id="profileTabInfo">
       <div class="form-group">
         <label class="form-label">Full Name</label>
-        <input type="text" class="form-control" id="editName">
+        <input type="text" class="form-control" id="editName" placeholder="Your name">
       </div>
       <div class="form-group">
-        <label class="form-label">Email</label>
-        <input type="email" class="form-control" id="editEmail">
+        <label class="form-label">Email Address</label>
+        <input type="email" class="form-control" id="editEmail" placeholder="you@example.com">
       </div>
       <button class="btn btn-primary btn-full" onclick="updateProfile()">
-        <i data-lucide="save" style="width:16px;height:16px"></i>
+        <i data-lucide="save" style="width:15px;height:15px;"></i>
         Save Changes
       </button>
     </div>
-    <!-- Tab Password -->
+
+    <!-- Tab: Password -->
     <div id="profileTabPassword" style="display:none;">
       <div class="form-group">
         <label class="form-label">Current Password</label>
@@ -1399,30 +1619,45 @@ document.addEventListener('click', function(e) {
         <input type="password" class="form-control" id="confirmNewPassword">
       </div>
       <button class="btn btn-primary btn-full" onclick="changePassword()">
-        <i data-lucide="lock" style="width:16px;height:16px"></i>
+        <i data-lucide="lock" style="width:15px;height:15px;"></i>
         Change Password
       </button>
     </div>
-    <!-- Tab Danger -->
+
+    <!-- Tab: Invitations -->
+    <div id="profileTabInvites" style="display:none;">
+      <p style="font-size:var(--text-sm);color:var(--text-muted);margin:0 0 var(--space-md);">
+        Farm collaboration invitations sent to your email.
+      </p>
+      <div id="invitesList" style="display:flex;flex-direction:column;gap:var(--space-sm);"></div>
+    </div>
+
+    <!-- Tab: Danger -->
     <div id="profileTabDanger" style="display:none;">
       <div style="background:rgba(231,76,60,0.05);border:1px solid rgba(231,76,60,0.2);
                   border-radius:var(--radius-md);padding:var(--space-lg);">
-        <h4 style="color:var(--danger);margin-bottom:var(--space-sm);">Delete Account</h4>
-        <p style="font-size:var(--text-sm);color:var(--text-muted);margin-bottom:var(--space-md);">
-          Permanently deletes your account and ALL your data. Cannot be undone.
+        <h4 style="color:var(--danger);margin:0 0 var(--space-sm);">Delete Account</h4>
+        <p style="font-size:var(--text-sm);color:var(--text-muted);margin:0 0 var(--space-md);">
+          Permanently deletes your account and all your data. This cannot be undone.
         </p>
         <div class="form-group">
           <label class="form-label">Confirm with your password</label>
           <input type="password" class="form-control" id="deletePassword">
         </div>
         <button class="btn btn-danger btn-full" onclick="confirmDeleteAccount()">
-          <i data-lucide="trash-2" style="width:16px;height:16px"></i>
+          <i data-lucide="trash-2" style="width:15px;height:15px;"></i>
           Delete My Account Forever
         </button>
       </div>
     </div>
+
   </div>
 </div>
 
+
+
+
+<script src="../js/arduino-bridge-drawer.js"></script>
+<script src="../js/feedback.js"></script>
 </body>
 </html>

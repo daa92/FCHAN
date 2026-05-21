@@ -38,11 +38,40 @@ app.use(cors({
 }));
 
 app.use(morgan('dev'));     // log every request in terminal
-app.use(express.json());   // parse incoming JSON data
+app.use(express.json({ limit: '10mb' }));   // parse incoming JSON data (10mb for base64 images)
 
 // ─── SOCKET.IO ────────────────────────────────────────
+const jwt = require('jsonwebtoken');
+io.use((socket, next) => {
+  // Authenticate socket connections via token query param
+  const token = socket.handshake.auth.token || socket.handshake.query.token;
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      socket.userId = decoded.id;
+    } catch (e) { /* unauthenticated socket - still allow connection */ }
+  }
+  next();
+});
+
 io.on('connection', (socket) => {
   console.log('New client connected:', socket.id);
+
+  // Join personal room for private messages
+  if (socket.userId) {
+    socket.join(`user:${socket.userId}`);
+    console.log(`User ${socket.userId} joined personal room`);
+  }
+
+  // Join chat rooms
+  socket.on('chat:joinRoom', (roomId) => {
+    socket.join(`room:${roomId}`);
+  });
+
+  socket.on('chat:leaveRoom', (roomId) => {
+    socket.leave(`room:${roomId}`);
+  });
+
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.id);
   });
@@ -54,15 +83,17 @@ app.set('io', io);
 // ─── ROUTES ───────────────────────────────────────────
 // We will add routes here as we build each phase // this comment has been set at the beginning
 // As far as we go through phases, it may not be longer important
-const authRoutes = require('./routes/auth'); // authentication route_phase2
-const farmRoutes = require('./routes/farm'); // farm, zone and plant_phase3
-const sensorRoutes = require('./routes/sensors'); // arduino sensors or manually data entry routes_phase4
-const alertRoutes = require('./routes/alerts'); // alerts management_phase5
+const authRoutes = require('./routes/auth');
+const farmRoutes = require('./routes/farm');
+const sensorRoutes = require('./routes/sensors');
+const alertRoutes = require('./routes/alerts');
 const { startAlertsEngine } = require('./services/alerts');
-const speciesRoutes = require('./routes/species'); // forecast engine implementation_phase6
+const speciesRoutes = require('./routes/species');
 const forecastRoutes = require('./routes/forecast');
-const reportsRoutes = require('./routes/reports'); // pdf report_phase7
+const reportsRoutes = require('./routes/reports');
 const collaboratorRoutes = require('./routes/collaborators');
+const chatRoutes     = require('./routes/chat');
+const feedbackRoutes = require('./routes/feedback');
 
 
 
@@ -74,7 +105,7 @@ app.get('/', (req, res) => {
   });
 });
 
-app.use('/api/auth', authRoutes); // authentication route_phase2
+app.use('/api/auth', authRoutes);
 app.use('/api/farm', farmRoutes);
 app.use('/api/sensors', sensorRoutes);
 app.use('/api/alerts', alertRoutes);
@@ -82,6 +113,8 @@ app.use('/api/species', speciesRoutes);
 app.use('/api/forecast', forecastRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/collaborators', collaboratorRoutes);
+app.use('/api/chat',     chatRoutes);
+app.use('/api/feedback', feedbackRoutes);
 // ─── 404 HANDLER ──────────────────────────────────────
 app.use((req, res) => {
   res.status(404).json({
@@ -107,5 +140,3 @@ server.listen (PORT, '0.0.0.0', () => {
   console.log(`Environment: ${process.env.NODE_ENV}`);
   startAlertsEngine(io); // start alert
 });
-
-
