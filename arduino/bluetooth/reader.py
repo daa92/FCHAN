@@ -25,7 +25,7 @@ SENSOR_API_KEYS = {
 
 # Your Arduino's Bluetooth MAC address
 # Find it by running: hcitool scan
-BT_MAC_ADDRESS = "XX:XX:XX:XX:XX:XX"
+BT_MAC_ADDRESS = "6E:F2:C8:A2:84:68"
 BT_PORT        = 1
 BT_TIMEOUT     = 10
 

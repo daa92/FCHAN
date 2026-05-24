@@ -20,7 +20,7 @@ FCHAN_API_URL = "http://localhost:3000/api"
 SENSOR_API_KEYS = {
     "temperature":   "1082c05710d8fa8198516cc2d290b8643b55485f605965d8bb6d99b78fab2a6c",
     "humidity":      "YOUR_HUMIDITY_SENSOR_API_KEY",
-    "soil_moisture": "YOUR_SOIL_MOISTURE_SENSOR_API_KEY",
+    "soil_moisture": "1cf24ba842d5980c904ea1ea86bed29b132c68710da1005fae77da879a33f203",
     "soil_ph":       "YOUR_SOIL_PH_SENSOR_API_KEY",
     "light":         "YOUR_LIGHT_SENSOR_API_KEY",
 }
