@@ -1,29 +1,41 @@
-const mysql = require('mysql2');
+const mysql  = require('mysql2');
+const fs     = require('fs');
+const path   = require('path');
 require('dotenv').config();
 
-// Create a connection pool
+// ── SSL Configuration ─────────────────────────────
+const sslConfig = process.env.DB_SSL === 'true' ? {
+  ssl: {
+    ca: fs.readFileSync(path.resolve(process.cwd(), process.env.DB_SSL_CA)),
+    rejectUnauthorized: true
+  }
+} : {};
+
+// ── Connection Pool ───────────────────────────────
 const pool = mysql.createPool({
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
-  database: process.env.DB_NAME,
-  user: process.env.DB_USER,
+  host:    process.env.DB_HOST,
+  port:    parseInt(process.env.DB_PORT) || 3306,
+  user:    process.env.DB_USER,
   password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
   waitForConnections: true,
-  connectionLimit: 10, // we can adjust it
-  queueLimit: 0
+  connectionLimit: 10,
+  queueLimit: 0,
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 0,
+  ...sslConfig
 });
 
-// Convert pool to use promises (so we can use async/await)
 const db = pool.promise();
 
-// Test the connection
+// ── Test Connection ───────────────────────────────
 db.getConnection()
   .then(connection => {
-    console.log('MySQL connected successfully');
+    console.log('  TiDB Cloud connected successfully');
     connection.release();
   })
   .catch(err => {
-    console.error('MySQL connection failed:', err.message);
+    console.error('  Database connection failed:', err.message);
   });
 
 module.exports = db;

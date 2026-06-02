@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FCHAN — Arduino Connection Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="icon" type="image/png" href="../assets/images/logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ── RESET & BASE ─────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --green:#22c55e;--green-d:#16a34a;--green-dim:#052e16;
+  --bg:#030712;--surface:#0f172a;--surface2:#1e293b;
+  --border:#1e293b;--border2:#334155;
+  --text:#f1f5f9;--muted:#94a3b8;--dim:#475569;
+  --yellow:#fbbf24;--red:#f87171;--blue:#60a5fa;--purple:#c084fc;
+  --radius:12px;--mono:'DM Mono',monospace;
+}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Nunito',sans-serif;
+  background:var(--bg);color:var(--text);
+  font-size:15px;line-height:1.7;
+  overflow-x:hidden;
+}
+
+/* ── ANIMATED BG ─────────────────────────────── */
+body::before{
+  content:'';position:fixed;inset:0;
+  background:
+    radial-gradient(ellipse 80vw 60vh at 10% 0%,rgba(34,197,94,.07) 0%,transparent 60%),
+    radial-gradient(ellipse 60vw 50vh at 90% 100%,rgba(96,165,250,.05) 0%,transparent 60%);
+  pointer-events:none;z-index:0;
+}
+
+/* ── HERO ─────────────────────────────────────── */
+.hero{
+  position:relative;z-index:1;
+  padding:80px 24px 60px;text-align:center;
+  border-bottom:1px solid var(--border);
+}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);
+  border-radius:100px;padding:6px 16px;
+  font-size:12px;font-weight:700;color:var(--green);
+  font-family:var(--mono);letter-spacing:1px;
+  text-transform:uppercase;margin-bottom:24px;
+}
+.hero-badge .dot{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--green);
+  animation:blink 1.4s infinite;
+}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.hero h1{
+  font-family:'Syne',sans-serif;
+  font-size:clamp(32px,6vw,64px);
+  font-weight:800;line-height:1.05;
+  letter-spacing:-2px;margin-bottom:16px;
+}
+.hero h1 span{
+  background:linear-gradient(135deg,var(--green),#86efac);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.hero p{
+  font-size:clamp(15px,2vw,18px);
+  color:var(--muted);max-width:560px;margin:0 auto 36px;
+}
+.hero-chips{
+  display:flex;flex-wrap:wrap;justify-content:center;gap:10px;
+}
+.chip{
+  background:var(--surface);border:1px solid var(--border2);
+  border-radius:100px;padding:6px 16px;
+  font-size:12px;font-weight:700;color:var(--muted);
+  display:flex;align-items:center;gap:6px;
+}
+.chip.active{border-color:var(--green);color:var(--green)}
+
+/* ── PLATFORM PICKER ──────────────────────────── */
+.picker-wrap{
+  position:relative;z-index:1;
+  max-width:900px;margin:0 auto;
+  padding:48px 24px 0;
+}
+.picker-label{
+  font-family:'Syne',sans-serif;
+  font-size:11px;font-weight:700;
+  text-transform:uppercase;letter-spacing:2px;
+  color:var(--dim);margin-bottom:16px;text-align:center;
+}
+.platform-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+  gap:12px;margin-bottom:40px;
+}
+.platform-btn{
+  background:var(--surface);
+  border:2px solid var(--border2);
+  border-radius:var(--radius);
+  padding:18px 12px;cursor:pointer;
+  display:flex;flex-direction:column;
+  align-items:center;gap:10px;
+  transition:all .2s;
+  font-family:'Nunito',sans-serif;
+}
+.platform-btn:hover{border-color:var(--green);transform:translateY(-2px)}
+.platform-btn.selected{
+  border-color:var(--green);
+  background:rgba(34,197,94,.08);
+  box-shadow:0 0 0 4px rgba(34,197,94,.1);
+}
+.platform-btn .icon{font-size:28px}
+.platform-btn .name{
+  font-size:13px;font-weight:700;color:var(--text);
+}
+.platform-btn .tag{
+  font-size:10px;color:var(--muted);
+  background:var(--surface2);
+  border-radius:6px;padding:2px 8px;
+  font-family:var(--mono);
+}
+
+/* ── METHOD PICKER ────────────────────────────── */
+.method-wrap{
+  max-width:900px;margin:0 auto;
+  padding:0 24px;display:none;
+}
+.method-wrap.visible{display:block}
+.section-title{
+  font-family:'Syne',sans-serif;
+  font-size:11px;font-weight:700;
+  text-transform:uppercase;letter-spacing:2px;
+  color:var(--dim);margin-bottom:16px;text-align:center;
+}
+.method-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+  gap:12px;margin-bottom:48px;
+}
+.method-btn{
+  background:var(--surface);
+  border:2px solid var(--border2);
+  border-radius:var(--radius);
+  padding:20px 16px;cursor:pointer;
+  display:flex;flex-direction:column;gap:8px;
+  transition:all .2s;
+  font-family:'Nunito',sans-serif;
+  position:relative;overflow:hidden;
+}
+.method-btn::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(34,197,94,.06),transparent);
+  opacity:0;transition:opacity .2s;
+}
+.method-btn:hover::before{opacity:1}
+.method-btn:hover{border-color:var(--green);transform:translateY(-2px)}
+.method-btn.selected{border-color:var(--green);background:rgba(34,197,94,.06)}
+.method-btn.disabled{opacity:.4;cursor:not-allowed}
+.method-btn.disabled:hover{transform:none;border-color:var(--border2)}
+.method-btn .m-icon{font-size:24px}
+.method-btn .m-name{font-size:14px;font-weight:700;color:var(--text)}
+.method-btn .m-desc{font-size:12px;color:var(--muted);line-height:1.4}
+.method-btn .m-badge{
+  font-size:10px;font-family:var(--mono);
+  padding:2px 8px;border-radius:6px;
+  font-weight:600;width:fit-content;
+}
+.m-badge.works{background:rgba(34,197,94,.15);color:var(--green)}
+.m-badge.limited{background:rgba(251,191,36,.12);color:var(--yellow)}
+.m-badge.no{background:rgba(248,113,113,.12);color:var(--red)}
+
+/* ── STEPS ────────────────────────────────────── */
+.steps-wrap{
+  max-width:820px;margin:0 auto;
+  padding:0 24px 80px;display:none;
+}
+.steps-wrap.visible{display:block}
+
+.steps-header{
+  text-align:center;margin-bottom:40px;
+}
+.steps-header h2{
+  font-family:'Syne',sans-serif;
+  font-size:28px;font-weight:800;
+  letter-spacing:-1px;margin-bottom:8px;
+}
+.steps-header p{color:var(--muted);font-size:14px}
+
+.step{
+  display:flex;gap:20px;margin-bottom:32px;
+  opacity:0;transform:translateY(20px);
+  transition:all .4s;
+}
+.step.visible{opacity:1;transform:translateY(0)}
+
+.step-num{
+  flex-shrink:0;
+  width:40px;height:40px;border-radius:50%;
+  background:linear-gradient(135deg,var(--green-d),var(--green));
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Syne',sans-serif;font-weight:800;font-size:16px;
+  color:#fff;margin-top:2px;
+  box-shadow:0 0 20px rgba(34,197,94,.3);
+}
+
+.step-body{flex:1}
+.step-body h3{
+  font-family:'Syne',sans-serif;
+  font-size:17px;font-weight:700;
+  margin-bottom:8px;color:var(--text);
+}
+.step-body p{
+  color:var(--muted);font-size:14px;
+  margin-bottom:12px;line-height:1.7;
+}
+.step-body strong{color:var(--text)}
+
+/* ── CODE BLOCKS ──────────────────────────────── */
+.code-wrap{position:relative;margin:14px 0}
+.code-label{
+  font-size:10px;font-family:var(--mono);
+  color:var(--dim);text-transform:uppercase;
+  letter-spacing:1px;margin-bottom:6px;
+}
+pre{
+  background:#0a0f1e;
+  border:1px solid var(--border2);
+  border-radius:10px;padding:18px;
+  overflow-x:auto;font-family:var(--mono);
+  font-size:12.5px;line-height:1.8;color:#c8d6e5;
+  position:relative;
+}
+.copy-btn{
+  position:absolute;top:10px;right:10px;
+  background:var(--surface2);border:1px solid var(--border2);
+  border-radius:6px;padding:4px 12px;
+  font-size:11px;font-family:var(--mono);
+  color:var(--muted);cursor:pointer;
+  transition:all .15s;
+}
+.copy-btn:hover{background:var(--green);color:#000;border-color:var(--green)}
+.copy-btn.copied{background:var(--green);color:#000;border-color:var(--green)}
+
+/* ── ALERT BOXES ──────────────────────────────── */
+.alert{
+  border-radius:10px;padding:14px 18px;
+  font-size:13px;line-height:1.6;
+  margin:14px 0;display:flex;gap:12px;
+}
+.alert.tip{
+  background:rgba(34,197,94,.07);
+  border:1px solid rgba(34,197,94,.2);color:#86efac;
+}
+.alert.warn{
+  background:rgba(251,191,36,.07);
+  border:1px solid rgba(251,191,36,.2);color:#fde68a;
+}
+.alert.info{
+  background:rgba(96,165,250,.07);
+  border:1px solid rgba(96,165,250,.2);color:#bfdbfe;
+}
+.alert-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+
+/* ── TABLE ────────────────────────────────────── */
+.tbl{width:100%;border-collapse:collapse;margin:14px 0;font-size:13px}
+.tbl th{
+  background:var(--surface2);color:var(--green);
+  padding:10px 14px;text-align:left;
+  font-family:var(--mono);font-size:11px;
+  text-transform:uppercase;letter-spacing:1px;
+}
+.tbl td{
+  padding:10px 14px;border-bottom:1px solid var(--border);
+  color:var(--muted);
+}
+.tbl tr:last-child td{border:none}
+.tbl td strong{color:var(--text)}
+.tick{color:var(--green)}
+.cross{color:var(--red)}
+.maybe{color:var(--yellow)}
+
+/* ── WIRING TABLE ─────────────────────────────── */
+.wire-row{
+  display:flex;align-items:center;
+  gap:12px;padding:10px 0;
+  border-bottom:1px solid var(--border);
+  font-size:13px;
+}
+.wire-row:last-child{border:none}
+.wire-pin{
+  font-family:var(--mono);font-size:12px;
+  background:var(--surface2);border:1px solid var(--border2);
+  border-radius:6px;padding:3px 10px;min-width:80px;
+  text-align:center;
+}
+.wire-arrow{color:var(--green);font-size:18px}
+.wire-pin.vcc{border-color:rgba(248,113,113,.4);color:#fca5a5}
+.wire-pin.gnd{border-color:rgba(148,163,184,.3);color:var(--muted)}
+.wire-pin.data{border-color:rgba(96,165,250,.4);color:#93c5fd}
+.wire-pin.dest{border-color:rgba(34,197,94,.4);color:#86efac}
+
+/* ── PROGRESS ─────────────────────────────────── */
+.progress-bar{
+  position:fixed;top:0;left:0;right:0;
+  height:3px;background:transparent;z-index:100;
+}
+.progress-fill{
+  height:100%;background:linear-gradient(90deg,var(--green),#86efac);
+  width:0%;transition:width .3s;
+}
+
+/* ── BACK BTN ─────────────────────────────────── */
+.back-btn{
+  display:inline-flex;align-items:center;gap:8px;
+  background:var(--surface);border:1px solid var(--border2);
+  border-radius:100px;padding:8px 20px;
+  font-size:13px;font-weight:600;color:var(--muted);
+  cursor:pointer;transition:all .2s;
+  font-family:'Nunito',sans-serif;
+  margin-bottom:24px;
+}
+.back-btn:hover{color:var(--text);border-color:var(--green)}
+
+/* ── DONE CARD ────────────────────────────────── */
+.done-card{
+  background:linear-gradient(135deg,rgba(34,197,94,.1),rgba(34,197,94,.04));
+  border:1px solid rgba(34,197,94,.3);
+  border-radius:16px;padding:32px;
+  text-align:center;margin-top:40px;
+}
+.done-card h3{
+  font-family:'Syne',sans-serif;
+  font-size:22px;font-weight:800;color:var(--green);
+  margin-bottom:8px;
+}
+.done-card p{color:var(--muted);font-size:14px}
+
+/* ── FOOTER ───────────────────────────────────── */
+footer{
+  border-top:1px solid var(--border);
+  padding:32px 24px;text-align:center;
+  color:var(--dim);font-size:13px;
+  position:relative;z-index:1;
+}
+footer a{color:var(--green);text-decoration:none}
+
+/* ── RESPONSIVE ───────────────────────────────── */
+@media(max-width:600px){
+  .platform-grid{grid-template-columns:repeat(2,1fr)}
+  .method-grid{grid-template-columns:1fr}
+  .step{flex-direction:column;gap:12px}
+  .step-num{width:32px;height:32px;font-size:14px}
+}
+
+/* ── SYNTAX COLORS ────────────────────────────── */
+.kw{color:#c084fc}
+.st{color:#86efac}
+.cm{color:#475569}
+.nm{color:#fbbf24}
+.fn{color:#60a5fa}
+</style>
+  <script src="../js/theme.js"></script>
+  <script src="../js/language.js"></script>
+</head>
+<body>
+
+<div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+
+<!-- ══ HERO ══════════════════════════════════════ -->
+<section class="hero">
+  <div class="hero-badge">
+    <span class="dot"></span>
+    Arduino Integration Guide
+  </div>
+  <h1>Connect your Arduino<br>to <span>FCHAN</span></h1>
+  <p>Step-by-step setup for every device and operating system. From plugging in to live data in under 10 minutes.</p>
+  <div class="hero-chips">
+    <div class="chip active">  Linux</div>
+    <div class="chip active">  Windows</div>
+    <div class="chip active">  macOS</div>
+    <div class="chip active">  Android</div>
+    <div class="chip">  iOS — WiFi only</div>
+  </div>
+</section>
+
+<!-- ══ PLATFORM PICKER ════════════════════════════ -->
+<div class="picker-wrap" id="platformSection">
+  <div class="picker-label">Step 1 — What device are you using?</div>
+  <div class="platform-grid">
+    <button class="platform-btn" onclick="selectPlatform('linux')">
+      <span class="icon"> </span>
+      <span class="name">Linux</span>
+      <span class="tag">Ubuntu / Debian</span>
+    </button>
+    <button class="platform-btn" onclick="selectPlatform('windows')">
+      <span class="icon"> </span>
+      <span class="name">Windows</span>
+      <span class="tag">Win 10 / 11</span>
+    </button>
+    <button class="platform-btn" onclick="selectPlatform('mac')">
+      <span class="icon"> </span>
+      <span class="name">macOS</span>
+      <span class="tag">Intel / Apple Silicon</span>
+    </button>
+    <button class="platform-btn" onclick="selectPlatform('android')">
+      <span class="icon"> </span>
+      <span class="name">Android</span>
+      <span class="tag">USB OTG or WiFi</span>
+    </button>
+    <button class="platform-btn" onclick="selectPlatform('ios')">
+      <span class="icon"> </span>
+      <span class="name">iPhone / iPad</span>
+      <span class="tag">WiFi only</span>
+    </button>
+  </div>
+</div>
+
+<!-- ══ METHOD PICKER ══════════════════════════════ -->
+<div class="method-wrap" id="methodSection">
+  <button class="back-btn" onclick="goBack('method')">← Back</button>
+  <div class="section-title">Step 2 — How is your Arduino connected?</div>
+  <div class="method-grid" id="methodGrid"></div>
+</div>
+
+<!-- ══ STEPS ══════════════════════════════════════ -->
+<div class="steps-wrap" id="stepsSection">
+  <button class="back-btn" onclick="goBack('steps')">← Back</button>
+  <div class="steps-header">
+    <h2 id="stepsTitle">Setup Guide</h2>
+    <p id="stepsSubtitle">Follow each step carefully</p>
+  </div>
+  <div id="stepsContent"></div>
+</div>
+
+<!-- ══ FOOTER ══════════════════════════════════ -->
+<footer>
+  <p>FCHAN — Farm Intelligence Platform &nbsp;·&nbsp;
+  Questions? <a href="mailto:bagnawe.gnoga@ictuniversity.edu.cm">bagnawe.gnoga@ictuniversity.edu.cm</a></p>
+</footer>
+
+<script>
+// ════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════
+let selectedPlatform = null;
+let selectedMethod   = null;
+
+// ════════════════════════════════════════════════
+// PLATFORM → available methods
+// ════════════════════════════════════════════════
+const METHODS = {
+  linux: [
+    { id:'usb',  icon:' ', name:'USB Cable',       desc:'Arduino plugged directly into this computer',  badge:'works',   label:'Recommended' },
+    { id:'bt',   icon:' ', name:'Bluetooth HC-06', desc:'Arduino with HC-06 Bluetooth module',           badge:'limited', label:'Advanced' },
+    { id:'wifi', icon:' ', name:'WiFi (ESP32)',     desc:'Arduino with ESP32 or ESP8266 WiFi module',    badge:'works',   label:'Wireless' },
+  ],
+  windows: [
+    { id:'usb',  icon:' ', name:'USB Cable',       desc:'Arduino plugged directly into this computer',  badge:'works',   label:'Recommended' },
+    { id:'bt',   icon:' ', name:'Bluetooth HC-06', desc:'Arduino with HC-06 Bluetooth module',           badge:'limited', label:'Advanced' },
+    { id:'wifi', icon:' ', name:'WiFi (ESP32)',     desc:'Arduino with ESP32 or ESP8266 WiFi module',    badge:'works',   label:'Wireless' },
+  ],
+  mac: [
+    { id:'usb',  icon:' ', name:'USB Cable',       desc:'Arduino plugged directly into this Mac',       badge:'works',   label:'Recommended' },
+    { id:'wifi', icon:' ', name:'WiFi (ESP32)',     desc:'Arduino with ESP32 or ESP8266 WiFi module',    badge:'works',   label:'Wireless' },
+  ],
+  android: [
+    { id:'otg',  icon:' ', name:'USB OTG Cable',   desc:'Arduino via USB OTG adapter',                  badge:'works',   label:'With OTG adapter' },
+    { id:'wifi', icon:' ', name:'WiFi (ESP32)',     desc:'Arduino with ESP32 or ESP8266 WiFi module',    badge:'works',   label:'Wireless' },
+  ],
+  ios: [
+    { id:'wifi', icon:' ', name:'WiFi (ESP32)',     desc:'Only option on iPhone — works perfectly',      badge:'works',   label:'Only option' },
+  ],
+};
+
+// ════════════════════════════════════════════════
+// STEPS CONTENT
+// ════════════════════════════════════════════════
+const STEPS = {
+
+  // ── LINUX USB ─────────────────────────────────
+  linux_usb: {
+    title: 'Linux + USB Cable Setup',
+    subtitle: 'Ubuntu / Debian — plug in and go',
+    steps: [
+      {
+        title: 'Plug your Arduino into the computer',
+        body: `Take the USB cable that came with your Arduino and plug it into your Linux computer. A small green LED on the Arduino board should turn on.`,
+        tip: { type:'tip', text:'If no LED turns on, try a different USB cable. Many phone charger cables are power-only and have no data wires.' }
+      },
+      {
+        title: 'Find the Arduino port',
+        body: `Open a terminal (Ctrl+Alt+T) and run this command to find which port your Arduino is on:`,
+        code: { label:'Terminal', text:`ls /dev/ttyACM* /dev/ttyUSB* 2>/dev/null` },
+        after: `You should see <strong>/dev/ttyACM0</strong> or <strong>/dev/ttyUSB0</strong>. That is your Arduino's port.`,
+        tip: { type:'warn', text:'If nothing appears, the USB cable has no data wires. Use a different cable.' }
+      },
+      {
+        title: 'Add yourself to the dialout group',
+        body: `This gives your user permission to access serial ports. Run this once:`,
+        code: { label:'Terminal', text:`sudo usermod -a -G dialout $USER` },
+        after: `Then <strong>log out and log back in</strong>. This is required — it won't work without it.`
+      },
+      {
+        title: 'Install Python dependencies',
+        code: { label:'Terminal', text:`pip3 install pyserial requests --break-system-packages` }
+      },
+      {
+        title: 'Create your sensors in FCHAN',
+        body: `Log into FCHAN in your browser. Go to your zone and create sensors for each type you have (Temperature, Humidity, Soil Moisture, etc.). Choose <strong>WiFi/HTTP</strong> as connection type — this generates an API key for each sensor.`,
+        tip: { type:'info', text:'Go to your zone → Add Sensor → fill in name and type → Save. The API key appears in the modal. Copy it.' }
+      },
+      {
+        title: 'Download and configure reader.py',
+        body: `Download the <strong>reader.py</strong> file from FCHAN (available in the Arduino Bridge drawer in the sidebar). Open it and fill in your API keys at the top:`,
+        code: { label:'reader.py — edit these lines', text:`FCHAN_API_URL = "http://YOUR_SERVER_IP:3000/api"
+
+SENSOR_API_KEYS = {
+    "temperature":   "paste_your_temperature_api_key",
+    "humidity":      "paste_your_humidity_api_key",
+    "soil_moisture": "paste_your_soil_moisture_api_key",
+    "light":         "paste_your_light_api_key",
+}` }
+      },
+      {
+        title: 'Run reader.py',
+        body: `Make sure the Arduino Serial Monitor in Arduino IDE is closed first, then run:`,
+        code: { label:'Terminal', text:`python3 reader.py` },
+        after: `You should see:<br><br><code style="background:#0a0f1e;padding:4px 10px;border-radius:6px;font-family:var(--mono);font-size:12px;color:#86efac">Connected to /dev/ttyACM0<br>Received: SOIL:77.0<br>Reading sent: 77.0</code>`,
+        done: true
+      },
+      {
+        title: '(Optional) Run automatically on startup',
+        body: `To make it start automatically every time you plug in the Arduino, run the installer script:`,
+        code: { label:'Terminal — run once', text:`bash install.sh` },
+        after: `After this, just plug in the Arduino. Data flows to FCHAN automatically — no terminal needed.`
+      }
+    ]
+  },
+
+  // ── WINDOWS USB ───────────────────────────────
+  windows_usb: {
+    title: 'Windows + USB Cable Setup',
+    subtitle: 'Windows 10 / 11 — full guide',
+    steps: [
+      {
+        title: 'Install the Arduino driver',
+        body: `Download and install the <strong>Arduino IDE</strong> from <strong>arduino.cc/en/software</strong>. This also installs the USB driver automatically.`,
+        tip: { type:'info', text:'If you have a clone Arduino (not the official Italian one), you may also need the CH340 driver: search "CH340 driver Windows" and download from wch-ic.com.' }
+      },
+      {
+        title: 'Plug in the Arduino',
+        body: `Plug the USB cable into your Windows computer. Windows will install the driver automatically. A green LED on the Arduino will turn on.`
+      },
+      {
+        title: 'Find the COM port',
+        body: `Right-click the Start button → <strong>Device Manager</strong> → expand <strong>Ports (COM & LPT)</strong>. You will see something like <strong>Arduino Uno (COM3)</strong>. Note that COM number.`,
+        tip: { type:'tip', text:'The COM number changes each time you plug into a different USB socket. Always use the same USB socket.' }
+      },
+      {
+        title: 'Install Python',
+        body: `Go to <strong>python.org/downloads</strong> and download Python 3. During installation, check <strong>"Add Python to PATH"</strong> — very important.`
+      },
+      {
+        title: 'Install dependencies',
+        body: `Open Command Prompt (search "cmd" in Start menu) and run:`,
+        code: { label:'Command Prompt', text:`pip install pyserial requests` }
+      },
+      {
+        title: 'Create your sensors in FCHAN',
+        body: `Log into FCHAN in your browser. Go to your zone → <strong>Add Sensor</strong> for each sensor type. Choose <strong>WiFi/HTTP</strong> to generate an API key. Copy each key.`
+      },
+      {
+        title: 'Configure reader.py',
+        body: `Open reader.py in Notepad or any text editor. Edit the top section:`,
+        code: { label:'reader.py — edit these lines', text:`FCHAN_API_URL = "http://YOUR_SERVER_IP:3000/api"
+
+SENSOR_API_KEYS = {
+    "temperature":   "paste_your_api_key_here",
+    "soil_moisture": "paste_your_api_key_here",
+}` },
+        after: `Also find the port auto-detection and make sure it matches. Or pass the port directly when running.`
+      },
+      {
+        title: 'Run reader.py',
+        body: `In Command Prompt, navigate to the folder with reader.py and run:`,
+        code: { label:'Command Prompt', text:`python reader.py COM3` },
+        after: `Replace <strong>COM3</strong> with the port you found in Device Manager.`,
+        done: true
+      }
+    ]
+  },
+
+  // ── MAC USB ────────────────────────────────────
+  mac_usb: {
+    title: 'macOS + USB Cable Setup',
+    subtitle: 'Intel and Apple Silicon Macs',
+    steps: [
+      {
+        title: 'Install Arduino IDE',
+        body: `Download Arduino IDE from <strong>arduino.cc/en/software</strong> → choose macOS. Open the .dmg and drag to Applications.`
+      },
+      {
+        title: 'Install CH340 driver (clone Arduinos only)',
+        body: `If your Arduino is a clone (not the official Italian board), install the CH340 driver. Search "CH340 driver macOS" — download from wch-ic.com. Official Arduino boards don't need this.`
+      },
+      {
+        title: 'Plug in the Arduino',
+        body: `Connect via USB. A green LED turns on. If you have a MacBook with only USB-C ports, use a USB-C hub or adapter.`
+      },
+      {
+        title: 'Find the port',
+        body: `Open Terminal (Cmd+Space → Terminal) and run:`,
+        code: { label:'Terminal', text:`ls /dev/cu.usbmodem* /dev/cu.usbserial* 2>/dev/null` },
+        after: `You will see something like <strong>/dev/cu.usbmodem14101</strong>. That is your port.`
+      },
+      {
+        title: 'Install Python dependencies',
+        code: { label:'Terminal', text:`pip3 install pyserial requests` }
+      },
+      {
+        title: 'Create sensors and configure reader.py',
+        body: `Same as Linux — create sensors in FCHAN, copy API keys, edit the top of reader.py.`
+      },
+      {
+        title: 'Run reader.py',
+        code: { label:'Terminal', text:`python3 reader.py /dev/cu.usbmodem14101` },
+        after: `Replace with the port you found in step 4.`,
+        done: true
+      }
+    ]
+  },
+
+  // ── ANDROID OTG ───────────────────────────────
+  android_otg: {
+    title: 'Android + USB OTG Setup',
+    subtitle: 'Requires a USB OTG adapter',
+    steps: [
+      {
+        title: 'What you need',
+        body: `You need a <strong>USB OTG adapter</strong> — a small adapter that converts your phone's charging port to a standard USB-A socket. Cost: ~$2 on AliExpress. Make sure your Android phone supports OTG (most phones from 2015+ do).`,
+        tip: { type:'info', text:'To check OTG support: install "USB OTG Checker" app from Play Store.' }
+      },
+      {
+        title: 'Install the Serial USB Terminal app',
+        body: `On your Android phone, install <strong>"Serial USB Terminal"</strong> by Kai Morich from the Play Store (free). This app reads data from the Arduino over OTG.`
+      },
+      {
+        title: 'Connect Arduino via OTG',
+        body: `Plug the OTG adapter into your phone, then plug the Arduino USB cable into the adapter. A dialog will appear asking to allow Serial USB Terminal to access the USB device. Tap <strong>OK</strong> and check <strong>"Use by default"</strong>.`
+      },
+      {
+        title: 'Verify Arduino is sending data',
+        body: `In Serial USB Terminal, tap Connect. You should see readings appearing:`,
+        tip: { type:'tip', text:`SOIL:77.0\n---\nSOIL:77.0\n\nIf you see this, your Arduino is working perfectly.` }
+      },
+      {
+        title: 'Install Termux for Python',
+        body: `Install <strong>Termux</strong> from F-Droid (not Play Store — the Play Store version is outdated). Then open Termux and run:`,
+        code: { label:'Termux', text:`pkg update && pkg install python
+pip install pyserial requests` }
+      },
+      {
+        title: 'Configure and run reader.py',
+        body: `Download reader.py to your phone (via FCHAN website or file transfer). Edit it to set your API keys and server URL. Then run:`,
+        code: { label:'Termux', text:`python reader.py /dev/bus/usb/001/002` },
+        after: `The USB path may differ. Run <strong>ls /dev/bus/usb/*/*</strong> to find it.`,
+        done: true
+      }
+    ]
+  },
+
+  // ── WIFI (ALL PLATFORMS) ───────────────────────
+  wifi: {
+    title: 'WiFi Setup (ESP32 / ESP8266)',
+    subtitle: 'Works on all devices — no Python, no USB',
+    steps: [
+      {
+        title: 'What you need',
+        body: `Replace your Arduino Uno with an <strong>ESP32</strong> or <strong>ESP8266</strong> board (~$5 on AliExpress/Amazon). These have WiFi built in and send data directly to FCHAN over the internet — no laptop, no Python, no USB cable needed after setup.`,
+        tip: { type:'tip', text:'This is the recommended method for permanent field sensors. Once set up, it runs forever on its own.' }
+      },
+      {
+        title: 'Wire your sensors to the ESP32',
+        body: `The pin numbers are the same concept as Arduino Uno:`,
+        table: {
+          headers: ['Sensor', 'VCC', 'GND', 'Data Pin'],
+          rows: [
+            ['DHT11/22 (Temp+Humidity)', '3.3V', 'GND', 'GPIO 4'],
+            ['Soil Moisture', '3.3V', 'GND', 'GPIO 34 (A)'],
+            ['Light (LDR)', '3.3V', 'GND', 'GPIO 35 (A)'],
+            ['Water Level', '3.3V', 'GND', 'GPIO 32 (A)'],
+          ]
+        },
+        tip: { type:'warn', text:'ESP32 analog pins run at 3.3V — do not connect 5V sensors directly or you will damage the board.' }
+      },
+      {
+        title: 'Create sensors in FCHAN',
+        body: `Log into FCHAN → your zone → <strong>Add Sensor</strong> for each type. Choose <strong>WiFi/HTTP</strong> as connection type. An API key is generated — you will need it in the next step.`
+      },
+      {
+        title: 'Get the Arduino sketch from FCHAN',
+        body: `In FCHAN, open the <strong>Arduino Bridge</strong> drawer (click Arduino Bridge in the sidebar). Select the <strong>📡 WiFi</strong> tab. The sketch is shown with your API key and server URL <strong>already filled in</strong>. Click <strong>Copy Full Sketch</strong>.`
+      },
+      {
+        title: 'Upload the sketch to ESP32',
+        body: `Open Arduino IDE. Paste the sketch. Connect the ESP32 via USB to your computer just for this one-time upload. Then:`,
+        code: { label:'Arduino IDE — before uploading', text:`// Fill in your WiFi credentials at the top:
+const char* ssid     = "YOUR_WIFI_NAME";
+const char* password = "YOUR_WIFI_PASSWORD";
+// API key and server URL are already filled from FCHAN` },
+        after: `Select <strong>Tools → Board → ESP32 Dev Module</strong>, select your port, click <strong>Upload</strong>.`
+      },
+      {
+        title: 'Disconnect USB — it runs on its own now',
+        body: `After uploading, unplug the USB. Power the ESP32 with any 5V USB charger or power bank. It will:`,
+        list: [
+          'Connect to your WiFi automatically',
+          'Send sensor readings to FCHAN every 30 seconds',
+          'Continue working even if your computer is off',
+          'Work from any device — phone, tablet, any browser'
+        ],
+        done: true
+      }
+    ]
+  },
+
+  // ── LINUX BLUETOOTH ───────────────────────────
+  linux_bt: {
+    title: 'Linux + Bluetooth HC-06',
+    subtitle: 'More complex — consider WiFi instead',
+    steps: [
+      {
+        title: 'Power on your Arduino with HC-06',
+        body: `The HC-06 module should be wired: VCC→5V, GND→GND, TXD→pin10, RXD→pin11. Power the Arduino. The HC-06 LED will blink fast (waiting to pair).`,
+        tip: { type:'warn', text:'HC-06 is Bluetooth Classic — not BLE. It cannot connect directly via browser. You must use Python on your computer.' }
+      },
+      {
+        title: 'Pair the HC-06',
+        code: { label:'Terminal', text:`bluetoothctl
+power on
+trust 6E:F2:C8:A2:84:68
+connect 6E:F2:C8:A2:84:68
+quit` },
+        after: `Replace <strong>6E:F2:C8:A2:84:68</strong> with your HC-06 MAC address. To find it: run <strong>bluetoothctl</strong> then <strong>scan on</strong> and wait 10 seconds.`
+      },
+      {
+        title: 'Open the RFCOMM serial port',
+        body: `Run this in one terminal and keep it open:`,
+        code: { label:'Terminal 1 — keep this open', text:`sudo rfcomm connect 0 6E:F2:C8:A2:84:68 1` },
+        after: `You should see: <strong>Connected /dev/rfcomm0 to 6E:F2:C8:A2:84:68 on channel 1</strong>`
+      },
+      {
+        title: 'Run reader.py in a second terminal',
+        code: { label:'Terminal 2', text:`python3 reader.py /dev/rfcomm0` },
+        done: true,
+        tip: { type:'info', text:'If you get "Host is down", the HC-06 disconnected. Run bluetoothctl → connect again, then immediately run rfcomm connect.' }
+      }
+    ]
+  },
+
+  ios_wifi: { // redirect to wifi
+    title: 'iPhone/iPad — WiFi Only',
+    subtitle: 'USB and Bluetooth are not supported on iOS',
+    steps: [
+      {
+        title: 'Why only WiFi works on iPhone',
+        body: `iOS (iPhone and iPad) does not allow any app to communicate directly with USB serial devices or Bluetooth Classic modules like HC-06. The <strong>only method that works on iPhone is WiFi</strong> using an ESP32 or ESP8266 Arduino board.`,
+        tip: { type:'info', text:'The good news: once your ESP32 is set up, you never need to touch it again. Just open FCHAN in Safari and see live data.' }
+      }
+    ]
+  },
+
+  android_wifi: null, // same as wifi
+};
+
+// ════════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════════
+function selectPlatform(platform) {
+  selectedPlatform = platform;
+
+  // Mark selected
+  document.querySelectorAll('.platform-btn').forEach(b => b.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+
+  // iOS goes straight to WiFi
+  if (platform === 'ios') {
+    showMethods(platform);
+    return;
+  }
+
+  showMethods(platform);
+  setProgress(33);
+}
+
+function showMethods(platform) {
+  const methods = METHODS[platform] || [];
+  const grid = document.getElementById('methodGrid');
+
+  grid.innerHTML = methods.map(m => `
+    <button class="method-btn" onclick="selectMethod('${m.id}')">
+      <span class="m-icon">${m.icon}</span>
+      <span class="m-name">${m.name}</span>
+      <span class="m-desc">${m.desc}</span>
+      <span class="m-badge ${m.badge}">${m.label}</span>
+    </button>
+  `).join('');
+
+  document.getElementById('platformSection').style.display = 'none';
+  document.getElementById('methodSection').classList.add('visible');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function selectMethod(method) {
+  selectedMethod = method;
+  document.querySelectorAll('.method-btn').forEach(b => b.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+
+  // Get the right steps key
+  let key;
+  if (method === 'wifi') key = 'wifi';
+  else if (method === 'otg') key = 'android_otg';
+  else if (selectedPlatform === 'ios') key = 'ios_wifi';
+  else key = `${selectedPlatform}_${method}`;
+
+  const data = STEPS[key];
+  if (!data) { key = 'wifi'; }
+  renderSteps(STEPS[key] || STEPS['wifi']);
+  setProgress(66);
+}
+
+function renderSteps(data) {
+  document.getElementById('stepsTitle').textContent    = data.title;
+  document.getElementById('stepsSubtitle').textContent = data.subtitle;
+
+  const container = document.getElementById('stepsContent');
+  container.innerHTML = data.steps.map((step, i) => `
+    <div class="step" id="step${i}">
+      <div class="step-num">${i+1}</div>
+      <div class="step-body">
+        <h3>${step.title}</h3>
+        ${step.body ? `<p>${step.body}</p>` : ''}
+        ${step.code ? `
+          <div class="code-wrap">
+            <div class="code-label">${step.code.label}</div>
+            <pre><button class="copy-btn" onclick="copyCode(this)">Copy</button>${escHtml(step.code.text)}</pre>
+          </div>
+        ` : ''}
+        ${step.after ? `<p style="margin-top:10px">${step.after}</p>` : ''}
+        ${step.table ? renderTable(step.table) : ''}
+        ${step.list ? `<ul style="margin:10px 0 0 20px;color:var(--muted);font-size:14px">${step.list.map(l=>`<li style="margin-bottom:4px">${l}</li>`).join('')}</ul>` : ''}
+        ${step.tip ? `
+          <div class="alert ${step.tip.type}">
+            <span class="alert-icon">${step.tip.type==='tip'?' ':step.tip.type==='warn'?' ':' '}</span>
+            <span>${step.tip.text.replace(/\n/g,'<br>')}</span>
+          </div>
+        ` : ''}
+        ${step.done ? `
+          <div class="done-card">
+            <h3> You're connected!</h3>
+            <p>Your Arduino is now sending data to FCHAN. Open your zone in FCHAN — you will see live sensor readings updating automatically.</p>
+          </div>
+        ` : ''}
+      </div>
+    </div>
+  `).join('');
+
+  document.getElementById('methodSection').classList.remove('visible');
+  document.getElementById('stepsSection').classList.add('visible');
+  window.scrollTo({top:0, behavior:'smooth'});
+
+  // Animate steps in
+  setTimeout(() => {
+    data.steps.forEach((_, i) => {
+      setTimeout(() => {
+        const el = document.getElementById(`step${i}`);
+        if (el) el.classList.add('visible');
+      }, i * 120);
+    });
+  }, 100);
+
+  setProgress(100);
+}
+
+function renderTable(table) {
+  return `<table class="tbl" style="margin:14px 0">
+    <thead><tr>${table.headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
+    <tbody>${table.rows.map(row=>`<tr>${row.map((c,i)=>`<td>${i===0?`<strong>${c}</strong>`:c}</td>`).join('')}</tr>`).join('')}</tbody>
+  </table>`;
+}
+
+function goBack(from) {
+  if (from === 'steps') {
+    document.getElementById('stepsSection').classList.remove('visible');
+    document.getElementById('methodSection').classList.add('visible');
+    setProgress(33);
+  } else if (from === 'method') {
+    document.getElementById('methodSection').classList.remove('visible');
+    document.getElementById('platformSection').style.display = 'block';
+    document.querySelectorAll('.platform-btn').forEach(b => b.classList.remove('selected'));
+    setProgress(0);
+  }
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function copyCode(btn) {
+  const pre  = btn.parentElement;
+  const text = pre.innerText.replace('Copy','').replace('Copied!','').trim();
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = 'Copy';
+      btn.classList.remove('copied');
+    }, 2000);
+  });
+}
+
+function escHtml(str) {
+  return str
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;');
+}
+
+function setProgress(pct) {
+  document.getElementById('progress').style.width = pct + '%';
+}
+</script>
+
+
+<!-- ══ THEME + LANGUAGE FLOATING BAR ══════════════ -->
+<div id="fchanToggleBar" style="
+  position:fixed; bottom:20px; right:20px; z-index:9999;
+  display:flex; align-items:center; gap:8px;
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:100px; padding:6px 12px;
+  box-shadow:0 4px 20px rgba(0,0,0,0.2);
+  backdrop-filter:blur(8px);
+">
+  <!-- Theme toggle -->
+  <button class="theme-toggle"
+          style="background:none;border:none;cursor:pointer;
+                 font-size:18px;width:32px;height:32px;
+                 display:flex;align-items:center;justify-content:center;
+                 border-radius:50%;transition:background .15s;"
+          title="Toggle theme"
+          onmouseover="this.style.background='var(--surface-2)'"
+          onmouseout="this.style.background='none'">
+    🌙
+  </button>
+  <!-- Divider -->
+  <div style="width:1px;height:20px;background:var(--border);"></div>
+  <!-- Language toggle -->
+  <div class="lang-toggle" style="display:flex;gap:2px;">
+    <button class="lang-btn active" data-lang="en"
+            style="background:none;border:1px solid var(--border);
+                   border-radius:6px;padding:3px 8px;cursor:pointer;
+                   font-size:11px;font-weight:700;color:var(--text-muted);
+                   transition:all .15s;font-family:var(--font-body);">EN</button>
+    <button class="lang-btn" data-lang="fr"
+            style="background:none;border:1px solid var(--border);
+                   border-radius:6px;padding:3px 8px;cursor:pointer;
+                   font-size:11px;font-weight:700;color:var(--text-muted);
+                   transition:all .15s;font-family:var(--font-body);">FR</button>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    ThemeManager.init();
+    LanguageManager.init();
+    // Style active lang btn
+    
+      // Hover styles
+      btn.addEventListener('mouseover', () => {
+        if (!btn.classList.contains('active'))
+          btn.style.background = 'var(--surface-2)';
+      });
+      btn.addEventListener('mouseout', () => {
+        if (!btn.classList.contains('active'))
+          btn.style.background = 'none';
+      });
+    });
+    // Watch lang changes to update active state
+    const updateLangBtns = () => {
+      const lang = LanguageManager.get();
+      document.querySelectorAll('.lang-btn').forEach(b => {
+        const isActive = b.dataset.lang === lang;
+        b.classList.toggle('active', isActive);
+        b.style.background    = isActive ? 'var(--primary)' : 'none';
+        b.style.color         = isActive ? 'white' : 'var(--text-muted)';
+        b.style.borderColor   = isActive ? 'var(--primary)' : 'var(--border)';
+      });
+    };
+    updateLangBtns();
+    
+  });
+</script>
+</body>
+</html>

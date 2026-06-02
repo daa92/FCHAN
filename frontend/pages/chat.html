@@ -10,6 +10,8 @@
   <link rel="icon" type="image/png" href="../assets/images/logo.png">
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script src="../js/theme.js"></script>
+  <script src="../js/language.js"></script>
   <style>
     /* ── CHAT LAYOUT ──────────────────────────────── */
     .chat-layout {
@@ -367,11 +369,31 @@
   <aside class="chat-sidebar">
     <div class="chat-sidebar-header">
       <h2>Messages</h2>
-      <button onclick="window.location.href='dashboard.html'"
-              style="background:none;border:none;cursor:pointer;color:var(--text-muted);"
-              title="Back to dashboard">
-        <i data-lucide="arrow-left" style="width:18px;height:18px;"></i>
-      </button>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <!-- Theme toggle -->
+        <button class="theme-toggle"
+                style="background:none;border:1px solid var(--border);
+                       border-radius:8px;width:30px;height:30px;cursor:pointer;
+                       display:flex;align-items:center;justify-content:center;font-size:14px;"
+                title="Toggle theme">🌙</button>
+        <!-- Language toggle -->
+        <div class="lang-toggle" style="display:flex;gap:2px;">
+          <button class="lang-btn active" data-lang="en"
+                  style="background:var(--primary);border:1px solid var(--primary);
+                         border-radius:6px;padding:2px 7px;cursor:pointer;
+                         font-size:10px;font-weight:700;color:white;">EN</button>
+          <button class="lang-btn" data-lang="fr"
+                  style="background:none;border:1px solid var(--border);
+                         border-radius:6px;padding:2px 7px;cursor:pointer;
+                         font-size:10px;font-weight:700;color:var(--text-muted);">FR</button>
+        </div>
+        <!-- Back button -->
+        <button onclick="window.location.href='dashboard.html'"
+                style="background:none;border:none;cursor:pointer;color:var(--text-muted);"
+                title="Back to dashboard">
+          <i data-lucide="arrow-left" style="width:18px;height:18px;"></i>
+        </button>
+      </div>
     </div>
 
     <!-- Broadcast channel (always pinned first) -->
@@ -518,8 +540,6 @@
 </div>
 
 <!-- Scripts -->
-<script src="../js/theme.js"></script>
-<script src="../js/language.js"></script>
 <script src="../js/auth.js"></script>
 <script>
 // ════════════════════════════════════════════════════
@@ -543,6 +563,23 @@ let currentView = null; // { type: 'broadcast'|'private'|'multicast', id: null|u
 // ── INIT ──────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
   ThemeManager.init();
+  LanguageManager.init();
+
+  // Keep lang button visuals in sync
+  function updateLangBtns() {
+    const lang = LanguageManager.get();
+    document.querySelectorAll('.lang-btn').forEach(b => {
+      const isActive = b.dataset.lang === lang;
+      b.classList.toggle('active', isActive);
+      b.style.background  = isActive ? 'var(--primary)' : 'none';
+      b.style.color       = isActive ? 'white' : 'var(--text-muted)';
+      b.style.borderColor = isActive ? 'var(--primary)' : 'var(--border)';
+    });
+  }
+  updateLangBtns();
+  const _origLangSet = LanguageManager.set.bind(LanguageManager);
+  LanguageManager.set = function(lang) { _origLangSet(lang); updateLangBtns(); };
+
   lucide.createIcons();
 
   currentUser = Auth.getUser();
@@ -894,7 +931,7 @@ function incrementDmBadge(userId) {
 
 function showMessageToast(msg, type) {
   if (document.hidden) return; // only if page is visible
-  const labels = { broadcast:'Public', private:'Direct', multicast:'Group' };
+  const labels = { broadcast:'  Public', private:'  Direct', multicast:'  Group' };
   const from   = msg.sender_name || 'Someone';
   showToast(`${labels[type] || ''} ${from}: ${msg.message.slice(0,40)}${msg.message.length>40?'…':''}`, 'info');
 }

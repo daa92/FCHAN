@@ -485,6 +485,14 @@
   	<span class="nav-icon"><i data-lucide="usb"></i></span>
   	<span class="nav-label">Arduino Bridge</span>
     </div>
+      <div class="nav-item" onclick="navigate('arduino-guide.html')">
+        <span class="nav-icon"><i data-lucide="book-open"></i></span>
+        <span class="nav-label">Arduino Guide</span>
+      </div>
+      <div class="nav-item" onclick="navigate('arduino-download.html')">
+        <span class="nav-icon"><i data-lucide="download"></i></span>
+        <span class="nav-label">Download Reader</span>
+      </div>
     </nav>
     <div class="sidebar-footer">
       <div style="display:flex;align-items:center;
@@ -1058,6 +1066,24 @@ function renderSensorCards(sensors) {
 
       <div class="sensor-card-name">${sensor.name}</div>
 
+      ${sensor.api_key ? `
+      <div style="margin:6px 0 4px;background:var(--surface-2);border:1px solid var(--border);
+                  border-radius:6px;padding:5px 8px;display:flex;align-items:center;gap:6px;
+                  cursor:default;" title="API Key: ${sensor.api_key}">
+        <span style="font-size:10px;color:var(--text-muted);flex-shrink:0;"></span>
+        <span style="font-family:monospace;font-size:10px;color:var(--text-muted);
+                     flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+          ${sensor.api_key}
+        </span>
+        <button onclick="copySensorKey('${sensor.api_key}', this)"
+                style="background:var(--primary);color:white;border:none;cursor:pointer;
+                       font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;
+                       white-space:nowrap;font-family:inherit;flex-shrink:0;transition:all 0.15s;"
+                title="Copy API key">
+          Copy
+        </button>
+      </div>` : ''}
+
       <div class="sensor-card-meta">
         <span id="stime-${sensor.id}">No data</span>
         <div style="display:flex;gap:4px;">
@@ -1595,10 +1621,10 @@ function onConnectionTypeChange() {
   const nowDesc = document.getElementById('connectNowDesc');
 
   const HINTS = {
-    manual:    '✏️  You will enter readings manually from the dashboard.',
-    wifi:      '📡  Your ESP32 / Arduino WiFi POSTs readings to the FCHAN API using the API key below.',
-    usb:       '🔌  Connect your Arduino via USB cable. The browser bridge reads Serial data directly — no Python needed.',
-    bluetooth: '📶  Pair your Arduino BLE module. The browser bridge streams readings wirelessly.'
+    manual:    '   You will enter readings manually from the dashboard.',
+    wifi:      '   Your ESP32 / Arduino WiFi POSTs readings to the FCHAN API using the API key below.',
+    usb:       '   Connect your Arduino via USB cable. The browser bridge reads Serial data directly — no Python needed.',
+    bluetooth: '   Pair your Arduino BLE module. The browser bridge streams readings wirelessly.'
   };
 
   hint.textContent = HINTS[conn] || '';
@@ -1768,6 +1794,34 @@ function copyApiKey() {
   navigator.clipboard.writeText(key).then(() => {
     showToast('API key copied!', 'success');
   });
+}
+
+function copySensorKey(apiKey, btn) {
+  if (!apiKey) return;
+  const copy = () => {
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copied!';
+    btn.style.color = 'var(--success, #27ae60)';
+    setTimeout(() => {
+      btn.textContent = orig;
+      btn.style.color = 'var(--primary)';
+    }, 2000);
+  };
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(apiKey).then(copy).catch(() => fallbackCopy(apiKey, copy));
+  } else {
+    fallbackCopy(apiKey, copy);
+  }
+}
+
+function fallbackCopy(text, callback) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;';
+  document.body.appendChild(ta);
+  ta.focus(); ta.select();
+  try { document.execCommand('copy'); callback(); } catch(e) {}
+  document.body.removeChild(ta);
 }
 
 // ── PANEL TOGGLE ──────────────────────────────────

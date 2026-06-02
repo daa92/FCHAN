@@ -102,13 +102,12 @@
         : `http://${h}:3000/api`;
     })();
 
-    async function verifyToken() {
+    async function verifyToken(manualToken) {
       const params = new URLSearchParams(window.location.search);
-      const token  = params.get('token');
+      const token  = manualToken || params.get('token');
 
       if (!token) {
-        showResult('error', 'Invalid Link',
-          'No verification token found in the URL.');
+        showManualInput();
         return;
       }
 
@@ -128,19 +127,52 @@
         } else {
           showResult('error', 'Verification Failed',
             data.message || 'Invalid or expired token.',
-            `<a href="index.html" class="btn btn-outline">
+            `<button onclick="showManualInput()" class="btn btn-outline">
+               Enter Token Manually
+             </button>
+             <a href="index.html" class="btn btn-outline" style="margin-top:8px;">
                Back to Login
              </a>`
           );
         }
       } catch (err) {
         showResult('error', 'Connection Error',
-          'Could not connect to the server. Please try again.',
-          `<button onclick="verifyToken()" class="btn btn-primary">
+          'Could not connect to the server. Make sure you are on the same network as the FCHAN server.',
+          `<button onclick="showManualInput()" class="btn btn-primary">
+             Enter Token Manually
+           </button>
+           <button onclick="verifyToken()" class="btn btn-outline" style="margin-top:8px;">
              Retry
            </button>`
         );
       }
+    }
+
+    function showManualInput() {
+      const container = document.getElementById('verifyCard');
+      container.innerHTML = `
+        <div style="text-align:center;padding:20px 0;">
+          <div style="font-size:48px;margin-bottom:16px;"></div>
+          <h2 style="margin-bottom:8px;">Enter Verification Token</h2>
+          <p style="color:var(--text-muted);font-size:14px;margin-bottom:24px;">
+            Copy the token from your verification email and paste it below.
+          </p>
+          <div style="display:flex;gap:10px;max-width:480px;margin:0 auto;">
+            <input type="text" id="manualTokenInput"
+              class="form-control"
+              placeholder="Paste your verification token here"
+              style="font-family:monospace;font-size:13px;flex:1;">
+            <button class="btn btn-primary"
+              onclick="verifyToken(document.getElementById('manualTokenInput').value.trim())">
+              Verify
+            </button>
+          </div>
+          <p style="margin-top:16px;">
+            <a href="index.html" style="color:var(--text-muted);font-size:13px;">
+              Back to Login
+            </a>
+          </p>
+        </div>`;
     }
 
     function showResult(type, title, message, actionHTML = '') {

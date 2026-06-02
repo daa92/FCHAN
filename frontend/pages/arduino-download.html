@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FCHAN — Download Arduino Reader</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<link rel="icon" type="image/png" href="../assets/images/logo.png">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script src="../js/auth.js"></script>
+<style>
+body { min-height:100vh; background:var(--bg); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:32px 16px; }
+.card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:40px; max-width:640px; width:100%; box-shadow:var(--shadow-lg); }
+.logo { font-size:28px; font-weight:800; color:var(--primary); font-family:var(--font-heading); margin-bottom:6px; }
+h1 { font-size:22px; font-weight:700; margin-bottom:8px; }
+p { color:var(--text-muted); font-size:14px; margin-bottom:24px; line-height:1.6; }
+.server-badge { background:rgba(39,174,96,0.1); border:1px solid rgba(39,174,96,0.3); border-radius:8px; padding:10px 16px; font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--primary); margin-bottom:24px; display:flex; align-items:center; gap:8px; }
+.server-badge .dot { width:8px; height:8px; border-radius:50%; background:var(--primary); animation:pulse 1.4s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+.download-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:24px; }
+@media(max-width:500px) { .download-grid { grid-template-columns:1fr; } }
+.download-card { border:1px solid var(--border); border-radius:12px; padding:20px; cursor:pointer; transition:all .2s; background:var(--surface-2); }
+.download-card:hover { border-color:var(--primary); transform:translateY(-2px); box-shadow:var(--shadow-md); }
+.download-card .icon { font-size:28px; margin-bottom:10px; }
+.download-card h3 { font-size:15px; font-weight:700; margin-bottom:4px; }
+.download-card p { font-size:12px; margin:0; color:var(--text-muted); }
+.download-card .badge { display:inline-block; background:var(--primary); color:white; font-size:10px; font-weight:700; border-radius:6px; padding:2px 8px; margin-top:8px; }
+.divider { border:none; border-top:1px solid var(--border); margin:24px 0; }
+.step-list { list-style:none; padding:0; }
+.step-list li { display:flex; gap:12px; align-items:flex-start; margin-bottom:14px; font-size:13px; color:var(--text-muted); }
+.step-num { background:var(--primary); color:white; border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex-shrink:0; margin-top:1px; }
+.step-list strong { color:var(--text); }
+.btn-primary { background:var(--primary); color:white; border:none; border-radius:10px; padding:12px 24px; font-size:14px; font-weight:600; cursor:pointer; width:100%; display:flex; align-items:center; justify-content:center; gap:8px; transition:all .2s; font-family:var(--font-body); margin-top:8px; }
+.btn-primary:hover { background:var(--primary-dark); transform:translateY(-1px); }
+code { background:var(--surface-2); border:1px solid var(--border); border-radius:6px; padding:2px 8px; font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--primary); }
+.back-link { margin-top:20px; font-size:13px; color:var(--text-muted); text-align:center; }
+.back-link a { color:var(--primary); text-decoration:none; font-weight:600; }
+</style>
+  <script src="../js/theme.js"></script>
+  <script src="../js/language.js"></script>
+</head>
+<body>
+
+<div class="card">
+  <div class="logo">FCHAN</div>
+  <h1>Arduino Connection Files</h1>
+  <p>Download the pre-configured Python script to connect your Arduino sensor to this FCHAN server. Works on Linux, Windows, and macOS.</p>
+
+  <!-- Server IP badge -->
+  <div class="server-badge">
+    <span class="dot"></span>
+    <span>Server: <strong id="serverUrl">detecting...</strong></span>
+  </div>
+
+  <!-- Download buttons -->
+  <div class="download-grid">
+    <div class="download-card" onclick="downloadReader('usb')">
+      <div class="icon">🔌</div>
+      <h3>USB Cable Reader</h3>
+      <p>Arduino connected via USB cable to your computer</p>
+      <div class="badge">Recommended</div>
+    </div>
+    <div class="download-card" onclick="downloadReader('bluetooth')">
+      <div class="icon">📶</div>
+      <h3>Bluetooth Reader</h3>
+      <p>Arduino with HC-06 Bluetooth module</p>
+      <div class="badge" style="background:var(--secondary);">Advanced</div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Instructions -->
+  <p style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px;">After downloading, follow these steps:</p>
+  <ul class="step-list">
+    <li>
+      <span class="step-num">1</span>
+      <span>Install Python from <strong>python.org</strong> if not already installed. Check <strong>"Add to PATH"</strong> during installation on Windows.</span>
+    </li>
+    <li>
+      <span class="step-num">2</span>
+      <span>Open a terminal and install dependencies:<br>
+        <code>pip install pyserial requests</code>
+      </span>
+    </li>
+    <li>
+      <span class="step-num">3</span>
+      <span>Open the downloaded file in a text editor. Fill in your <strong>sensor API keys</strong> at the top. You can find them in FCHAN → your zone → click your sensor.</span>
+    </li>
+    <li>
+      <span class="step-num">4</span>
+      <span>Plug in your Arduino, then run:<br>
+        <code>python3 fchan_usb_reader.py</code> (Linux/Mac)<br>
+        <code>python fchan_usb_reader.py</code> (Windows)
+      </span>
+    </li>
+    <li>
+      <span class="step-num">5</span>
+      <span>Open FCHAN in your browser — your sensor readings will appear live.</span>
+    </li>
+  </ul>
+
+  <button class="btn-primary" onclick="window.location.href='arduino-guide.html'">
+    <i data-lucide="book-open" style="width:16px;height:16px;"></i>
+    Full Step-by-Step Guide (all platforms)
+  </button>
+</div>
+
+<div class="back-link">
+  <a href="dashboard.html">← Back to Dashboard</a>
+</div>
+
+<script>
+// ── Detect server URL ──────────────────────────
+const serverUrl = (() => {
+  const h = window.location.hostname;
+  return h === 'localhost' || h === '127.0.0.1'
+    ? 'http://localhost:3000/api'
+    : `http://${h}:3000/api`;
+})();
+
+document.getElementById('serverUrl').textContent =
+  serverUrl.replace('/api','');
+
+lucide.createIcons();
+
+// ── Generate and download pre-configured reader ─
+function downloadReader(type) {
+  const isUsb = type === 'usb';
+  const filename = isUsb ? 'fchan_usb_reader.py' : 'fchan_bluetooth_reader.py';
+
+  // Fetch the template file then inject the server URL
+  fetch(`../assets/downloads/${filename}`)
+    .then(r => r.text())
+    .then(content => {
+      // Replace the localhost API URL with the real server URL
+      content = content.replace(
+        /FCHAN_API_URL\s*=\s*["']http:\/\/localhost:3000\/api["']/,
+        `FCHAN_API_URL = "${serverUrl}"`
+      );
+      content = content.replace(
+        /FCHAN_API_URL\s*=\s*["']http:\/\/127\.0\.0\.1:3000\/api["']/,
+        `FCHAN_API_URL = "${serverUrl}"`
+      );
+
+      // Add a header comment with server info
+      const header = `#!/usr/bin/env python3
+# ══════════════════════════════════════════════════
+# FCHAN Arduino Reader — pre-configured
+# Server: ${serverUrl.replace('/api','')}
+# Downloaded: ${new Date().toLocaleString()}
+#
+# IMPORTANT: Fill in your API keys below before running!
+# Get them from: ${serverUrl.replace('/api','')}/pages/dashboard.html
+#  → your farm → zone → click sensor → copy API key
+# ══════════════════════════════════════════════════
+
+`;
+      // Remove existing shebang if present
+      content = content.replace(/^#!.*\n/, '');
+      content = header + content;
+
+      // Trigger download
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    })
+    .catch(() => {
+      // Fallback: direct download without modification
+      window.location.href = `../assets/downloads/${filename}`;
+    });
+}
+</script>
+
+
+<!-- ══ THEME + LANGUAGE FLOATING BAR ══════════════ -->
+<div id="fchanToggleBar" style="
+  position:fixed; bottom:20px; right:20px; z-index:9999;
+  display:flex; align-items:center; gap:8px;
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:100px; padding:6px 12px;
+  box-shadow:0 4px 20px rgba(0,0,0,0.2);
+  backdrop-filter:blur(8px);
+">
+  <!-- Theme toggle -->
+  <button class="theme-toggle"
+          style="background:none;border:none;cursor:pointer;
+                 font-size:18px;width:32px;height:32px;
+                 display:flex;align-items:center;justify-content:center;
+                 border-radius:50%;transition:background .15s;"
+          title="Toggle theme"
+          onmouseover="this.style.background='var(--surface-2)'"
+          onmouseout="this.style.background='none'">
+    🌙
+  </button>
+  <!-- Divider -->
+  <div style="width:1px;height:20px;background:var(--border);"></div>
+  <!-- Language toggle -->
+  <div class="lang-toggle" style="display:flex;gap:2px;">
+    <button class="lang-btn active" data-lang="en"
+            style="background:none;border:1px solid var(--border);
+                   border-radius:6px;padding:3px 8px;cursor:pointer;
+                   font-size:11px;font-weight:700;color:var(--text-muted);
+                   transition:all .15s;font-family:var(--font-body);">EN</button>
+    <button class="lang-btn" data-lang="fr"
+            style="background:none;border:1px solid var(--border);
+                   border-radius:6px;padding:3px 8px;cursor:pointer;
+                   font-size:11px;font-weight:700;color:var(--text-muted);
+                   transition:all .15s;font-family:var(--font-body);">FR</button>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    ThemeManager.init();
+    LanguageManager.init();
+    // Style active lang btn
+    
+      // Hover styles
+      btn.addEventListener('mouseover', () => {
+        if (!btn.classList.contains('active'))
+          btn.style.background = 'var(--surface-2)';
+      });
+      btn.addEventListener('mouseout', () => {
+        if (!btn.classList.contains('active'))
+          btn.style.background = 'none';
+      });
+    });
+    // Watch lang changes to update active state
+    const updateLangBtns = () => {
+      const lang = LanguageManager.get();
+      document.querySelectorAll('.lang-btn').forEach(b => {
+        const isActive = b.dataset.lang === lang;
+        b.classList.toggle('active', isActive);
+        b.style.background    = isActive ? 'var(--primary)' : 'none';
+        b.style.color         = isActive ? 'white' : 'var(--text-muted)';
+        b.style.borderColor   = isActive ? 'var(--primary)' : 'var(--border)';
+      });
+    };
+    updateLangBtns();
+    
+  });
+</script>
+</body>
+</html>

@@ -69,6 +69,23 @@
               <div style="font-size:11px;color:var(--text-muted);">Send sensor data to FCHAN</div>
             </div>
           </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button onclick="window.open('arduino-guide.html','_blank')"
+                    style="background:rgba(39,174,96,0.12);border:1px solid rgba(39,174,96,0.3);
+                           border-radius:8px;padding:6px 12px;cursor:pointer;
+                           color:var(--primary);font-size:12px;font-weight:600;
+                           font-family:var(--font-body);white-space:nowrap;"
+                    title="Step-by-step guide">
+               Full Guide
+            </button>
+            <button onclick="window.open('arduino-download.html','_blank')"
+                    style="background:rgba(91,143,255,0.12);border:1px solid rgba(91,143,255,0.3);
+                           border-radius:8px;padding:6px 12px;cursor:pointer;
+                           color:#5b8fff;font-size:12px;font-weight:600;
+                           font-family:var(--font-body);white-space:nowrap;"
+                    title="Download reader.py">
+               Download
+            </button>
           <button onclick="closeArduinoBridge()"
                   style="background:var(--surface-2);border:1px solid var(--border);
                          border-radius:50%;width:34px;height:34px;cursor:pointer;
@@ -84,7 +101,7 @@
                       border-radius:12px;padding:16px;margin-bottom:20px;">
             <div style="font-size:12px;font-weight:600;color:var(--text-muted);
                         text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">
-              🔑 Your Sensor Connection Key
+                Your Sensor Connection Key
             </div>
             <div style="display:flex;gap:8px;align-items:center;">
               <input id="abApiKey" type="password"
@@ -114,25 +131,25 @@
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;" id="abMethodGrid">
 
               <button class="ab-method-btn active" data-mode="usb" onclick="abSelectMode('usb')">
-                <span style="font-size:22px;">🔌</span>
+                <span style="font-size:22px;"> </span>
                 <span style="font-weight:600;font-size:13px;">USB Cable</span>
                 <span style="font-size:11px;color:var(--text-muted);">Plugged into this computer</span>
               </button>
 
               <button class="ab-method-btn" data-mode="bluetooth" onclick="abSelectMode('bluetooth')">
-                <span style="font-size:22px;">📶</span>
+                <span style="font-size:22px;"> </span>
                 <span style="font-weight:600;font-size:13px;">Bluetooth</span>
                 <span style="font-size:11px;color:var(--text-muted);">Wireless, nearby</span>
               </button>
 
               <button class="ab-method-btn" data-mode="wifi" onclick="abSelectMode('wifi')">
-                <span style="font-size:22px;">📡</span>
+                <span style="font-size:22px;"> </span>
                 <span style="font-weight:600;font-size:13px;">WiFi / Network</span>
                 <span style="font-size:11px;color:var(--text-muted);">Arduino has WiFi module</span>
               </button>
 
               <button class="ab-method-btn" data-mode="manual" onclick="abSelectMode('manual')">
-                <span style="font-size:22px;">✏️</span>
+                <span style="font-size:22px;"> </span>
                 <span style="font-weight:600;font-size:13px;">Enter Manually</span>
                 <span style="font-size:11px;color:var(--text-muted);">Type readings yourself</span>
               </button>
@@ -147,7 +164,7 @@
           <div id="abLiveSection" style="display:none;margin-top:20px;">
             <div style="font-size:12px;font-weight:600;color:var(--text-muted);
                         text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">
-              📊 Live Readings
+                Live Readings
             </div>
             <div id="abReadingsGrid"
                  style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;">
@@ -165,7 +182,7 @@
           <details style="margin-top:16px;">
             <summary style="font-size:12px;color:var(--text-muted);cursor:pointer;
                             user-select:none;padding:6px 0;">
-              📋 Technical log (for troubleshooting)
+                Technical log (for troubleshooting)
             </summary>
             <div id="abLog"
                  style="margin-top:8px;background:#0d1117;border-radius:8px;
@@ -309,12 +326,12 @@
             1. Plug your Arduino into this computer with a USB cable.<br>
             2. Click <strong>Connect Arduino</strong> below.<br>
             3. A popup will ask you to choose a port — select your Arduino.<br>
-            4. Data will start flowing automatically. ✅
+            4. Data will start flowing automatically.  
           </div>
         `}
         <button class="ab-btn-connect" id="abUsbConnectBtn" onclick="abUsbConnect()"
                 ${!supported ? 'disabled' : ''}>
-          🔌 Connect Arduino via USB
+            Connect Arduino via USB
         </button>
         <button class="ab-btn-disconnect" id="abUsbDisconnectBtn"
                 style="display:none;margin-top:8px;" onclick="abUsbDisconnect()">
@@ -344,12 +361,12 @@
             1. Make sure your Arduino's Bluetooth module is powered on.<br>
             2. Click <strong>Scan for Arduino</strong> below.<br>
             3. Select your device from the list.<br>
-            4. Data will stream automatically. ✅
+            4. Data will stream automatically.  
           </div>
         `}
         <button class="ab-btn-connect" id="abBtConnectBtn" onclick="abBtConnect()"
                 ${!supported ? 'disabled' : ''}>
-          📶 Scan &amp; Connect via Bluetooth
+            Scan &amp; Connect via Bluetooth
         </button>
         <button class="ab-btn-disconnect" id="abBtDisconnectBtn"
                 style="display:none;margin-top:8px;" onclick="abBtDisconnect()">
@@ -364,7 +381,7 @@
       area.innerHTML = `
         <div style="background:var(--surface-2);border-radius:10px;padding:16px;margin-bottom:14px;">
           <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px;">
-            📋 Copy this code onto your Arduino WiFi sketch:
+              Copy this code onto your Arduino WiFi sketch:
           </div>
           <div style="background:#0d1117;border-radius:8px;padding:12px;
                       font-family:monospace;font-size:11px;color:#c9d1d9;
@@ -379,12 +396,12 @@
                   style="margin-top:10px;padding:8px 16px;background:var(--primary);
                          color:white;border:none;border-radius:8px;font-size:12px;
                          font-weight:600;cursor:pointer;width:100%;">
-            📋 Copy Full Sketch
+              Copy Full Sketch
           </button>
         </div>
         <div style="font-size:12px;color:var(--text-muted);line-height:1.6;">
           Once uploaded, your Arduino will automatically send readings every 30 seconds.
-          No cables needed. ✅
+          No cables needed.  
         </div>
         <div style="margin-top:14px;">
           <div style="font-size:13px;font-weight:600;margin-bottom:8px;">
@@ -417,7 +434,7 @@
                  placeholder="e.g. 28.5" step="0.01">
         </div>
         <button class="ab-btn-connect" onclick="abManualSend()">
-          📤 Send Reading
+            Send Reading
         </button>
         <div id="abManualStatus" style="margin-top:10px;"></div>
       `;
@@ -432,7 +449,7 @@
       usbPort = await navigator.serial.requestPort();
       await usbPort.open({ baudRate: 9600 });
       isConnected = true;
-      abSetStatus('abUsbStatus', 'ok', '✅ Connected — receiving data from Arduino');
+      abSetStatus('abUsbStatus', 'ok', '  Connected — receiving data from Arduino');
       document.getElementById('abUsbConnectBtn').style.display    = 'none';
       document.getElementById('abUsbDisconnectBtn').style.display = 'block';
       document.getElementById('abLiveSection').style.display      = 'block';
@@ -537,7 +554,7 @@
       });
 
       isBtConnected = true;
-      abSetStatus('abBtStatus', 'ok', `✅ Connected to ${btDevice.name || 'Arduino'}`);
+      abSetStatus('abBtStatus', 'ok', `  Connected to ${btDevice.name || 'Arduino'}`);
       document.getElementById('abBtConnectBtn').style.display    = 'none';
       document.getElementById('abBtDisconnectBtn').style.display = 'block';
       document.getElementById('abLiveSection').style.display     = 'block';
@@ -573,8 +590,8 @@
     st.innerHTML = `<span style="color:var(--warning);font-size:12px;">Sending…</span>`;
     const ok = await abSendReading(val);
     st.innerHTML = ok
-      ? `<span style="color:var(--success);font-size:12px;">✅ Test reading sent! Your connection works.</span>`
-      : `<span style="color:var(--danger);font-size:12px;">❌ Failed — check your API key and server address.</span>`;
+      ? `<span style="color:var(--success);font-size:12px;">  Test reading sent! Your connection works.</span>`
+      : `<span style="color:var(--danger);font-size:12px;">  Failed — check your API key and server address.</span>`;
     if (ok) abUpdateReading('test', val);
   };
 
@@ -586,8 +603,8 @@
     st.innerHTML = `<span style="color:var(--warning);font-size:12px;">Saving…</span>`;
     const ok = await abSendReading(val);
     st.innerHTML = ok
-      ? `<span style="color:var(--success);font-size:12px;">✅ Reading saved!</span>`
-      : `<span style="color:var(--danger);font-size:12px;">❌ Error saving — check your API key.</span>`;
+      ? `<span style="color:var(--success);font-size:12px;">  Reading saved!</span>`
+      : `<span style="color:var(--danger);font-size:12px;">  Error saving — check your API key.</span>`;
     if (ok) abUpdateReading('manual', val);
   };
 
@@ -646,8 +663,8 @@ void loop() {
   window.abToggleKeyVisibility = function () {
     const inp = document.getElementById('abApiKey');
     const btn = document.getElementById('abKeyToggle');
-    if (inp.type === 'password') { inp.type = 'text'; btn.textContent = '🙈'; }
-    else                         { inp.type = 'password'; btn.textContent = '👁'; }
+    if (inp.type === 'password') { inp.type = 'text'; btn.textContent = ' '; }
+    else                         { inp.type = 'password'; btn.textContent = ' '; }
   };
 
   // ── SEND READING ──────────────────────────────────

@@ -418,10 +418,18 @@
         <span class="nav-icon"><i data-lucide="message-circle"></i></span>
         <span class="nav-label">Messages</span>
       </div>
-      <div class="nav-item" onclick="openArduinoBridge()">
+      <!--<div class="nav-item" onclick="openArduinoBridge()">
   	<span class="nav-icon"><i data-lucide="usb"></i></span>
   	<span class="nav-label">Arduino Bridge</span>
-    </div>
+      </div>-->
+      <div class="nav-item" onclick="navigate('arduino-guide.html')">
+        <span class="nav-icon"><i data-lucide="book-open"></i></span>
+        <span class="nav-label">Arduino Guide</span>
+      </div>
+      <div class="nav-item" onclick="navigate('arduino-download.html')">
+        <span class="nav-icon"><i data-lucide="download"></i></span>
+        <span class="nav-label">Download Reader</span>
+      </div>
     <div class="user-avatar" id="userAvatar"
      onclick="openProfileModal()"
      style="cursor:pointer;"
@@ -770,7 +778,7 @@ async function checkPendingInvitations() {
         });
         parent.appendChild(badge);
       }
-      showToast(`📬 You have ${data.invitations.length} farm invitation(s) — click your avatar`, 'success');
+      showToast(` You have ${data.invitations.length} farm invitation(s) — click your avatar`, 'success');
     }
   } catch (e) { /* non-blocking */ }
 }
@@ -1561,19 +1569,19 @@ document.addEventListener('click', function(e) {
               style="flex:1;padding:8px;border-radius:4px;font-size:12px;
                      font-weight:600;cursor:pointer;border:none;
                      background:var(--surface);color:var(--primary);">
-        ✏️ Profile
+         Profile
       </button>
       <button id="profileTab2" onclick="switchProfileTab('password')"
               style="flex:1;padding:8px;border-radius:4px;font-size:12px;
                      font-weight:600;cursor:pointer;border:none;
                      background:none;color:var(--text-muted);">
-        🔒 Password
+         Password
       </button>
       <button id="profileTab3" onclick="switchProfileTab('invites')"
               style="flex:1;padding:8px;border-radius:4px;font-size:12px;
                      font-weight:600;cursor:pointer;border:none;
                      background:none;color:var(--text-muted);position:relative;">
-        📬 Invites
+         Invites
         <span id="inviteTabBadge"
               style="display:none;position:absolute;top:2px;right:4px;
                      background:var(--primary);color:white;border-radius:50%;
@@ -1584,7 +1592,7 @@ document.addEventListener('click', function(e) {
               style="flex:1;padding:8px;border-radius:4px;font-size:12px;
                      font-weight:600;cursor:pointer;border:none;
                      background:none;color:var(--danger);">
-        ⚠️ Delete
+         Delete
       </button>
     </div>
 

@@ -19,17 +19,25 @@ transporter.verify((error) => {
 });
 
 // ── DYNAMIC APP URL ───────────────────────────────
-// Pass the Express req object to get the real host/IP from the incoming request,
-// so links work regardless of which WiFi/LAN the server is on.
+// Priority:
+// 1. FRONTEND_URL env var (set this on production VPS)
+// 2. Request host (works on LAN — whatever IP the user used to reach the server)
+// 3. localhost fallback for development
 function getAppUrl(req) {
+  // If explicitly configured (production), always use it
+  if (process.env.FRONTEND_URL) {
+    return process.env.FRONTEND_URL.replace(/\/$/, '');
+  }
   if (req) {
-    const host = req.headers['x-forwarded-host'] || req.headers.host || '';
+    const host  = req.headers['x-forwarded-host'] || req.headers.host || '';
     const proto = req.headers['x-forwarded-proto'] || 'http';
-    // host includes port e.g. "192.168.1.5:3000" -> replace :3000 with :8080
-    const frontendHost = host.replace(':3000', ':8080').replace(':' + (process.env.PORT||3000), ':8080');
+    // host is e.g. "192.168.1.5:3000" — swap backend port for frontend port
+    const apiPort      = String(process.env.PORT || 3000);
+    const frontendPort = process.env.FRONTEND_PORT || '8080';
+    const frontendHost = host.replace(`:${apiPort}`, `:${frontendPort}`);
     return `${proto}://${frontendHost}`;
   }
-  return process.env.APP_URL || 'http://localhost:8080';
+  return 'http://localhost:8080';
 }
 
 // ── EMAIL TEMPLATES ───────────────────────────────
@@ -50,17 +58,23 @@ const templates = {
   .body p{color:#7f8c8d;line-height:1.7;margin-bottom:16px}
   .btn{display:block;width:fit-content;margin:30px auto;padding:16px 40px;background:linear-gradient(135deg,#27ae60,#1a5276);color:#fff;text-decoration:none;border-radius:50px;font-weight:bold;font-size:16px}
   .token-box{background:#f8f9fa;border:1px solid #e9ecef;border-radius:8px;padding:12px 20px;font-family:monospace;font-size:13px;color:#2c3e50;text-align:center;margin:20px 0;word-break:break-all}
+  .info-box{background:#eaf5fb;border:1px solid #aed6f1;border-radius:8px;padding:14px 20px;font-size:13px;color:#1a5276;margin:20px 0;line-height:1.6}
   .footer{background:#f8f9fa;padding:20px 40px;text-align:center;color:#bdc3c7;font-size:12px;border-top:1px solid #e9ecef}
 </style></head>
 <body><div class="wrap">
   <div class="hdr"><h1>FCHAN</h1><p>Farm Intelligence Platform</p></div>
   <div class="body">
     <h2>Hello ${name}!</h2>
-    <p>Thank you for joining FCHAN. Please verify your email address to activate your account.</p>
+    <p>Thank you for joining FCHAN. Click the button below to verify your email address.</p>
     <a href="${appUrl}/pages/verify.html?token=${token}" class="btn">Verify My Email</a>
-    <p style="font-size:13px;color:#95a5a6;text-align:center;">Or copy this link:</p>
-    <div class="token-box">${appUrl}/pages/verify.html?token=${token}</div>
-    <p style="font-size:13px;color:#95a5a6;">This link expires in <strong>24 hours</strong>.</p>
+    <div class="info-box">
+      <strong>🌐 If the button doesn't work</strong> (e.g. you changed WiFi network):<br>
+      Open FCHAN in your browser, then go to:<br>
+      <code style="background:#d6eaf8;padding:2px 6px;border-radius:4px">/pages/verify.html?token=${token}</code><br><br>
+      Or copy this token and paste it manually on the verify page:
+    </div>
+    <div class="token-box">${token}</div>
+    <p style="font-size:13px;color:#95a5a6;text-align:center;">This link expires in <strong>24 hours</strong>.</p>
   </div>
   <div class="footer"><p>© 2026 FCHAN — Farm Intelligence Platform</p></div>
 </div></body></html>`
