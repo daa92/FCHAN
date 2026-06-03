@@ -68,7 +68,7 @@ const templates = {
     <p>Thank you for joining FCHAN. Click the button below to verify your email address.</p>
     <a href="${appUrl}/pages/verify.html?token=${token}" class="btn">Verify My Email</a>
     <div class="info-box">
-      <strong>🌐 If the button doesn't work</strong> (e.g. you changed WiFi network):<br>
+      <strong>  If the button doesn't work</strong> (e.g. you changed WiFi network):<br>
       Open FCHAN in your browser, then go to:<br>
       <code style="background:#d6eaf8;padding:2px 6px;border-radius:4px">/pages/verify.html?token=${token}</code><br><br>
       Or copy this token and paste it manually on the verify page:
