@@ -99,7 +99,7 @@
   const h = window.location.hostname;
   return h === 'localhost' || h === '127.0.0.1'
     ? 'http://localhost:3000/api'
-    : 'https://fchan.onrender.com/api';  // ← production
+    : 'https://fchan.onrender.com/api';
 })();
 
     async function verifyToken(manualToken) {
