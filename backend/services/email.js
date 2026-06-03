@@ -1,37 +1,18 @@
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 require('dotenv').config();
 
-// ── CREATE TRANSPORTER ────────────────────────────
-const transporter = nodemailer.createTransport({
-  host:   process.env.EMAIL_HOST,
-  port:   parseInt(process.env.EMAIL_PORT) || 587,
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  },
-  tls: { rejectUnauthorized: false }
-});
-
-transporter.verify((error) => {
-  if (error) console.error('Email service error:', error.message);
-  else        console.log('Email service ready');
-});
+// ── RESEND CLIENT ─────────────────────────────────
+const resend = new Resend(process.env.RESEND_API_KEY);
+console.log('Email service ready');
 
 // ── DYNAMIC APP URL ───────────────────────────────
-// Priority:
-// 1. FRONTEND_URL env var (set this on production VPS)
-// 2. Request host (works on LAN — whatever IP the user used to reach the server)
-// 3. localhost fallback for development
 function getAppUrl(req) {
-  // If explicitly configured (production), always use it
   if (process.env.FRONTEND_URL) {
     return process.env.FRONTEND_URL.replace(/\/$/, '');
   }
   if (req) {
     const host  = req.headers['x-forwarded-host'] || req.headers.host || '';
     const proto = req.headers['x-forwarded-proto'] || 'http';
-    // host is e.g. "192.168.1.5:3000" — swap backend port for frontend port
     const apiPort      = String(process.env.PORT || 3000);
     const frontendPort = process.env.FRONTEND_PORT || '8080';
     const frontendHost = host.replace(`:${apiPort}`, `:${frontendPort}`);
@@ -68,7 +49,7 @@ const templates = {
     <p>Thank you for joining FCHAN. Click the button below to verify your email address.</p>
     <a href="${appUrl}/pages/verify.html?token=${token}" class="btn">Verify My Email</a>
     <div class="info-box">
-      <strong>  If the button doesn't work</strong> (e.g. you changed WiFi network):<br>
+      <strong>If the button doesn't work:</strong><br>
       Open FCHAN in your browser, then go to:<br>
       <code style="background:#d6eaf8;padding:2px 6px;border-radius:4px">/pages/verify.html?token=${token}</code><br><br>
       Or copy this token and paste it manually on the verify page:
@@ -214,13 +195,17 @@ const templates = {
 const sendEmail = async (to, templateName, ...args) => {
   try {
     const template = templates[templateName](...args);
-    const info = await transporter.sendMail({
-      from:    process.env.EMAIL_FROM || process.env.EMAIL_USER,
+    const { data, error } = await resend.emails.send({
+      from:    'FCHAN <onboarding@resend.dev>',
       to,
       subject: template.subject,
       html:    template.html
     });
-    console.log(`Email sent to ${to}: ${info.messageId}`);
+    if (error) {
+      console.error(`Email error (${templateName}):`, JSON.stringify(error));
+      return false;
+    }
+    console.log(`Email sent to ${to}: ${data.id}`);
     return true;
   } catch (err) {
     console.error(`Email error (${templateName}): ${err.message}`);
