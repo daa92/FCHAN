@@ -1,9 +1,20 @@
-const { Resend } = require('resend');
+const nodemailer = require('nodemailer');
 require('dotenv').config();
 
-// ── RESEND CLIENT ─────────────────────────────────
-const resend = new Resend(process.env.RESEND_API_KEY);
-console.log('Email service ready');
+const transporter = nodemailer.createTransport({
+  host: process.env.EMAIL_HOST,
+  port: parseInt(process.env.EMAIL_PORT) || 587,
+  secure: false,
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
+});
+
+transporter.verify((error) => {
+  if (error) console.error('Email service error:', error.message);
+  else console.log('Email service ready');
+});
 
 // ── DYNAMIC APP URL ───────────────────────────────
 function getAppUrl(req) {
@@ -195,17 +206,13 @@ const templates = {
 const sendEmail = async (to, templateName, ...args) => {
   try {
     const template = templates[templateName](...args);
-    const { data, error } = await resend.emails.send({
-      from:    'FCHAN <onboarding@resend.dev>',
+    const info = await transporter.sendMail({
+      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
       to,
       subject: template.subject,
-      html:    template.html
+      html: template.html
     });
-    if (error) {
-      console.error(`Email error (${templateName}):`, JSON.stringify(error));
-      return false;
-    }
-    console.log(`Email sent to ${to}: ${data.id}`);
+    console.log(`Email sent to ${to}: ${info.messageId}`);
     return true;
   } catch (err) {
     console.error(`Email error (${templateName}): ${err.message}`);
