@@ -376,7 +376,7 @@
     }
 
     else if (mode === 'wifi') {
-      const apiUrl = (typeof API_URL !== 'undefined' ? API_URL : 'http://localhost:3000/api');
+      const apiUrl = (typeof API_URL !== 'undefined' ? API_URL : 'https://fchan.onrender.com/api');
       const key    = document.getElementById('abApiKey').value.trim() || 'YOUR_API_KEY';
       area.innerHTML = `
         <div style="background:var(--surface-2);border-radius:10px;padding:16px;margin-bottom:14px;">
@@ -610,7 +610,7 @@
 
   // ── COPY SKETCH ───────────────────────────────────
   window.abCopySketch = function () {
-    const apiUrl = (typeof API_URL !== 'undefined' ? API_URL : 'http://localhost:3000/api');
+    const apiUrl = (typeof API_URL !== 'undefined' ? API_URL : 'https://fchan.onrender.com/api');
     const key    = document.getElementById('abApiKey').value.trim() || 'YOUR_API_KEY';
     const sketch = `// FCHAN WiFi Sensor Sketch — ESP32 / ESP8266
 // Install libraries: WiFi (built-in), HTTPClient (built-in), DHT sensor library
@@ -670,7 +670,7 @@ void loop() {
   // ── SEND READING ──────────────────────────────────
   async function abSendReading(value) {
     const key    = document.getElementById('abApiKey').value.trim();
-    const apiUrl = (typeof API_URL !== 'undefined' ? API_URL : 'http://localhost:3000/api')
+    const apiUrl = (typeof API_URL !== 'undefined' ? API_URL : 'https://fchan.onrender.com/api')
                     .replace(/\/$/, '');
     if (!key) {
       abShowToast('Please paste your sensor API key at the top of this panel', 'warn');

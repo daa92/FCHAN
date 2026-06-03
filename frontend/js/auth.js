@@ -2,16 +2,17 @@
 // FCHAN — Auth Manager
 // ════════════════════════════════════════════════════
 
-//const API_URL = 'http://localhost:3000/api';
+//const API_URL = 'https://fchan.onrender.com/api';
 
 // WITH THIS — auto-detects the server
 const getApiUrl = () => {
   const hostname = window.location.hostname;
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return 'http://localhost:3000/api';
+    return 'http://localhost:3000/api';  // local dev
   }
-  return `http://${hostname}:3000/api`;
+  return 'https://fchan.onrender.com/api';  // production
 };
+
 const API_URL = getApiUrl();
 
 const Auth = {
