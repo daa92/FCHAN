@@ -6,7 +6,9 @@ require('dotenv').config();
 // ── SSL Configuration ─────────────────────────────
 const sslConfig = process.env.DB_SSL === 'true' ? {
   ssl: {
-    ca: fs.readFileSync(path.resolve(process.cwd(), process.env.DB_SSL_CA)),
+    ca: process.env.DB_SSL_CA_CONTENT 
+      ? process.env.DB_SSL_CA_CONTENT          // production: from env var
+      : fs.readFileSync(path.resolve(process.cwd(), process.env.DB_SSL_CA)), // local: from file
     rejectUnauthorized: true
   }
 } : {};
