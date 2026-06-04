@@ -29,8 +29,9 @@ const char* WIFI_PASSWORD = "6881wdf";
 
 // FCHAN API
 // Replace with your computer's local IP address
-const char* FCHAN_API_URL =
-  "http://192.168.100.40:3000/api/sensors/readings/ingest";
+//const char* FCHAN_API_URL =
+ // "http://192.168.100.40:3000/api/sensors/readings/ingest";
+const char* FCHAN_API_URL = "https://fchan.onrender.com/api/sensors/readings/ingest";
 
 // Sensor API keys — get these from FCHAN dashboard
 // Go to: Zone → Add Sensor → copy the API key shown
