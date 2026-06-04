@@ -14,19 +14,11 @@ function getAppUrl(req) {
     const frontendHost = host.replace(`:${apiPort}`, `:${frontendPort}`);
     return `${proto}://${frontendHost}`;
   }
-<<<<<<< HEAD
-  return 'https://fchan-five.vercel.app'; // fallback
-}
-
-// ── EMAIL TEMPLATES (unchanged) ───────────────────────────────
-const templates = {
-=======
   return 'https://fchan-five.vercel.app';
 }
 
 // ── EMAIL TEMPLATES ───────────────────────────────
-const templates = { /* Your full templates object - I kept it from the original file you sent earlier */ 
->>>>>>> eed9159 (fix: axios module)
+const templates = {
 
   verification: (name, token, appUrl) => ({
     subject: 'Verify your FCHAN account',
@@ -65,63 +57,30 @@ const templates = { /* Your full templates object - I kept it from the original 
 </div></body></html>`
   }),
 
-<<<<<<< HEAD
-  // ... (I kept only verification for brevity, but you should keep ALL your templates)
-
-  passwordReset: (name, token, appUrl) => ({ /* your existing code */ }),
-  collaboratorInvite: (inviterName, farmName, token, appUrl) => ({ /* your existing code */ }),
-  alertNotification: (name, farmName, alerts, appUrl) => ({ /* your existing code */ }),
-  feedback: (senderName, senderEmail, subject, message) => ({ /* your existing code */ })
-=======
-  // Add your other templates here (passwordReset, collaboratorInvite, etc.)
-  // ... paste the rest from your original email.js
->>>>>>> eed9159 (fix: axios module)
+  // TODO: Add your other templates here (passwordReset, collaboratorInvite, etc.)
+  // Copy them from your old email.js file
 };
 
 // ── SEND EMAIL USING BREVO API ────────────────────────────────────
 const sendEmail = async (to, templateName, ...args) => {
   try {
     if (!process.env.BREVO_API_KEY) {
-<<<<<<< HEAD
-      console.error('BREVO_API_KEY is not set in environment variables');
-=======
-      console.error('  BREVO_API_KEY is not configured');
->>>>>>> eed9159 (fix: axios module)
+      console.error('  BREVO_API_KEY is not configured in Render Environment');
       return false;
     }
 
     const template = templates[templateName](...args);
 
     const payload = {
-<<<<<<< HEAD
       sender: {
         name: "FCHAN",
         email: process.env.EMAIL_FROM || "noreply@fchan.onrender.com"
       },
-=======
-      sender: { name: "FCHAN", email: process.env.EMAIL_FROM || "noreply@fchan.onrender.com" },
->>>>>>> eed9159 (fix: axios module)
       to: [{ email: to }],
       subject: template.subject,
       htmlContent: template.html
     };
 
-<<<<<<< HEAD
-    const response = await axios.post('https://api.brevo.com/v3/smtp/email', payload, {
-      headers: {
-        'api-key': process.env.BREVO_API_KEY,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      }
-    });
-
-    console.log(`  Email sent successfully to ${to}`);
-    return true;
-
-  } catch (err) {
-    console.error(`  Brevo API Error (${templateName}):`, 
-      err.response?.data || err.message);
-=======
     await axios.post('https://api.brevo.com/v3/smtp/email', payload, {
       headers: {
         'api-key': process.env.BREVO_API_KEY,
@@ -129,12 +88,11 @@ const sendEmail = async (to, templateName, ...args) => {
       }
     });
 
-    console.log(`  Verification email sent to ${to}`);
+    console.log(`  Email sent successfully to ${to}`);
     return true;
 
   } catch (err) {
-    console.error(`  Brevo Error:`, err.response?.data || err.message);
->>>>>>> eed9159 (fix: axios module)
+    console.error(`  Brevo API Error:`, err.response?.data || err.message);
     return false;
   }
 };
