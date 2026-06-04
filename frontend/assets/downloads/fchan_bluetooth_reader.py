@@ -12,7 +12,8 @@ import sys
 from datetime import datetime
 
 # ── CONFIGURATION ──────────────────────────────────
-FCHAN_API_URL = "http://localhost:3000/api"
+#FCHAN_API_URL = "http://localhost:3000/api"
+FCHAN_API_URL = "https://fchan.onrender.com/api"
 
 # Replace with your actual sensor API keys
 SENSOR_API_KEYS = {
