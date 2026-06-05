@@ -57,19 +57,54 @@ const templates = {
 </div></body></html>`
   }),
 
-  // TODO: Add your other templates here (passwordReset, collaboratorInvite, etc.)
-  // Copy them from your old email.js file
+  feedback: (senderName, senderEmail, subject, message) => ({
+    subject: `FCHAN Feedback: ${subject}`,
+    html: `<!DOCTYPE html>
+<html><head><meta charset="UTF-8">
+<style>
+  body{font-family:Arial,sans-serif;background:#f0f4f8;margin:0;padding:0}
+  .wrap{max-width:600px;margin:40px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.1)}
+  .hdr{background:linear-gradient(135deg,#1a5276,#27ae60);padding:32px 40px;text-align:center}
+  .hdr h1{color:#fff;font-size:28px;margin:0}
+  .hdr p{color:rgba(255,255,255,.8);margin:8px 0 0}
+  .body{padding:40px}
+  .meta{background:#f8f9fa;border-radius:8px;padding:16px 20px;margin-bottom:24px}
+  .meta-row{display:flex;gap:8px;margin-bottom:6px;font-size:14px}
+  .meta-label{font-weight:bold;color:#2c3e50;min-width:80px}
+  .meta-val{color:#7f8c8d}
+  .msg-box{background:#fff;border:1px solid #e9ecef;border-radius:8px;padding:20px;font-size:15px;color:#2c3e50;line-height:1.7;white-space:pre-wrap}
+  .footer{background:#f8f9fa;padding:16px 40px;text-align:center;color:#bdc3c7;font-size:12px;border-top:1px solid #e9ecef}
+</style></head>
+<body><div class="wrap">
+  <div class="hdr"><h1>FCHAN</h1><p>User Feedback</p></div>
+  <div class="body">
+    <div class="meta">
+      <div class="meta-row"><span class="meta-label">From:</span><span class="meta-val">${senderName} (${senderEmail})</span></div>
+      <div class="meta-row"><span class="meta-label">Subject:</span><span class="meta-val">${subject}</span></div>
+    </div>
+    <div class="msg-box">${message}</div>
+  </div>
+  <div class="footer"><p>© 2026 FCHAN — Farm Intelligence Platform</p></div>
+</div></body></html>`
+  })
+  // Add more templates here later if needed (passwordReset, etc.)
 };
 
 // ── SEND EMAIL USING BREVO API ────────────────────────────────────
 const sendEmail = async (to, templateName, ...args) => {
   try {
     if (!process.env.BREVO_API_KEY) {
-      console.error('  BREVO_API_KEY is not configured in Render Environment');
+      console.error('  BREVO_API_KEY is not configured');
       return false;
     }
 
-    const template = templates[templateName](...args);
+    const templateFunc = templates[templateName];
+    if (typeof templateFunc !== 'function') {
+      console.error(`  Template '${templateName}' not found or not a function`);
+      return false;
+    }
+
+    const template = templateFunc(...args);
 
     const payload = {
       sender: {
@@ -88,11 +123,11 @@ const sendEmail = async (to, templateName, ...args) => {
       }
     });
 
-    console.log(`  Email sent successfully to ${to}`);
+    console.log(`  Email sent successfully to ${to} (${templateName})`);
     return true;
 
   } catch (err) {
-    console.error(`  Brevo API Error:`, err.response?.data || err.message);
+    console.error(`  Brevo API Error (${templateName}):`, err.response?.data || err.message);
     return false;
   }
 };
