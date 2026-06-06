@@ -17,39 +17,29 @@ const getUsers = async (req, res) => {
 // ── SEND MESSAGE ──────────────────────────────────
 const sendMessage = async (req, res) => {
   try {
-    const { message, type, recipient_id, room_id } = req.body;
+    const { message, type = 'broadcast', recipient_id, room_id } = req.body;
+
     if (!message || !message.trim()) {
       return res.status(400).json({ success: false, message: 'Message cannot be empty.' });
     }
 
-    const validTypes = ['broadcast', 'private', 'multicast'];
-    const msgType = validTypes.includes(type) ? type : 'broadcast';
+    const msgType = ['broadcast', 'private', 'multicast'].includes(type) ? type : 'broadcast';
 
+    // Validation
     if (msgType === 'private' && !recipient_id) {
       return res.status(400).json({ success: false, message: 'recipient_id required for private messages.' });
     }
     if (msgType === 'multicast' && !room_id) {
-      return res.status(400).json({ success: false, message: 'room_id required for multicast messages.' });
-    }
-
-    // For multicast, verify sender is a member
-    if (msgType === 'multicast') {
-      const [membership] = await db.execute(
-        'SELECT 1 FROM chat_room_members WHERE room_id = ? AND user_id = ?',
-        [room_id, req.user.id]
-      );
-      if (!membership.length) {
-        return res.status(403).json({ success: false, message: 'You are not a member of this room.' });
-      }
+      return res.status(400).json({ success: false, message: 'room_id required for group messages.' });
     }
 
     const [result] = await db.execute(
       `INSERT INTO chat_messages (sender_id, recipient_id, room_id, message, type)
        VALUES (?, ?, ?, ?, ?)`,
-      [req.user.id, recipient_id || null, room_id || null, message.trim(), msgType]
+      [req.user.id, msgType === 'private' ? recipient_id : null, 
+       msgType === 'multicast' ? room_id : null, message.trim(), msgType]
     );
 
-    // Fetch the inserted message with sender info for real-time broadcast
     const [rows] = await db.execute(
       `SELECT m.*, u.name AS sender_name, u.avatar AS sender_avatar
        FROM chat_messages m
@@ -57,22 +47,24 @@ const sendMessage = async (req, res) => {
        WHERE m.id = ?`,
       [result.insertId]
     );
+
     const msg = rows[0];
 
     // Emit via Socket.IO
     const io = req.app.get('io');
     if (io) {
       if (msgType === 'broadcast') {
-        io.emit('chat:broadcast', msg);
+        io.emit('chat:broadcast', msg);           // ← This was missing or broken
       } else if (msgType === 'private') {
         io.to(`user:${recipient_id}`).emit('chat:private', msg);
-        io.to(`user:${req.user.id}`).emit('chat:private', msg); // echo to sender
+        io.to(`user:${req.user.id}`).emit('chat:private', msg);
       } else if (msgType === 'multicast') {
         io.to(`room:${room_id}`).emit('chat:multicast', msg);
       }
     }
 
     return res.status(201).json({ success: true, message: msg });
+
   } catch (err) {
     console.error('SendMessage error:', err.message);
     return res.status(500).json({ success: false, message: 'Internal server error.' });
