@@ -75,7 +75,7 @@ const sendMessage = async (req, res) => {
 const getBroadcasts = async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 50;
-    const before = req.query.before; // for pagination
+    const before = req.query.before;
 
     let query = `SELECT m.*, u.name AS sender_name, u.avatar AS sender_avatar
                  FROM chat_messages m
@@ -87,14 +87,23 @@ const getBroadcasts = async (req, res) => {
       query += ' AND m.id < ?';
       params.push(before);
     }
+
     query += ' ORDER BY m.created_at DESC LIMIT ?';
     params.push(limit);
 
     const [rows] = await db.execute(query, params);
-    return res.status(200).json({ success: true, messages: rows.reverse() });
+    
+    return res.status(200).json({ 
+      success: true, 
+      messages: rows.reverse() 
+    });
+
   } catch (err) {
     console.error('GetBroadcasts error:', err.message);
-    return res.status(500).json({ success: false, message: 'Internal server error.' });
+    return res.status(500).json({ 
+      success: false, 
+      message: 'Internal server error.' 
+    });
   }
 };
 
