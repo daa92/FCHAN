@@ -77,22 +77,24 @@ const getBroadcasts = async (req, res) => {
     const limit = parseInt(req.query.limit) || 50;
     const before = req.query.before;
 
-    let query = `SELECT m.*, u.name AS sender_name, u.avatar AS sender_avatar
-                 FROM chat_messages m
-                 JOIN users u ON m.sender_id = u.id
-                 WHERE m.type = 'broadcast'`;
+    let query = `
+      SELECT m.*, u.name AS sender_name, u.avatar AS sender_avatar 
+      FROM chat_messages m
+      JOIN users u ON m.sender_id = u.id
+      WHERE m.type = 'broadcast'
+    `;
     const params = [];
 
     if (before) {
-      query += ' AND m.id < ?';
+      query += ` AND m.id < ?`;
       params.push(before);
     }
 
-    query += ' ORDER BY m.created_at DESC LIMIT ?';
+    query += ` ORDER BY m.created_at DESC LIMIT ?`;
     params.push(limit);
 
     const [rows] = await db.execute(query, params);
-    
+
     return res.status(200).json({ 
       success: true, 
       messages: rows.reverse() 
