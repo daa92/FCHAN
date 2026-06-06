@@ -12,39 +12,47 @@ const farmAccess = (requireWrite = false) => async (req, res, next) => {
     const farmId = req.params.farmId || req.params.id;
     const userId = req.user.id;
 
-    const [rows] = await db.execute(
-      `SELECT f.*,
-              CASE WHEN f.user_id = ? THEN 'owner'
-                   WHEN c.user_id IS NOT NULL THEN c.role
-                   ELSE NULL END AS access_role
-       FROM farms f
-       LEFT JOIN collaborators c
-         ON c.farm_id = f.id AND c.user_id = ? AND c.status = 'accepted'
-       WHERE f.id = ? AND (f.user_id = ? OR (c.user_id = ? AND c.status = 'accepted'))`,
-      [userId, userId, farmId, userId, userId]
-    );
+    const [rows] = await db.execute(`
+      SELECT f.*,
+             CASE 
+               WHEN f.user_id = ? THEN 'owner'
+               WHEN c.user_id IS NOT NULL THEN c.role 
+               ELSE NULL 
+             END AS access_role
+      FROM farms f
+      LEFT JOIN collaborators c 
+        ON c.farm_id = f.id 
+       AND c.user_id = ? 
+       AND c.status = 'accepted'
+      WHERE f.id = ? 
+        AND (f.user_id = ? OR (c.user_id = ? AND c.status = 'accepted'))
+    `, [userId, userId, farmId, userId, userId]);
 
     if (!rows.length) {
       return res.status(404).json({ success: false, message: 'Farm not found or access denied.' });
     }
 
     const farm = rows[0];
-    const role = farm.access_role; // 'owner' | 'viewer' | 'editor'
+    const role = farm.access_role;
 
+    req.farm = farm;
+    req.farmAccess = role;
+
+    // Enforce read-only for viewers
     if (requireWrite && role === 'viewer') {
       return res.status(403).json({
         success: false,
-        message: 'You have view-only access to this farm.'
+        message: 'You have view-only access. You cannot modify this farm.'
       });
     }
 
-    req.farm       = farm;
-    req.farmAccess = role;
     next();
   } catch (err) {
     console.error('farmAccess error:', err.message);
     return res.status(500).json({ success: false, message: 'Internal server error.' });
   }
 };
+
+module.exports = farmAccess;
 
 module.exports = farmAccess;
