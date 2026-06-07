@@ -54,5 +54,3 @@ const farmAccess = (requireWrite = false) => async (req, res, next) => {
 };
 
 module.exports = farmAccess;
-
-module.exports = farmAccess;
