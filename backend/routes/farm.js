@@ -14,8 +14,8 @@ router.use(auth);
 router.get('/',    getFarms);
 router.post('/',   createFarm);
 router.get('/:id',    farmAccess(false), getFarm);
-router.put('/:id',    farmAccess(false), updateFarm);   // ownership checked inside controller
-router.delete('/:id', farmAccess(false), deleteFarm);  // ownership checked inside controller
+router.put('/:id',    farmAccess(true),  updateFarm);
+router.delete('/:id', farmAccess(true),  deleteFarm);
 
 // ─── ZONES ────────────────────────────────────────────
 router.get( '/:farmId/zones',              farmAccess(false), getZones);
