@@ -789,17 +789,18 @@ const buildReportHTML = (data) => {
   `;
 };
 
-// ─── GENERATE PDF (FINAL WORKING VERSION) ─────────────────
+// ─── GENERATE PDF (FINAL WORKING VERSION FOR RENDER) ─────────────────
 const generatePDF = async (farmId, userId) => {
   let browser = null;
   try {
     const data = await gatherReportData(farmId, userId);
     const html = buildReportHTML(data);
 
+    // Correct usage of @sparticuz/chromium
     browser = await puppeteer.launch({
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
-      executablePath: chromium.executablePath,   // ← Changed here (no await)
+      executablePath: await chromium.executablePath(),
       headless: true,
     });
 
