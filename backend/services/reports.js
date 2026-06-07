@@ -788,33 +788,21 @@ const buildReportHTML = (data) => {
 };
 
 
-// ─── GENERATE PDF ─────────────────────────────────────────────────────────────
+// ─── GENERATE PDF ─────────────────
 const generatePDF = async (farmId, userId) => {
   let browser = null;
   try {
     const data = await gatherReportData(farmId, userId);
     const html = buildReportHTML(data);
 
-    // Launch configuration optimized specifically for Render Free Tier limits
     browser = await puppeteer.launch({
-      headless: true, 
-      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-        '--no-zygote',
-        '--single-process' // Helps save RAM on Render's 512MB limit
-      ]
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
     });
 
     const page = await browser.newPage();
-    
-    // Inject your built HTML string and wait for scripts/images to finish
     await page.setContent(html, { waitUntil: 'networkidle0' });
 
-    // Output raw PDF buffer data
     const pdf = await page.pdf({
       format: 'A4',
       printBackground: true,
@@ -823,26 +811,9 @@ const generatePDF = async (farmId, userId) => {
 
     return { pdf, farmName: data.farm.name };
 
-  } catch (error) {
-    console.error('Puppeteer Chrome execution failed:', error);
-    throw error;
   } finally {
-    if (browser) {
-      await browser.close();
-    }
+    if (browser) await browser.close();
   }
 };
-
-// ─── HELPER DATA FUNCTIONS ──────────────────────────────────────────────────
-// Note: Ensure your actual data gathering logic replaces these placeholder codes
-async function gatherReportData(farmId, userId) {
-  // Replace this with your actual database aggregate pipeline scripts
-  return { farm: { name: "Farm Report Data" } };
-}
-
-function buildReportHTML(data) {
-  // Replace this template with your actual HTML/CSS structure layout
-  return `<html><body><h1>Report for ${data.farm.name}</h1></body></html>`;
-}
 
 module.exports = { generatePDF };
