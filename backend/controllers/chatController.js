@@ -33,6 +33,15 @@ const sendMessage = async (req, res) => {
       return res.status(400).json({ success: false, message: 'room_id required for group messages.' });
     }
 
+    // For group chat: check only_admin_can_write restriction
+    if (msgType === 'multicast' && room_id) {
+      const [roomRows] = await db.execute('SELECT * FROM chat_rooms WHERE id = ?', [room_id]);
+      const room = roomRows[0];
+      if (room && room.only_admin_can_write && room.created_by !== req.user.id) {
+        return res.status(403).json({ success: false, message: 'Only the group admin can send messages in this group.' });
+      }
+    }
+
     const [result] = await db.execute(
       `INSERT INTO chat_messages (sender_id, recipient_id, room_id, message, type)
        VALUES (?, ?, ?, ?, ?)`,
@@ -160,12 +169,12 @@ const getUnreadCounts = async (req, res) => {
 
 const createRoom = async (req, res) => {
   try {
-    const { name, member_ids } = req.body;
+    const { name, member_ids, avatar } = req.body;
     if (!name) return res.status(400).json({ success: false, message: 'Room name required.' });
 
     const [result] = await db.execute(
-      'INSERT INTO chat_rooms (name, created_by) VALUES (?, ?)',
-      [name.trim(), req.user.id]
+      'INSERT INTO chat_rooms (name, created_by, avatar) VALUES (?, ?, ?)',
+      [name.trim(), req.user.id, avatar || null]
     );
     const roomId = result.insertId;
 
@@ -226,8 +235,131 @@ const getRoomMessages = async (req, res) => {
   }
 };
 
+// ── UPDATE ROOM ───────────────────────────────────
+const updateRoom = async (req, res) => {
+  try {
+    const roomId = req.params.roomId;
+    const userId = req.user.id;
+    const { name, avatar, only_admin_can_write } = req.body;
+
+    // Only creator may update
+    const [room] = await db.execute(
+      'SELECT * FROM chat_rooms WHERE id = ? AND created_by = ?',
+      [roomId, userId]
+    );
+    if (!room.length) return res.status(403).json({ success: false, message: 'Only the group creator can update settings.' });
+
+    const updates = [];
+    const params  = [];
+    if (name !== undefined)                { updates.push('name = ?');                 params.push(name.trim()); }
+    if (avatar !== undefined)              { updates.push('avatar = ?');                params.push(avatar); }
+    if (only_admin_can_write !== undefined){ updates.push('only_admin_can_write = ?'); params.push(only_admin_can_write ? 1 : 0); }
+
+    if (!updates.length) return res.status(400).json({ success: false, message: 'Nothing to update.' });
+
+    params.push(roomId);
+    await db.execute(`UPDATE chat_rooms SET ${updates.join(', ')} WHERE id = ?`, params);
+
+    const [updated] = await db.execute('SELECT * FROM chat_rooms WHERE id = ?', [roomId]);
+    return res.status(200).json({ success: true, room: updated[0] });
+  } catch (err) {
+    console.error('UpdateRoom error:', err.message);
+    return res.status(500).json({ success: false, message: 'Internal server error.' });
+  }
+};
+
+// ── DELETE ROOM ───────────────────────────────────
+const deleteRoom = async (req, res) => {
+  try {
+    const roomId = req.params.roomId;
+    const userId = req.user.id;
+
+    const [room] = await db.execute(
+      'SELECT * FROM chat_rooms WHERE id = ? AND created_by = ?',
+      [roomId, userId]
+    );
+    if (!room.length) return res.status(403).json({ success: false, message: 'Only the group creator can delete this group.' });
+
+    await db.execute('DELETE FROM chat_rooms WHERE id = ?', [roomId]);
+    return res.status(200).json({ success: true, message: 'Group deleted.' });
+  } catch (err) {
+    console.error('DeleteRoom error:', err.message);
+    return res.status(500).json({ success: false, message: 'Internal server error.' });
+  }
+};
+
+// ── GET ROOM MEMBERS ──────────────────────────────
+const getRoomMembers = async (req, res) => {
+  try {
+    const roomId = req.params.roomId;
+    const [mem] = await db.execute(
+      'SELECT 1 FROM chat_room_members WHERE room_id = ? AND user_id = ?',
+      [roomId, req.user.id]
+    );
+    if (!mem.length) return res.status(403).json({ success: false, message: 'Not a member.' });
+
+    const [rows] = await db.execute(
+      `SELECT u.id, u.name, u.email, u.avatar
+       FROM chat_room_members m
+       JOIN users u ON u.id = m.user_id
+       WHERE m.room_id = ?
+       ORDER BY u.name`,
+      [roomId]
+    );
+    return res.status(200).json({ success: true, members: rows });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Internal server error.' });
+  }
+};
+
+// ── ADD MEMBER ────────────────────────────────────
+const addRoomMember = async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const { user_id } = req.body;
+    const [room] = await db.execute(
+      'SELECT * FROM chat_rooms WHERE id = ? AND created_by = ?',
+      [roomId, req.user.id]
+    );
+    if (!room.length) return res.status(403).json({ success: false, message: 'Only the creator can add members.' });
+
+    await db.execute(
+      'INSERT IGNORE INTO chat_room_members (room_id, user_id) VALUES (?, ?)',
+      [roomId, user_id]
+    );
+    return res.status(200).json({ success: true, message: 'Member added.' });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Internal server error.' });
+  }
+};
+
+// ── REMOVE MEMBER ─────────────────────────────────
+const removeRoomMember = async (req, res) => {
+  try {
+    const { roomId, uid } = req.params;
+    const [room] = await db.execute(
+      'SELECT * FROM chat_rooms WHERE id = ? AND created_by = ?',
+      [roomId, req.user.id]
+    );
+    if (!room.length) return res.status(403).json({ success: false, message: 'Only the creator can remove members.' });
+
+    if (parseInt(uid) === parseInt(req.user.id)) {
+      return res.status(400).json({ success: false, message: 'You cannot remove yourself as creator.' });
+    }
+
+    await db.execute(
+      'DELETE FROM chat_room_members WHERE room_id = ? AND user_id = ?',
+      [roomId, uid]
+    );
+    return res.status(200).json({ success: true, message: 'Member removed.' });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Internal server error.' });
+  }
+};
+
 module.exports = {
   getUsers, sendMessage,
   getBroadcasts, getPrivateMessages, getUnreadCounts,
-  createRoom, getRooms, getRoomMessages
+  createRoom, getRooms, getRoomMessages,
+  updateRoom, deleteRoom, getRoomMembers, addRoomMember, removeRoomMember
 };
