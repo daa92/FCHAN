@@ -83,7 +83,7 @@
                            border-radius:8px;padding:6px 12px;cursor:pointer;
                            color:#5b8fff;font-size:12px;font-weight:600;
                            font-family:var(--font-body);white-space:nowrap;"
-                    title="Download reader.py">
+                    title="Download Scripts">
                Download
             </button>
           <button onclick="closeArduinoBridge()"
