@@ -514,9 +514,9 @@ const STEPS = {
         tip: { type:'info', text:'Go to your zone → Add Sensor → fill in name and type → Save. The API key appears in the modal. Copy it.' }
       },
       {
-        title: 'Download and configure reader.py',
-        body: `Download the <strong>reader.py</strong> file from FCHAN (available in the Arduino Bridge drawer in the sidebar). Open it and fill in your API keys at the top:`,
-        code: { label:'reader.py — edit these lines', text:`FCHAN_API_URL = "http://YOUR_SERVER_IP:3000/api"
+        title: 'Download and configure fchan_usb_reader.py',
+        body: `Download the <strong>fchan_usb_reader.py</strong> file from FCHAN (available in the Arduino Bridge drawer in the sidebar). Open it and fill in your API keys at the top:`,
+        code: { label:'fchan_usb_reader.py — edit these lines', text:`FCHAN_API_URL = "http://YOUR_SERVER_IP:3000/api"
 
 SENSOR_API_KEYS = {
     "temperature":   "paste_your_temperature_api_key",
@@ -526,9 +526,9 @@ SENSOR_API_KEYS = {
 }` }
       },
       {
-        title: 'Run reader.py',
+        title: 'Run fchan_usb_reader.py',
         body: `Make sure the Arduino Serial Monitor in Arduino IDE is closed first, then run:`,
-        code: { label:'Terminal', text:`python3 reader.py` },
+        code: { label:'Terminal', text:`python3 fchan_usb_reader.py` },
         after: `You should see:<br><br><code style="background:#0a0f1e;padding:4px 10px;border-radius:6px;font-family:var(--mono);font-size:12px;color:#86efac">Connected to /dev/ttyACM0<br>Received: SOIL:77.0<br>Reading sent: 77.0</code>`,
         done: true
       },
@@ -574,9 +574,9 @@ SENSOR_API_KEYS = {
         body: `Log into FCHAN in your browser. Go to your zone → <strong>Add Sensor</strong> for each sensor type. Choose <strong>WiFi/HTTP</strong> to generate an API key. Copy each key.`
       },
       {
-        title: 'Configure reader.py',
-        body: `Open reader.py in Notepad or any text editor. Edit the top section:`,
-        code: { label:'reader.py — edit these lines', text:`FCHAN_API_URL = "http://YOUR_SERVER_IP:3000/api"
+        title: 'Configure fchan_usb_reader.py',
+        body: `Open fchan_usb_reader.py in Notepad or any text editor. Edit the top section:`,
+        code: { label:'fchan_usb_reader.py — edit these lines', text:`FCHAN_API_URL = "http://YOUR_SERVER_IP:3000/api"
 
 SENSOR_API_KEYS = {
     "temperature":   "paste_your_api_key_here",
@@ -585,9 +585,9 @@ SENSOR_API_KEYS = {
         after: `Also find the port auto-detection and make sure it matches. Or pass the port directly when running.`
       },
       {
-        title: 'Run reader.py',
-        body: `In Command Prompt, navigate to the folder with reader.py and run:`,
-        code: { label:'Command Prompt', text:`python reader.py COM3` },
+        title: 'Run fchan_usb_reader.py',
+        body: `In Command Prompt, navigate to the folder with fchan_usb_reader.py and run:`,
+        code: { label:'Command Prompt', text:`python fchan_usb_reader.py COM3` },
         after: `Replace <strong>COM3</strong> with the port you found in Device Manager.`,
         done: true
       }
@@ -622,12 +622,12 @@ SENSOR_API_KEYS = {
         code: { label:'Terminal', text:`pip3 install pyserial requests` }
       },
       {
-        title: 'Create sensors and configure reader.py',
-        body: `Same as Linux — create sensors in FCHAN, copy API keys, edit the top of reader.py.`
+        title: 'Create sensors and configure fchan_usb_reader.py',
+        body: `Same as Linux — create sensors in FCHAN, copy API keys, edit the top of fchan_usb_reader.py.`
       },
       {
-        title: 'Run reader.py',
-        code: { label:'Terminal', text:`python3 reader.py /dev/cu.usbmodem14101` },
+        title: 'Run fchan_usb_reader.py',
+        code: { label:'Terminal', text:`python3 fchan_usb_reader.py /dev/cu.usbmodem14101` },
         after: `Replace with the port you found in step 4.`,
         done: true
       }
@@ -664,9 +664,9 @@ SENSOR_API_KEYS = {
 pip install pyserial requests` }
       },
       {
-        title: 'Configure and run reader.py',
-        body: `Download reader.py to your phone (via FCHAN website or file transfer). Edit it to set your API keys and server URL. Then run:`,
-        code: { label:'Termux', text:`python reader.py /dev/bus/usb/001/002` },
+        title: 'Configure and run fchan_usb_reader.py',
+        body: `Download fchan_usb_reader.py to your phone (via FCHAN website or file transfer). Edit it to set your API keys and server URL. Then run:`,
+        code: { label:'Termux', text:`python fchan_usb_reader.py /dev/bus/usb/001/002` },
         after: `The USB path may differ. Run <strong>ls /dev/bus/usb/*/*</strong> to find it.`,
         done: true
       }
@@ -754,8 +754,8 @@ quit` },
         after: `You should see: <strong>Connected /dev/rfcomm0 to 6E:F2:C8:A2:84:68 on channel 1</strong>`
       },
       {
-        title: 'Run reader.py in a second terminal',
-        code: { label:'Terminal 2', text:`python3 reader.py /dev/rfcomm0` },
+        title: 'Run fchan_bluetooth_reader.py in a second terminal',
+        code: { label:'Terminal 2', text:`python3 fchan_bluetooth_reader.py /dev/rfcomm0` },
         done: true,
         tip: { type:'info', text:'If you get "Host is down", the HC-06 disconnected. Run bluetoothctl → connect again, then immediately run rfcomm connect.' }
       }
