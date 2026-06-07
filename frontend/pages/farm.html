@@ -671,7 +671,7 @@
       <div class="tab-content active" id="tab-zones">
         <div class="section-header">
           <h3 id="zoneCount">0 Zones</h3>
-          <button class="btn btn-primary btn-sm"
+          <button class="btn btn-primary btn-sm viewer-hidden"
                   onclick="openModal('addZoneModal')">
             <i data-lucide="plus"></i>
             <span data-i18n="create_zone">Create Zone</span>
@@ -959,7 +959,9 @@
 
 //Auth.requireAuth();
 
-let currentFarmId = null;
+let currentFarmId   = null;
+let currentFarmRole = null;   // 'owner' | 'editor' | 'viewer'
+let allFchanUsers   = [];     // all users for invite/search
 let farms = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -1117,6 +1119,20 @@ async function loadFarmStats(farmId) {
   document.getElementById(`farmSensors-${farmId}`).textContent = sensors;
 }
 
+// ── VIEWER RESTRICTIONS ───────────────────────────
+function applyViewerRestrictions(role) {
+  const isViewer = role === 'viewer';
+  // Toggle elements that should be hidden for viewers
+  document.querySelectorAll('.viewer-hidden').forEach(el => {
+    el.style.display = isViewer ? 'none' : '';
+  });
+  // Disable inputs that viewers should not touch
+  document.querySelectorAll('.viewer-disabled').forEach(el => {
+    el.disabled = isViewer;
+    if (isViewer) el.style.opacity = '0.4';
+  });
+}
+
 // ── LOAD FARM DETAIL ──────────────────────────────
 async function loadFarmDetail(farmId) {
   currentFarmId = farmId;
@@ -1132,6 +1148,10 @@ async function loadFarmDetail(farmId) {
   if (!data || !data.success) return;
 
   const farm = data.farm;
+
+  // Set role for this farm
+  currentFarmRole = !farm.collab_role ? 'owner' : farm.collab_role;
+  applyViewerRestrictions(currentFarmRole);
 
   // Update header
   document.getElementById('detailFarmName').textContent = farm.name;
@@ -1209,13 +1229,13 @@ async function loadZones(farmId) {
         </span>
         <div style="display:flex;gap:6px;"
              onclick="event.stopPropagation()">
-          <button class="btn btn-ghost btn-sm"
+          <button class="btn btn-ghost btn-sm viewer-hidden"
                   style="padding:4px 8px;"
                   onclick="openEditZoneModal(${zone.id},'${zone.name}','${zone.description || ''}',${zone.area_sqm || ''})">
             <i data-lucide="edit-2"
                style="width:14px;height:14px"></i>
           </button>
-          <button class="btn btn-ghost btn-sm"
+          <button class="btn btn-ghost btn-sm viewer-hidden"
                   style="padding:4px 8px;color:var(--danger);"
                   onclick="deleteZone(${zone.id})">
             <i data-lucide="trash-2"
@@ -1224,16 +1244,19 @@ async function loadZones(farmId) {
         </div>
       </div>
     </div>
-  `).join('') + `
+  `).join('') + (currentFarmRole !== 'viewer' ? `
     <div class="zone-card-add"
          onclick="openModal('addZoneModal')">
       <i data-lucide="plus"
          style="width:32px;height:32px"></i>
       <p>${LanguageManager.t('create_zone')}</p>
     </div>
-  `;
+  ` : '');
 
   lucide.createIcons();
+
+  // Re-apply viewer restrictions after dynamic render
+  applyViewerRestrictions(currentFarmRole);
 
   // Load zone stats
   zones.forEach(zone => loadZoneStats(farmId, zone.id));
@@ -1692,7 +1715,7 @@ async function downloadReport() {
 
   const token = Auth.getToken();
   const response = await fetch(
-    `http://localhost:3000/api/reports/farm/${currentFarmId}`, {
+    `${API_URL}/reports/farm/${currentFarmId}`, {
     headers: { Authorization: `Bearer ${token}` }
   });
 
@@ -1714,6 +1737,12 @@ async function downloadReport() {
 function openModal(id) {
   document.getElementById(id).classList.add('open');
   lucide.createIcons();
+  // Pre-load FCHAN users for collaborator invite search
+  if (id === 'inviteModal') {
+    document.getElementById('inviteEmail').value = '';
+    document.getElementById('inviteUserList').innerHTML = '';
+    loadFchanUsers();
+  }
 }
 
 function closeModal(id) {
@@ -1792,6 +1821,7 @@ function toggleSidebar() {
 
 // ── NAVIGATION ────────────────────────────────────
 function navigate(page) { window.location.href = page; }
+function esc(str) { return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 // ── TOAST ─────────────────────────────────────────
 function showToast(message, type = 'info') {
@@ -1886,6 +1916,45 @@ async function loadCollaborators(farmId) {
   lucide.createIcons();
 }
 
+// ── LOAD ALL FCHAN USERS FOR INVITE SEARCH ────────
+async function loadFchanUsers() {
+  if (allFchanUsers.length) return; // already loaded
+  const d = await Auth.request('/chat/users');
+  if (d?.success) allFchanUsers = d.users;
+}
+
+function renderInviteUserList() {
+  const q   = (document.getElementById('inviteEmail')?.value || '').toLowerCase();
+  const box = document.getElementById('inviteUserList');
+  if (!box) return;
+  if (!q) { box.innerHTML = ''; return; }
+  const filtered = allFchanUsers.filter(u =>
+    u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)
+  ).slice(0, 10);
+  box.innerHTML = filtered.map(u => `
+    <div onclick="selectInviteUser('${escAttr(u.email)}')"
+         style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;
+                cursor:pointer;border:1px solid transparent;transition:background 0.15s;"
+         onmouseover="this.style.background='var(--surface-2)';this.style.borderColor='var(--border)'"
+         onmouseout="this.style.background='';this.style.borderColor='transparent'">
+      <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--secondary));
+                  display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:12px;flex-shrink:0;">
+        ${esc(u.name).charAt(0).toUpperCase()}
+      </div>
+      <div>
+        <div style="font-size:13px;font-weight:500;color:var(--text);">${esc(u.name)}</div>
+        <div style="font-size:11px;color:var(--text-muted);">${esc(u.email)}</div>
+      </div>
+    </div>`).join('');
+}
+
+function selectInviteUser(email) {
+  document.getElementById('inviteEmail').value = email;
+  document.getElementById('inviteUserList').innerHTML = '';
+}
+
+function escAttr(str) { return String(str||'').replace(/'/g,"&#39;").replace(/"/g,'&quot;'); }
+
 async function inviteCollaborator() {
   const email = document.getElementById('inviteEmail').value.trim();
   const role  = document.getElementById('inviteRole').value;
@@ -1953,22 +2022,26 @@ function timeAgo(dateStr) {
         <i data-lucide="x"></i>
       </button>
     </div>
-    <p style="font-size:var(--text-sm);color:var(--text-muted);
-              margin-bottom:var(--space-lg);">
-      Enter the email address of the person you want to invite.
-      They will receive an email with instructions to join your farm.
+    <p style="font-size:var(--text-sm);color:var(--text-muted);margin-bottom:var(--space-lg);">
+      Search for an FCHAN user or type an email address directly.
     </p>
     <div class="form-group">
-      <label class="form-label">Email Address *</label>
-      <input type="email" class="form-control"
+      <label class="form-label">Search User or Email *</label>
+      <input type="text" class="form-control"
              id="inviteEmail"
-             placeholder="collaborator@example.com">
+             placeholder="Type a name or email…"
+             oninput="renderInviteUserList()"
+             autocomplete="off">
+      <!-- Searchable user dropdown -->
+      <div id="inviteUserList"
+           style="max-height:180px;overflow-y:auto;margin-top:6px;
+                  display:flex;flex-direction:column;gap:2px;"></div>
     </div>
     <div class="form-group">
       <label class="form-label">Role</label>
       <select class="form-control" id="inviteRole">
         <option value="viewer">Viewer (can view data only)</option>
-        <option value="editor">Editor (can add data)</option>
+        <option value="editor">Editor (can add &amp; edit data)</option>
       </select>
     </div>
     <div style="display:flex;gap:var(--space-md);
