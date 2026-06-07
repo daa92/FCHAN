@@ -789,7 +789,7 @@ const buildReportHTML = (data) => {
   `;
 };
 
-// ─── GENERATE PDF (Optimized for Render) ─────────────────
+// ─── GENERATE PDF (Fixed for Render) ─────────────────
 const generatePDF = async (farmId, userId) => {
   let browser = null;
   try {
@@ -799,7 +799,7 @@ const generatePDF = async (farmId, userId) => {
     browser = await puppeteer.launch({
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath(),
+      executablePath: await chromium.executablePath(),   // ← This line was the problem
       headless: true,
     });
 
@@ -816,6 +816,13 @@ const generatePDF = async (farmId, userId) => {
         left: '20px' 
       }
     });
+
+    return { pdf, farmName: data.farm.name };
+
+  } finally {
+    if (browser) await browser.close();
+  }
+};
 
     return { pdf, farmName: data.farm.name };
 
