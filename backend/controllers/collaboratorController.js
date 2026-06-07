@@ -16,9 +16,9 @@ const invite = async (req, res) => {
       });
     }
 
-    // Verify farm belongs to user
+    // Verify farm belongs to user (coerce types to avoid string/number mismatch)
     const farm = await Farm.findById(farm_id);
-    if (!farm || farm.user_id !== req.user.id) {
+    if (!farm || parseInt(farm.user_id) !== parseInt(req.user.id)) {
       return res.status(403).json({
         success: false,
         message: 'Farm not found or access denied.'
@@ -75,7 +75,7 @@ const invite = async (req, res) => {
 const getCollaborators = async (req, res) => {
   try {
     const farm = await Farm.findById(req.params.farmId);
-    if (!farm || farm.user_id !== req.user.id) {
+    if (!farm || parseInt(farm.user_id) !== parseInt(req.user.id)) {
       return res.status(403).json({
         success: false, message: 'Access denied.'
       });
