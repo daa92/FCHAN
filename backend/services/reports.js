@@ -786,7 +786,6 @@ const buildReportHTML = (data) => {
     </html>
   `;
 };
-
 // ─── GENERATE PDF ─────────────────
 const generatePDF = async (farmId, userId) => {
   let browser = null;
@@ -796,7 +795,7 @@ const generatePDF = async (farmId, userId) => {
 
     browser = await puppeteer.launch({
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
     });
 
     const page = await browser.newPage();
@@ -805,12 +804,7 @@ const generatePDF = async (farmId, userId) => {
     const pdf = await page.pdf({
       format: 'A4',
       printBackground: true,
-      margin: { 
-        top: '20px', 
-        right: '20px', 
-        bottom: '20px', 
-        left: '20px' 
-      }
+      margin: { top: '20px', right: '20px', bottom: '20px', left: '20px' }
     });
 
     return { pdf, farmName: data.farm.name };
