@@ -12,6 +12,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@sparticuz/chromium": "^149.0.0",
     "axios": "^1.17.0",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
@@ -23,7 +24,7 @@
     "mysql2": "^3.22.3",
     "node-cron": "^4.2.1",
     "nodemailer": "^8.0.7",
-    "puppeteer": "^25.1.0",
+    "puppeteer-core": "^25.1.0",
     "resend": "^6.12.4",
     "socket.io": "^4.8.3"
   },
@@ -31,3 +32,4 @@
     "nodemon": "^3.1.14"
   }
 }
+
