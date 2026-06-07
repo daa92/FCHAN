@@ -38,10 +38,12 @@ const getHealthColor = (score) => {
 // ─── GATHER ALL REPORT DATA ───────────────────────────
 const gatherReportData = async (farmId, userId) => {
 
-  // Get farm info
+  // Get farm info — owner OR accepted collaborator can generate a report
   const [farms] = await db.execute(
-    'SELECT * FROM farms WHERE id = ? AND user_id = ?',
-    [farmId, userId]
+    `SELECT f.* FROM farms f
+     LEFT JOIN collaborators c ON c.farm_id = f.id AND c.user_id = ? AND c.status = 'accepted'
+     WHERE f.id = ? AND (f.user_id = ? OR c.user_id IS NOT NULL)`,
+    [userId, farmId, userId]
   );
   const farm = farms[0];
   if (!farm) throw new Error('Farm not found.');
