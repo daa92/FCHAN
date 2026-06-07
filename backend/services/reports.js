@@ -825,12 +825,3 @@ const generatePDF = async (farmId, userId) => {
 };
 
 module.exports = { generatePDF };
-
-    return { pdf, farmName: data.farm.name };
-
-  } finally {
-    if (browser) await browser.close();
-  }
-};
-
-module.exports = { generatePDF };
