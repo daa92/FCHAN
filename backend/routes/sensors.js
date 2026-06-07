@@ -1,10 +1,11 @@
-const express = require('express');
-const router = express.Router();
+const express      = require('express');
+const router       = express.Router();
 const {
   getSensors, getSensor, createSensor, updateSensor, deleteSensor,
   getReadings, getLatestReading, getStats, createReading, ingestReading
 } = require('../controllers/sensorController');
-const { auth } = require('../middleware/auth');
+const { auth }       = require('../middleware/auth');
+const sensorAccess   = require('../middleware/sensorAccess');
 
 // ─── PUBLIC ROUTE ─────────────────────────────────────
 router.post('/readings/ingest', ingestReading);
@@ -12,18 +13,18 @@ router.post('/readings/ingest', ingestReading);
 router.use(auth);
 
 // ─── SPECIFIC ROUTES FIRST ────────────────────────────
-router.get('/zone/:zoneId', getSensors);
+router.get('/zone/:zoneId',      sensorAccess(false), getSensors);
 
-// Readings - specific paths before /:id
-router.get('/:id/readings/latest', getLatestReading);
-router.get('/:id/readings/stats', getStats);
-router.get('/:id/readings', getReadings);
-router.post('/:id/readings', createReading);
+// Readings
+router.get('/:id/readings/latest', sensorAccess(false), getLatestReading);
+router.get('/:id/readings/stats',  sensorAccess(false), getStats);
+router.get('/:id/readings',        sensorAccess(false), getReadings);
+router.post('/:id/readings',       sensorAccess(true),  createReading);
 
 // Sensor CRUD
-router.get('/:id', getSensor);
-router.post('/zone/:zoneId', createSensor);
-router.put('/:id', updateSensor);
-router.delete('/:id', deleteSensor);
+router.get('/:id',            sensorAccess(false), getSensor);
+router.post('/zone/:zoneId',  sensorAccess(true),  createSensor);
+router.put('/:id',            sensorAccess(true),  updateSensor);
+router.delete('/:id',         sensorAccess(true),  deleteSensor);
 
 module.exports = router;
