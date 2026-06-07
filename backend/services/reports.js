@@ -799,7 +799,7 @@ const generatePDF = async (farmId, userId) => {
     browser = await puppeteer.launch({
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath(),   // ← This line was the problem
+      executablePath: await chromium.executablePath(),
       headless: true,
     });
 
@@ -823,6 +823,8 @@ const generatePDF = async (farmId, userId) => {
     if (browser) await browser.close();
   }
 };
+
+module.exports = { generatePDF };
 
     return { pdf, farmName: data.farm.name };
 
