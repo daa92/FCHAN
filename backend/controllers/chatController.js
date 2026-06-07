@@ -99,8 +99,7 @@ const getBroadcasts = async (req, res) => {
       params.push(before);
     }
 
-    query += ` ORDER BY m.created_at DESC LIMIT ?`;
-    params.push(limit);
+    query += ` ORDER BY m.created_at DESC LIMIT ${limit}`;
 
     const [rows] = await db.execute(query, params);
 
@@ -172,10 +171,21 @@ const createRoom = async (req, res) => {
     const { name, member_ids, avatar } = req.body;
     if (!name) return res.status(400).json({ success: false, message: 'Room name required.' });
 
-    const [result] = await db.execute(
-      'INSERT INTO chat_rooms (name, created_by, avatar) VALUES (?, ?, ?)',
-      [name.trim(), req.user.id, avatar || null]
-    );
+    // Try with avatar column (migration 006); fall back gracefully if not yet applied
+    let result;
+    try {
+      [result] = await db.execute(
+        'INSERT INTO chat_rooms (name, created_by, avatar) VALUES (?, ?, ?)',
+        [name.trim(), req.user.id, avatar || null]
+      );
+    } catch (colErr) {
+      if (colErr.code === 'ER_BAD_FIELD_ERROR') {
+        [result] = await db.execute(
+          'INSERT INTO chat_rooms (name, created_by) VALUES (?, ?)',
+          [name.trim(), req.user.id]
+        );
+      } else throw colErr;
+    }
     const roomId = result.insertId;
 
     // Add creator + invited members
