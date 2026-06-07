@@ -1,0 +1,142 @@
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const morgan = require('morgan');
+const http = require('http');
+const socketio = require('socket.io');
+require('dotenv').config();
+
+// Import database connection
+const db = require('./config/db');
+
+// Initialize express app
+const app = express();
+const server = http.createServer(app);
+const io = socketio(server, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST']
+  }
+});
+
+// ─── MIDDLEWARE ───────────────────────────────────────
+app.use(helmet());         // security headers
+//app.use(cors());           // allow frontend to talk to backend
+//correct version since backend = 3000 and frontent = 8080
+/*app.use(cors({
+  origin: ['http://localhost:8080', 'http://192.168.100.40:8080'],
+  //origin: ['http://localhost:8080', 'http://10.95.173.12:8080'],
+  credentials: true
+}));*/
+
+app.use(cors({
+  origin: function(origin, callback) {
+    // Allow all origins in development
+    callback(null, true);
+  },
+  credentials: true
+}));
+
+app.use(morgan('dev'));     // log every request in terminal
+app.use(express.json({ limit: '10mb' }));   // parse incoming JSON data (10mb for base64 images)
+
+// ─── SOCKET.IO ────────────────────────────────────────
+const jwt = require('jsonwebtoken');
+io.use((socket, next) => {
+  // Authenticate socket connections via token query param
+  const token = socket.handshake.auth.token || socket.handshake.query.token;
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      socket.userId = decoded.id;
+    } catch (e) { /* unauthenticated socket - still allow connection */ }
+  }
+  next();
+});
+
+io.on('connection', (socket) => {
+  console.log('New client connected:', socket.id);
+
+  // Join personal room for private messages
+  if (socket.userId) {
+    socket.join(`user:${socket.userId}`);
+    console.log(`User ${socket.userId} joined personal room`);
+  }
+
+  // Join chat rooms
+  socket.on('chat:joinRoom', (roomId) => {
+    socket.join(`room:${roomId}`);
+  });
+
+  socket.on('chat:leaveRoom', (roomId) => {
+    socket.leave(`room:${roomId}`);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Client disconnected:', socket.id);
+  });
+});
+
+// Make io accessible to routes later
+app.set('io', io);
+
+// ─── ROUTES ───────────────────────────────────────────
+// We will add routes here as we build each phase // this comment has been set at the beginning
+// As far as we go through phases, it may not be longer important
+const authRoutes = require('./routes/auth');
+const farmRoutes = require('./routes/farm');
+const sensorRoutes = require('./routes/sensors');
+const alertRoutes = require('./routes/alerts');
+const { startAlertsEngine } = require('./services/alerts');
+const speciesRoutes = require('./routes/species');
+const forecastRoutes = require('./routes/forecast');
+const reportsRoutes = require('./routes/reports');
+const collaboratorRoutes = require('./routes/collaborators');
+const chatRoutes     = require('./routes/chat');
+const feedbackRoutes = require('./routes/feedback');
+
+
+
+app.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Welcome to FCHAN API',
+    version: '1.0.0'
+  });
+});
+
+app.use('/api/auth', authRoutes);
+app.use('/api/farm', farmRoutes);
+app.use('/api/sensors', sensorRoutes);
+app.use('/api/alerts', alertRoutes);
+app.use('/api/species', speciesRoutes);
+app.use('/api/forecast', forecastRoutes);
+app.use('/api/reports', reportsRoutes);
+app.use('/api/collaborators', collaboratorRoutes);
+app.use('/api/chat',     chatRoutes);
+app.use('/api/feedback', feedbackRoutes);
+// ─── 404 HANDLER ──────────────────────────────────────
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: 'Route not found'
+  });
+});
+
+// ─── ERROR HANDLER ────────────────────────────────────
+app.use((err, req, res, next) => {
+  console.error('Error:', err.message);
+  res.status(500).json({
+    success: false,
+    message: 'Internal server error'
+  });
+});
+
+// ─── START SERVER ─────────────────────────────────────
+const PORT = process.env.PORT || 3000;
+//server.listen(PORT, () => {
+server.listen (PORT, '0.0.0.0', () => {
+  console.log(`FCHAN server running on port ${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV}`);
+  startAlertsEngine(io); // start alert
+});
