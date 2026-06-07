@@ -796,10 +796,13 @@ const generatePDF = async (farmId, userId) => {
     const data = await gatherReportData(farmId, userId);
     const html = buildReportHTML(data);
 
+    // Correct way to use @sparticuz/chromium
+    const executablePath = await chromium.executablePath();
+
     browser = await puppeteer.launch({
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath(),
+      executablePath: executablePath,
       headless: true,
     });
 
