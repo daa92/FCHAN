@@ -1,4 +1,6 @@
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-core');
+const chromium = require('@sparticuz/chromium');
+
 const db = require('../config/db');
 const { getForecast } = require('./forecast');
 const Plant = require('../models/Plant');
@@ -787,36 +789,31 @@ const buildReportHTML = (data) => {
   `;
 };
 
-// ─── GENERATE PDF ─────────────────────────────────────
+// ─── GENERATE PDF (Optimized for Render) ─────────────────
 const generatePDF = async (farmId, userId) => {
   let browser = null;
   try {
-    // Gather all data
     const data = await gatherReportData(farmId, userId);
-
-    // Build HTML
     const html = buildReportHTML(data);
 
-    // Launch headless browser
     browser = await puppeteer.launch({
-      headless: 'new',
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport,
+      executablePath: await chromium.executablePath(),
+      headless: true,
     });
 
     const page = await browser.newPage();
-
-    // Set HTML content
     await page.setContent(html, { waitUntil: 'networkidle0' });
 
-    // Generate PDF
     const pdf = await page.pdf({
       format: 'A4',
       printBackground: true,
-      margin: {
-        top: '0',
-        right: '0',
-        bottom: '0',
-        left: '0'
+      margin: { 
+        top: '20px', 
+        right: '20px', 
+        bottom: '20px', 
+        left: '20px' 
       }
     });
 
