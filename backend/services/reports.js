@@ -311,6 +311,13 @@ const generatePDF = async (farmId, userId) => {
     const html = buildReportHTML(data);
 
     const executablePath = findChrome();
+
+    // If env var path doesn't exist, remove it so Puppeteer v25 doesn't try it internally
+    if (!executablePath && process.env.PUPPETEER_EXECUTABLE_PATH) {
+      console.log('Clearing stale PUPPETEER_EXECUTABLE_PATH from env');
+      delete process.env.PUPPETEER_EXECUTABLE_PATH;
+    }
+
     const launchOptions = {
       headless: 'new',
       args: [
