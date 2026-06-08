@@ -1,32 +1,22 @@
 #!/usr/bin/env python3
-"""
-FCHAN — Arduino Bluetooth Reader
-Reads sensor data from Arduino via Bluetooth
-and sends to FCHAN API
-"""
-
-import bluetooth
+import socket  # Utilise le Bluetooth natif de Windows
 import requests
 import time
 import sys
 from datetime import datetime
 
 # ── CONFIGURATION ──────────────────────────────────
-#FCHAN_API_URL = "http://localhost:3000/api"
 FCHAN_API_URL = "https://fchan.onrender.com/api"
 
-# Replace with your actual sensor API keys
 SENSOR_API_KEYS = {
-    "temperature":   "YOUR_TEMPERATURE_SENSOR_API_KEY",
-    "humidity":      "YOUR_HUMIDITY_SENSOR_API_KEY",
+    "temperature":   "YOUR_SOIL_TEMPERATURE_SENSOR_API_KEY",
+    "humidity":      "YOUR_SOIL_HUMIDITY_SENSOR_API_KEY",
     "soil_moisture": "YOUR_SOIL_MOISTURE_SENSOR_API_KEY",
     "soil_ph":       "YOUR_SOIL_PH_SENSOR_API_KEY",
-    "light":         "YOUR_LIGHT_SENSOR_API_KEY",
+    "light":         "YOUR_SOIL_LIGHT_SENSOR_API_KEY",
 }
 
-# Your Arduino's Bluetooth MAC address
-# Find it by running: hcitool scan
-BT_MAC_ADDRESS = "6E:F2:C8:A2:84:68"
+BT_MAC_ADDRESS = "58:56:00:00:B6:63"
 BT_PORT        = 1
 BT_TIMEOUT     = 10
 
@@ -70,60 +60,41 @@ def parse_line(line):
     if ':' not in line:
         return None, None
     parts = line.split(':', 1)
+    
     sensor_map = {
         'TEMP':  'temperature',
         'HUM':   'humidity',
         'SOIL':  'soil_moisture',
         'PH':    'soil_ph',
         'LIGHT': 'light',
-        'CO2':   'co2',
-        'WIND':  'wind',
-        'RAIN':  'rainfall'
     }
-    sensor_type = sensor_map.get(parts[0].upper())
+    
+    # .strip().upper() évite les espaces cachés envoyés par l'Arduino
+    sensor_type = sensor_map.get(parts[0].strip().upper())
     try:
-        value = float(parts[1])
-    except ValueError:
+        value = float(parts[1].strip()) # Correction : index [1] pour la valeur
+    except (ValueError, IndexError):
         return None, None
     return sensor_type, value
 
-# ── SCAN FOR BLUETOOTH DEVICES ──────────────────────
-def scan_devices():
-    log("Scanning for Bluetooth devices...", BLUE)
-    try:
-        devices = bluetooth.discover_devices(
-            duration=8, lookup_names=True
-        )
-        if not devices:
-            log("No Bluetooth devices found", RED)
-            return
-        log("Found devices:", GREEN)
-        for addr, name in devices:
-            print(f"  {BLUE}→ {addr} — {name}{RESET}")
-    except Exception as e:
-        log(f"Scan error: {e}", RED)
-
 # ── MAIN ────────────────────────────────────────────
 def main():
-    log("FCHAN Bluetooth Reader", GREEN)
+    log("FCHAN Bluetooth Reader (Direct MAC Mode)", GREEN)
     log("=" * 40, GREEN)
-
-    if '--scan' in sys.argv:
-        scan_devices()
-        return
 
     log(f"Connecting to {BT_MAC_ADDRESS}...", BLUE)
 
     while True:
         try:
-            sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
-            sock.connect((BT_MAC_ADDRESS, BT_PORT))
+            # Connexion Bluetooth directe sans port COM virtuel
+            sock = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM)
             sock.settimeout(BT_TIMEOUT)
-            log("Connected!", GREEN)
+            sock.connect((BT_MAC_ADDRESS, BT_PORT))
+            log("Connected via MAC Address!", GREEN)
 
             buffer = ""
             while True:
-                data = sock.recv(1024).decode('utf-8')
+                data = sock.recv(1024).decode('utf-8', errors='ignore')
                 buffer += data
 
                 while '\n' in buffer:
@@ -132,7 +103,7 @@ def main():
                     if not line:
                         continue
 
-                    log(f"{line}", BLUE)
+                    log(f"Received: {line}", BLUE)
                     sensor_type, value = parse_line(line)
 
                     if sensor_type is None:
@@ -145,8 +116,8 @@ def main():
 
                     send_reading(api_key, value)
 
-        except bluetooth.BluetoothError as e:
-            log(f"Bluetooth error: {e}", RED)
+        except (socket.error, OSError) as e:
+            log(f"Bluetooth Error: {e}", RED)
             log("Retrying in 5 seconds...", YELLOW)
             time.sleep(5)
         except KeyboardInterrupt:
