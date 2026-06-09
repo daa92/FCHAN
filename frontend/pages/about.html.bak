@@ -1247,7 +1247,7 @@
           </div>
           <div class="tech-card">
             <div class="tech-icon"><i data-lucide="file-text"></i></div>
-            <div class="tech-name">Puppeteer</div>
+            <div class="tech-name">PdfKit</div>
             <div class="tech-desc">PDF generation</div>
           </div>
           <div class="tech-card">
