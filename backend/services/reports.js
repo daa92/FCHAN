@@ -1,29 +1,19 @@
-const puppeteer = require('puppeteer');
+const PDFDocument = require('pdfkit');
 const db = require('../config/db');
-const { getForecast } = require('./forecast');
 const Plant = require('../models/Plant');
 const Sensor = require('../models/Sensor');
 const Reading = require('../models/Reading');
 const Alert = require('../models/Alert');
 
-// ─── HELPER: FORMAT DATE ──────────────────────────────
-const formatDate = (date) => {
+// ── HELPERS ───────────────────────────────────────────
+const fmt = (date) => {
   if (!date) return 'N/A';
   return new Date(date).toLocaleDateString('en-US', {
     year: 'numeric', month: 'long', day: 'numeric'
   });
 };
 
-const getSeverityColor = (severity) => {
-  switch (severity) {
-    case 'critical': return '#e74c3c';
-    case 'warning':  return '#f39c12';
-    case 'info':     return '#3498db';
-    default:         return '#95a5a6';
-  }
-};
-
-const getHealthColor = (score) => {
+const healthColor = (score) => {
   if (score >= 85) return '#27ae60';
   if (score >= 70) return '#2ecc71';
   if (score >= 50) return '#f39c12';
@@ -31,38 +21,7 @@ const getHealthColor = (score) => {
   return '#e74c3c';
 };
 
-// ─── FIND CHROME EXECUTABLE ───────────────────────────
-const findChrome = () => {
-  // 1. Explicit env var (Render dashboard setting)
-  if (process.env.PUPPETEER_EXECUTABLE_PATH) {
-    const { execFileSync } = require('child_process');
-    try {
-      execFileSync('test', ['-f', process.env.PUPPETEER_EXECUTABLE_PATH]);
-      return process.env.PUPPETEER_EXECUTABLE_PATH;
-    } catch {
-      console.warn('PUPPETEER_EXECUTABLE_PATH set but file not found:', process.env.PUPPETEER_EXECUTABLE_PATH);
-    }
-  }
-
-  // 2. Common Linux/Render paths
-  const candidates = [
-    '/usr/bin/google-chrome-stable',
-    '/usr/bin/google-chrome',
-    '/usr/bin/chromium-browser',
-    '/usr/bin/chromium',
-    '/snap/bin/chromium',
-  ];
-
-  const fs = require('fs');
-  for (const p of candidates) {
-    if (fs.existsSync(p)) return p;
-  }
-
-  // 3. Let puppeteer use its own bundled chromium (works locally)
-  return null;
-};
-
-// ─── GATHER REPORT DATA ───────────────────────────────
+// ── GATHER DATA ───────────────────────────────────────
 const gatherReportData = async (farmId, userId) => {
   const [farms] = await db.execute(
     `SELECT f.* FROM farms f
@@ -90,7 +49,10 @@ const gatherReportData = async (farmId, userId) => {
     const plantsData = [];
     for (const plant of plants) {
       let forecast = null;
-      try { forecast = await getForecast(plant, sensors); } catch (e) { forecast = null; }
+      try {
+        const { getForecast } = require('./forecast');
+        forecast = await getForecast(plant, sensors);
+      } catch (e) { forecast = null; }
       plantsData.push({ ...plant, forecast });
     }
 
@@ -103,257 +65,381 @@ const gatherReportData = async (farmId, userId) => {
   return { farm, zones: zonesData, alerts, user: users[0], generated_at: new Date() };
 };
 
-// ─── BUILD HTML ───────────────────────────────────────
-const buildReportHTML = (data) => {
-  const { farm, zones, alerts, user, generated_at } = data;
-
-  const zonesHTML = zones.map(zone => {
-    const sensorsHTML = zone.sensors.length > 0
-      ? zone.sensors.map(s => `
-          <tr>
-            <td>${s.name}</td>
-            <td>${s.type.replace('_',' ')}</td>
-            <td>${s.latest ? s.latest.value+' '+(s.unit||'') : 'No data'}</td>
-            <td>${s.stats.average ? parseFloat(s.stats.average).toFixed(2)+' '+(s.unit||'') : 'N/A'}</td>
-            <td>${s.stats.minimum ? parseFloat(s.stats.minimum).toFixed(2) : 'N/A'}</td>
-            <td>${s.stats.maximum ? parseFloat(s.stats.maximum).toFixed(2) : 'N/A'}</td>
-            <td><span class="badge ${s.is_active?'badge-success':'badge-danger'}">${s.is_active?'Active':'Inactive'}</span></td>
-          </tr>`).join('')
-      : '<tr><td colspan="7" class="text-center">No sensors in this zone</td></tr>';
-
-    const plantsHTML = zone.plants.length > 0
-      ? zone.plants.map(plant => {
-          const f = plant.forecast;
-          return `<div class="plant-card">
-            <div class="plant-header">
-              <h4>${plant.name}</h4>
-              <span class="badge badge-info">${plant.growth_stage}</span>
-            </div>
-            <div class="plant-details">
-              <div class="detail-row"><span>Species:</span><strong>${plant.species||'Unknown'}</strong></div>
-              <div class="detail-row"><span>Quantity:</span><strong>${plant.quantity}</strong></div>
-              <div class="detail-row"><span>Planted:</span><strong>${formatDate(plant.planted_at)}</strong></div>
-              ${f && !f.error ? `
-              <div class="forecast-box">
-                <h5>Forecast</h5>
-                <div class="progress-bar-container">
-                  <div class="progress-bar-label">Growth: ${f.growth_percentage}%</div>
-                  <div class="progress-bar"><div class="progress-fill" style="width:${f.growth_percentage}%;background:${getHealthColor(f.growth_percentage)}"></div></div>
-                </div>
-                <div class="forecast-grid">
-                  <div class="forecast-item"><span>GDD Accumulated</span><strong>${f.accumulated_gdd}</strong></div>
-                  <div class="forecast-item"><span>Total GDD Needed</span><strong>${f.total_gdd_needed}</strong></div>
-                  <div class="forecast-item"><span>Days Remaining</span><strong>${f.days_remaining||'N/A'}</strong></div>
-                  <div class="forecast-item"><span>Est. Harvest</span><strong>${formatDate(f.estimated_harvest_date)}</strong></div>
-                  <div class="forecast-item"><span>Health Score</span><strong style="color:${getHealthColor(f.health_score)}">${f.health_score||'N/A'}/100</strong></div>
-                  <div class="forecast-item"><span>Status</span><strong style="color:${getHealthColor(f.health_score)}">${f.health_status||'N/A'}</strong></div>
-                </div>
-                ${f.recommendations&&f.recommendations.length?`<div class="recommendations"><h6>Recommendations</h6><ul>${f.recommendations.map(r=>`<li>${r}</li>`).join('')}</ul></div>`:''}
-              </div>` : `<div class="no-forecast">${f&&f.error?f.error:'Forecast unavailable'}</div>`}
-            </div>
-          </div>`;
-        }).join('')
-      : '<p class="no-data">No plants in this zone</p>';
-
-    return `<div class="zone-section">
-      <div class="zone-header">
-        <h3>${zone.name}</h3>
-        ${zone.area_sqm?`<span class="zone-area">${zone.area_sqm} m²</span>`:''}
-      </div>
-      ${zone.description?`<p class="zone-desc">${zone.description}</p>`:''}
-      <h4 class="section-title">Sensors & Readings (Last 24h)</h4>
-      <table class="data-table"><thead><tr><th>Sensor</th><th>Type</th><th>Latest</th><th>Average</th><th>Min</th><th>Max</th><th>Status</th></tr></thead><tbody>${sensorsHTML}</tbody></table>
-      <h4 class="section-title">Plants</h4>
-      <div class="plants-grid">${plantsHTML}</div>
-    </div>`;
-  }).join('');
-
-  const alertsHTML = alerts.length > 0
-    ? alerts.map(a => `<tr>
-        <td>${formatDate(a.created_at)}</td>
-        <td>${a.type.replace(/_/g,' ')}</td>
-        <td><span class="badge" style="background:${getSeverityColor(a.severity)};color:white">${a.severity}</span></td>
-        <td>${a.message}</td>
-        <td><span class="badge ${a.is_resolved?'badge-success':'badge-warning'}">${a.is_resolved?'Resolved':'Active'}</span></td>
-      </tr>`).join('')
-    : '<tr><td colspan="5" class="text-center">No alerts recorded</td></tr>';
-
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
-  <title>FCHAN Report - ${farm.name}</title>
-  <style>
-    *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:'Segoe UI',Arial,sans-serif;color:#2c3e50;background:#fff;font-size:13px;line-height:1.6}
-    .cover{min-height:100vh;background:linear-gradient(135deg,#1a5276 0%,#27ae60 100%);display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;color:white;padding:40px;page-break-after:always}
-    .cover h1{font-size:42px;font-weight:800;letter-spacing:3px;margin-bottom:10px}
-    .cover h2{font-size:24px;font-weight:300;margin-bottom:40px;opacity:0.9}
-    .cover-divider{width:80px;height:4px;background:rgba(255,255,255,0.5);margin:30px auto;border-radius:2px}
-    .cover-info{font-size:16px;opacity:0.85;line-height:2}
-    .cover-badge{margin-top:40px;background:rgba(255,255,255,0.2);padding:10px 30px;border-radius:50px;font-size:14px;border:1px solid rgba(255,255,255,0.4)}
-    .content{padding:40px;max-width:1000px;margin:0 auto}
-    .page-section{page-break-before:always;padding-top:20px}
-    .section-header{background:linear-gradient(135deg,#1a5276,#27ae60);color:white;padding:15px 25px;border-radius:8px;margin-bottom:25px}
-    .section-header h2{font-size:20px;font-weight:700}
-    .summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin-bottom:30px}
-    .summary-card{background:#f8f9fa;border:1px solid #e9ecef;border-radius:8px;padding:20px;text-align:center}
-    .summary-card .value{font-size:32px;font-weight:800;color:#27ae60}
-    .summary-card .label{font-size:12px;color:#7f8c8d;margin-top:5px;text-transform:uppercase;letter-spacing:1px}
-    .info-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:25px}
-    .info-item{background:#f8f9fa;padding:12px 15px;border-radius:6px;border-left:4px solid #27ae60}
-    .info-item label{font-size:11px;color:#7f8c8d;text-transform:uppercase;letter-spacing:1px;display:block}
-    .info-item value{font-size:14px;font-weight:600;color:#2c3e50}
-    .zone-section{margin-bottom:30px;border:1px solid #e9ecef;border-radius:10px;overflow:hidden}
-    .zone-header{background:#eafaf1;padding:15px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #d5f5e3}
-    .zone-header h3{color:#1a5276;font-size:16px}
-    .zone-area{background:#27ae60;color:white;padding:3px 12px;border-radius:20px;font-size:12px}
-    .zone-desc{padding:10px 20px;color:#7f8c8d;font-style:italic;border-bottom:1px solid #e9ecef}
-    .section-title{padding:12px 20px;font-size:14px;color:#2c3e50;background:#f8f9fa;border-bottom:1px solid #e9ecef;border-top:1px solid #e9ecef}
-    .data-table{width:100%;border-collapse:collapse;font-size:12px}
-    .data-table th{background:#2c3e50;color:white;padding:10px 12px;text-align:left;font-weight:600;text-transform:uppercase;font-size:11px;letter-spacing:0.5px}
-    .data-table td{padding:9px 12px;border-bottom:1px solid #f0f0f0;color:#2c3e50}
-    .data-table tr:nth-child(even) td{background:#f8f9fa}
-    .text-center{text-align:center}
-    .badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
-    .badge-success{background:#d5f5e3;color:#27ae60}
-    .badge-danger{background:#fadbd8;color:#e74c3c}
-    .badge-warning{background:#fef9e7;color:#f39c12}
-    .badge-info{background:#d6eaf8;color:#2980b9}
-    .plants-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:15px;padding:15px}
-    .plant-card{border:1px solid #e9ecef;border-radius:8px;overflow:hidden}
-    .plant-header{background:#eafaf1;padding:12px 15px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #d5f5e3}
-    .plant-header h4{font-size:14px;color:#1a5276}
-    .plant-details{padding:12px 15px}
-    .detail-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f8f9fa;font-size:12px}
-    .detail-row span{color:#7f8c8d}
-    .forecast-box{margin-top:12px;background:#f8f9fa;border-radius:6px;padding:12px}
-    .forecast-box h5{font-size:13px;margin-bottom:10px;color:#2c3e50}
-    .progress-bar-container{margin-bottom:10px}
-    .progress-bar-label{font-size:12px;color:#7f8c8d;margin-bottom:4px}
-    .progress-bar{height:10px;background:#e9ecef;border-radius:5px;overflow:hidden}
-    .progress-fill{height:100%;border-radius:5px}
-    .forecast-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:10px}
-    .forecast-item{background:white;padding:6px 10px;border-radius:4px;border:1px solid #e9ecef}
-    .forecast-item span{display:block;font-size:10px;color:#7f8c8d;text-transform:uppercase}
-    .forecast-item strong{font-size:13px}
-    .recommendations{margin-top:10px;background:#fff3cd;border-radius:4px;padding:8px 12px}
-    .recommendations h6{font-size:12px;margin-bottom:5px;color:#856404}
-    .recommendations ul{padding-left:16px;font-size:11px;color:#856404}
-    .no-forecast{margin-top:10px;background:#fff3cd;padding:8px;border-radius:4px;font-size:12px;color:#856404}
-    .no-data{padding:15px;color:#7f8c8d;font-style:italic;text-align:center}
-    .alerts-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin-bottom:20px}
-    .alert-stat{text-align:center;padding:15px;border-radius:8px}
-    .alert-stat.critical{background:#fadbd8}.alert-stat.warning{background:#fef9e7}.alert-stat.info{background:#d6eaf8}
-    .alert-stat .num{font-size:28px;font-weight:800}
-    .alert-stat.critical .num{color:#e74c3c}.alert-stat.warning .num{color:#f39c12}.alert-stat.info .num{color:#3498db}
-    .footer{margin-top:40px;padding:20px 40px;background:#2c3e50;color:white;text-align:center;font-size:12px}
-    .footer p{opacity:0.7}
-    @media print{.page-section{page-break-before:always}.zone-section{page-break-inside:avoid}.plant-card{page-break-inside:avoid}}
-  </style></head><body>
-
-  <div class="cover">
-    <div style="font-size:64px;margin-bottom:20px">🌿</div>
-    <h1>FCHAN</h1>
-    <h2>Farm Intelligence Platform</h2>
-    <div class="cover-divider"></div>
-    <div class="cover-info">
-      <p><strong>${farm.name}</strong></p>
-      <p>${farm.city||''}${farm.city&&farm.country?', ':''}${farm.country||''}</p>
-      <p>Generated for: ${user.name}</p>
-      <p>${formatDate(generated_at)}</p>
-    </div>
-    <div class="cover-badge">Complete Farm Report</div>
-  </div>
-
-  <div class="content">
-    <div class="page-section">
-      <div class="section-header"><h2>Farm Overview</h2></div>
-      <div class="summary-grid">
-        <div class="summary-card"><div class="value">${zones.length}</div><div class="label">Total Zones</div></div>
-        <div class="summary-card"><div class="value">${zones.reduce((a,z)=>a+z.plants.length,0)}</div><div class="label">Total Plants</div></div>
-        <div class="summary-card"><div class="value">${zones.reduce((a,z)=>a+z.sensors.length,0)}</div><div class="label">Total Sensors</div></div>
-      </div>
-      <div class="info-grid">
-        <div class="info-item"><label>Farm Name</label><value>${farm.name}</value></div>
-        <div class="info-item"><label>Location</label><value>${farm.city||'N/A'}${farm.city&&farm.country?', ':''}${farm.country||''}</value></div>
-        <div class="info-item"><label>Owner</label><value>${user.name}</value></div>
-        <div class="info-item"><label>Report Generated</label><value>${formatDate(generated_at)}</value></div>
-      </div>
-    </div>
-
-    <div class="page-section">
-      <div class="section-header"><h2>Zones, Sensors & Plants</h2></div>
-      ${zonesHTML}
-    </div>
-
-    <div class="page-section">
-      <div class="section-header"><h2>Recent Alerts</h2></div>
-      <div class="alerts-summary">
-        <div class="alert-stat critical"><div class="num">${alerts.filter(a=>a.severity==='critical').length}</div><div>Critical</div></div>
-        <div class="alert-stat warning"><div class="num">${alerts.filter(a=>a.severity==='warning').length}</div><div>Warnings</div></div>
-        <div class="alert-stat info"><div class="num">${alerts.filter(a=>a.severity==='info').length}</div><div>Info</div></div>
-      </div>
-      <table class="data-table"><thead><tr><th>Date</th><th>Type</th><th>Severity</th><th>Message</th><th>Status</th></tr></thead><tbody>${alertsHTML}</tbody></table>
-    </div>
-  </div>
-
-  <div class="footer">
-    <p>FCHAN — Farm Intelligence Platform</p>
-    <p>Report generated on ${formatDate(generated_at)} for ${user.name} (${user.email})</p>
-    <p>This report is confidential and intended solely for the use of the farm owner.</p>
-  </div>
-</body></html>`;
+// ── DRAW HELPERS ──────────────────────────────────────
+const COLORS = {
+  primary:   '#27ae60',
+  secondary: '#1a5276',
+  danger:    '#e74c3c',
+  warning:   '#f39c12',
+  text:      '#2c3e50',
+  muted:     '#7f8c8d',
+  light:     '#f8f9fa',
+  border:    '#dee2e6',
+  white:     '#ffffff',
 };
 
-// ─── GENERATE PDF ─────────────────────────────────────
-const generatePDF = async (farmId, userId) => {
-  let browser = null;
+const PAGE_W = 595.28;
+const PAGE_H = 841.89;
+const MARGIN = 50;
+const COL_W  = PAGE_W - MARGIN * 2;
+
+function drawRect(doc, x, y, w, h, color, radius = 0) {
+  doc.save().roundedRect(x, y, w, h, radius).fill(color).restore();
+}
+
+function sectionHeader(doc, title, y) {
+  drawRect(doc, MARGIN, y, COL_W, 30, COLORS.secondary, 6);
+  doc.font('Helvetica-Bold').fontSize(13).fillColor(COLORS.white)
+     .text(title, MARGIN + 12, y + 8, { width: COL_W - 24 });
+  return y + 40;
+}
+
+function rowLine(doc, y) {
+  doc.save().moveTo(MARGIN, y).lineTo(PAGE_W - MARGIN, y)
+     .strokeColor(COLORS.border).lineWidth(0.5).stroke().restore();
+}
+
+function checkPage(doc, y, needed = 80) {
+  if (y + needed > PAGE_H - MARGIN) {
+    doc.addPage();
+    return MARGIN + 10;
+  }
+  return y;
+}
+
+// ── GENERATE PDF ──────────────────────────────────────
+const generatePDF = (farmId, userId) => new Promise(async (resolve, reject) => {
   try {
     const data = await gatherReportData(farmId, userId);
-    const html = buildReportHTML(data);
+    const { farm, zones, alerts, user, generated_at } = data;
 
-    const executablePath = findChrome();
-
-    // If env var path doesn't exist, remove it so Puppeteer v25 doesn't try it internally
-    if (!executablePath && process.env.PUPPETEER_EXECUTABLE_PATH) {
-      console.log('Clearing stale PUPPETEER_EXECUTABLE_PATH from env');
-      delete process.env.PUPPETEER_EXECUTABLE_PATH;
-    }
-
-    const launchOptions = {
-      headless: 'new',
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-        '--no-first-run',
-        '--no-zygote',
-        '--single-process',
-      ]
-    };
-
-    if (executablePath) {
-      launchOptions.executablePath = executablePath;
-      console.log('Using Chrome at:', executablePath);
-    } else {
-      console.log('Using puppeteer bundled chromium');
-    }
-
-    browser = await puppeteer.launch(launchOptions);
-
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0', timeout: 30000 });
-
-    const pdf = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      margin: { top: '0', right: '0', bottom: '0', left: '0' }
+    const doc = new PDFDocument({
+      size: 'A4',
+      margins: { top: MARGIN, bottom: MARGIN, left: MARGIN, right: MARGIN },
+      bufferPages: true,
+      info: {
+        Title:  `FCHAN Report — ${farm.name}`,
+        Author: user.name,
+        Subject: 'Farm Intelligence Report',
+      }
     });
 
-    return { pdf, farmName: data.farm.name };
+    const chunks = [];
+    doc.on('data', chunk => chunks.push(chunk));
+    doc.on('end',  ()    => resolve({ pdf: Buffer.concat(chunks), farmName: farm.name }));
+    doc.on('error', reject);
 
-  } finally {
-    if (browser) await browser.close();
+    // ─── COVER PAGE ────────────────────────────────────
+    // Green gradient background (simulated with rect)
+    drawRect(doc, 0, 0, PAGE_W, PAGE_H, COLORS.secondary);
+    drawRect(doc, 0, PAGE_H * 0.55, PAGE_W, PAGE_H * 0.45, COLORS.primary);
+
+    // Logo / Title
+    doc.font('Helvetica-Bold').fontSize(52).fillColor(COLORS.white)
+       .text('FCHAN', 0, 180, { align: 'center' });
+    doc.font('Helvetica').fontSize(18).fillColor('rgba(255,255,255,0.85)')
+       .text('Farm Intelligence Platform', 0, 248, { align: 'center' });
+
+    // Divider
+    const divX = PAGE_W / 2 - 40;
+    doc.save().moveTo(divX, 290).lineTo(divX + 80, 290)
+       .strokeColor('rgba(255,255,255,0.4)').lineWidth(3).stroke().restore();
+
+    // Farm info box
+    drawRect(doc, MARGIN + 60, 315, COL_W - 120, 160, 'rgba(255,255,255,0.12)', 12);
+    doc.font('Helvetica-Bold').fontSize(16).fillColor(COLORS.white)
+       .text(farm.name, MARGIN + 60, 335, { align: 'center', width: COL_W - 120 });
+    doc.font('Helvetica').fontSize(12).fillColor('rgba(255,255,255,0.8)');
+    const loc = [farm.city, farm.country].filter(Boolean).join(', ') || 'N/A';
+    doc.text(`  ${loc}`,       MARGIN + 60, 362, { align: 'center', width: COL_W - 120 });
+    doc.text(`  ${user.name}`, MARGIN + 60, 385, { align: 'center', width: COL_W - 120 });
+    doc.text(`  ${user.email}`,MARGIN + 60, 408, { align: 'center', width: COL_W - 120 });
+    doc.text(`  Generated: ${fmt(generated_at)}`, MARGIN + 60, 431, { align: 'center', width: COL_W - 120 });
+
+    // Summary stats at bottom of cover
+    const totalPlants  = zones.reduce((a, z) => a + z.plants.length, 0);
+    const totalSensors = zones.reduce((a, z) => a + z.sensors.length, 0);
+    const stats = [
+      { label: 'Zones',   value: zones.length },
+      { label: 'Plants',  value: totalPlants  },
+      { label: 'Sensors', value: totalSensors },
+      { label: 'Alerts',  value: alerts.length },
+    ];
+    const boxW = (COL_W - 30) / 4;
+    stats.forEach((s, i) => {
+      const bx = MARGIN + i * (boxW + 10);
+      drawRect(doc, bx, 570, boxW, 70, 'rgba(255,255,255,0.15)', 8);
+      doc.font('Helvetica-Bold').fontSize(26).fillColor(COLORS.white)
+         .text(String(s.value), bx, 582, { align: 'center', width: boxW });
+      doc.font('Helvetica').fontSize(10).fillColor('rgba(255,255,255,0.7)')
+         .text(s.label.toUpperCase(), bx, 614, { align: 'center', width: boxW });
+    });
+
+    // Footer
+    doc.font('Helvetica').fontSize(10).fillColor('rgba(255,255,255,0.5)')
+       .text('Complete Farm Report — Confidential', 0, PAGE_H - 60, { align: 'center' });
+
+    // ─── PAGE 2: FARM OVERVIEW ─────────────────────────
+    doc.addPage();
+    let y = MARGIN;
+
+    y = sectionHeader(doc, 'Farm Overview', y);
+
+    const infoItems = [
+      ['Farm Name',   farm.name],
+      ['Location',    loc],
+      ['Owner',       user.name],
+      ['Email',       user.email],
+      ['Total Zones', String(zones.length)],
+      ['Total Plants',String(totalPlants)],
+      ['Total Sensors',String(totalSensors)],
+      ['Report Date', fmt(generated_at)],
+    ];
+
+    infoItems.forEach((item, i) => {
+      const ix = MARGIN;
+      const iy = y + i * 26;
+      if (i % 2 === 0) drawRect(doc, ix, iy, COL_W, 26, COLORS.light);
+      doc.font('Helvetica-Bold').fontSize(11).fillColor(COLORS.muted)
+         .text(item[0], ix + 10, iy + 7, { width: 160 });
+      doc.font('Helvetica').fontSize(11).fillColor(COLORS.text)
+         .text(item[1], ix + 175, iy + 7, { width: COL_W - 185 });
+    });
+    y += infoItems.length * 26 + 20;
+
+    // ─── ZONES SECTION ─────────────────────────────────
+    for (const zone of zones) {
+      y = checkPage(doc, y, 120);
+      y = sectionHeader(doc, `Zone: ${zone.name}${zone.area_sqm ? '  ('+zone.area_sqm+' m²)' : ''}`, y);
+
+      if (zone.description) {
+        doc.font('Helvetica-Oblique').fontSize(10).fillColor(COLORS.muted)
+           .text(zone.description, MARGIN, y, { width: COL_W });
+        y += 20;
+      }
+
+      // Sensors table
+      y = checkPage(doc, y, 60);
+      doc.font('Helvetica-Bold').fontSize(11).fillColor(COLORS.secondary)
+         .text('Sensors & Readings (Last 24h)', MARGIN, y);
+      y += 18;
+
+      // Table header
+      const cols = [
+        { label: 'Sensor Name', x: MARGIN,       w: 130 },
+        { label: 'Type',        x: MARGIN + 130,  w: 100 },
+        { label: 'Latest',      x: MARGIN + 230,  w: 80  },
+        { label: 'Avg (24h)',   x: MARGIN + 310,  w: 80  },
+        { label: 'Min',         x: MARGIN + 390,  w: 60  },
+        { label: 'Max',         x: MARGIN + 450,  w: 60  },
+        { label: 'Status',      x: MARGIN + 510,  w: 55  },
+      ];
+      drawRect(doc, MARGIN, y, COL_W, 22, COLORS.secondary);
+      cols.forEach(c => {
+        doc.font('Helvetica-Bold').fontSize(9).fillColor(COLORS.white)
+           .text(c.label, c.x + 4, y + 6, { width: c.w - 4 });
+      });
+      y += 22;
+
+      if (zone.sensors.length === 0) {
+        drawRect(doc, MARGIN, y, COL_W, 24, COLORS.light);
+        doc.font('Helvetica-Oblique').fontSize(10).fillColor(COLORS.muted)
+           .text('No sensors in this zone', MARGIN, y + 6, { align: 'center', width: COL_W });
+        y += 24;
+      } else {
+        zone.sensors.forEach((s, i) => {
+          y = checkPage(doc, y, 26);
+          if (i % 2 === 0) drawRect(doc, MARGIN, y, COL_W, 22, COLORS.light);
+          const latest = s.latest ? `${parseFloat(s.latest.value).toFixed(1)} ${s.unit||''}` : 'No data';
+          const avg    = s.stats?.average ? `${parseFloat(s.stats.average).toFixed(1)} ${s.unit||''}` : 'N/A';
+          const min    = s.stats?.minimum ? parseFloat(s.stats.minimum).toFixed(1) : 'N/A';
+          const max    = s.stats?.maximum ? parseFloat(s.stats.maximum).toFixed(1) : 'N/A';
+          const status = s.is_active ? 'Active' : 'Inactive';
+          const stColor = s.is_active ? COLORS.primary : COLORS.danger;
+
+          doc.font('Helvetica').fontSize(9).fillColor(COLORS.text);
+          doc.text(s.name,                       MARGIN + 4,     y + 6, { width: 126 });
+          doc.text(s.type.replace(/_/g, ' '),    MARGIN + 134,   y + 6, { width: 96  });
+          doc.text(latest,                        MARGIN + 234,   y + 6, { width: 76  });
+          doc.text(avg,                           MARGIN + 314,   y + 6, { width: 76  });
+          doc.text(min,                           MARGIN + 394,   y + 6, { width: 56  });
+          doc.text(max,                           MARGIN + 454,   y + 6, { width: 56  });
+          doc.font('Helvetica-Bold').fontSize(9).fillColor(stColor)
+             .text(status,                        MARGIN + 514,   y + 6, { width: 51  });
+          y += 22;
+        });
+      }
+      y += 12;
+
+      // Plants
+      y = checkPage(doc, y, 60);
+      doc.font('Helvetica-Bold').fontSize(11).fillColor(COLORS.secondary)
+         .text('Plants', MARGIN, y);
+      y += 18;
+
+      if (zone.plants.length === 0) {
+        drawRect(doc, MARGIN, y, COL_W, 24, COLORS.light);
+        doc.font('Helvetica-Oblique').fontSize(10).fillColor(COLORS.muted)
+           .text('No plants in this zone', MARGIN, y + 6, { align: 'center', width: COL_W });
+        y += 24;
+      } else {
+        for (const plant of zone.plants) {
+          y = checkPage(doc, y, 100);
+          // Plant card header
+          drawRect(doc, MARGIN, y, COL_W, 26, '#eafaf1');
+          doc.font('Helvetica-Bold').fontSize(11).fillColor(COLORS.secondary)
+             .text(`🌱 ${plant.name}`, MARGIN + 8, y + 7, { width: COL_W * 0.6 });
+          doc.font('Helvetica').fontSize(9).fillColor(COLORS.muted)
+             .text(`Stage: ${plant.growth_stage || 'N/A'}  |  Qty: ${plant.quantity || 'N/A'}  |  Planted: ${fmt(plant.planted_at)}`,
+                   MARGIN + 8, y + 22 - 9, { width: COL_W - 16 });
+          y += 26;
+
+          // Forecast
+          const f = plant.forecast;
+          if (f && !f.error) {
+            const hs = f.health_score || 0;
+            const hColor = healthColor(hs);
+
+            // Progress bar
+            drawRect(doc, MARGIN + 8, y + 4, COL_W - 16, 10, COLORS.border, 5);
+            drawRect(doc, MARGIN + 8, y + 4, Math.max(4, (COL_W - 16) * (f.growth_percentage || 0) / 100), 10, hColor, 5);
+            doc.font('Helvetica').fontSize(9).fillColor(COLORS.muted)
+               .text(`Growth: ${f.growth_percentage || 0}%`, MARGIN + 8, y + 17, { width: 100 });
+            doc.font('Helvetica-Bold').fontSize(9).fillColor(hColor)
+               .text(`Health: ${hs}/100 — ${f.health_status || 'N/A'}`, PAGE_W - MARGIN - 160, y + 17, { width: 155, align: 'right' });
+            y += 30;
+
+            // Forecast grid
+            const fItems = [
+              ['GDD Accumulated', String(f.accumulated_gdd || 'N/A')],
+              ['GDD Needed',      String(f.total_gdd_needed || 'N/A')],
+              ['Days Remaining',  String(f.days_remaining || 'N/A')],
+              ['Est. Harvest',    fmt(f.estimated_harvest_date)],
+            ];
+            const fColW = (COL_W - 24) / 2;
+            fItems.forEach((fi, idx) => {
+              const fx = MARGIN + 8 + (idx % 2) * (fColW + 8);
+              const fy = y + Math.floor(idx / 2) * 22;
+              drawRect(doc, fx, fy, fColW, 20, COLORS.light, 3);
+              doc.font('Helvetica').fontSize(8).fillColor(COLORS.muted)
+                 .text(fi[0], fx + 6, fy + 3, { width: fColW / 2 - 4 });
+              doc.font('Helvetica-Bold').fontSize(9).fillColor(COLORS.text)
+                 .text(fi[1], fx + fColW / 2, fy + 3, { width: fColW / 2 - 6, align: 'right' });
+            });
+            y += 50;
+
+            // Recommendations
+            if (f.recommendations && f.recommendations.length) {
+              y = checkPage(doc, y, 30 + f.recommendations.length * 16);
+              drawRect(doc, MARGIN + 8, y, COL_W - 16, 20 + f.recommendations.length * 16, '#fff3cd', 4);
+              doc.font('Helvetica-Bold').fontSize(9).fillColor('#856404')
+                 .text('Recommendations:', MARGIN + 14, y + 5);
+              f.recommendations.forEach((r, ri) => {
+                doc.font('Helvetica').fontSize(9).fillColor('#856404')
+                   .text(`• ${r}`, MARGIN + 14, y + 18 + ri * 16, { width: COL_W - 28 });
+              });
+              y += 20 + f.recommendations.length * 16;
+            }
+          } else {
+            drawRect(doc, MARGIN + 8, y, COL_W - 16, 22, '#fff3cd', 4);
+            doc.font('Helvetica-Oblique').fontSize(9).fillColor('#856404')
+               .text(f?.error || 'Forecast unavailable', MARGIN + 14, y + 6, { width: COL_W - 28 });
+            y += 22;
+          }
+          rowLine(doc, y + 4);
+          y += 14;
+        }
+      }
+      y += 16;
+    }
+
+    // ─── ALERTS PAGE ───────────────────────────────────
+    y = checkPage(doc, y, 200);
+    if (y > MARGIN + 100) { doc.addPage(); y = MARGIN; }
+
+    y = sectionHeader(doc, 'Recent Alerts', y);
+
+    // Alert summary boxes
+    const aCrit = alerts.filter(a => a.severity === 'critical').length;
+    const aWarn = alerts.filter(a => a.severity === 'warning').length;
+    const aInfo = alerts.filter(a => a.severity === 'info').length;
+    const aBoxW = (COL_W - 20) / 3;
+    [
+      { label: 'Critical', count: aCrit, color: COLORS.danger  },
+      { label: 'Warnings', count: aWarn, color: COLORS.warning },
+      { label: 'Info',     count: aInfo, color: COLORS.secondary },
+    ].forEach((ab, i) => {
+      const abx = MARGIN + i * (aBoxW + 10);
+      drawRect(doc, abx, y, aBoxW, 55, COLORS.light, 6);
+      doc.save().rect(abx, y, aBoxW, 4).fill(ab.color).restore();
+      doc.font('Helvetica-Bold').fontSize(26).fillColor(ab.color)
+         .text(String(ab.count), abx, y + 10, { align: 'center', width: aBoxW });
+      doc.font('Helvetica').fontSize(10).fillColor(COLORS.muted)
+         .text(ab.label, abx, y + 38, { align: 'center', width: aBoxW });
+    });
+    y += 65;
+
+    // Alerts table header
+    const aCols = [
+      { label: 'Date',     x: MARGIN,       w: 105 },
+      { label: 'Type',     x: MARGIN + 105, w: 110 },
+      { label: 'Severity', x: MARGIN + 215, w: 70  },
+      { label: 'Message',  x: MARGIN + 285, w: 195 },
+      { label: 'Status',   x: MARGIN + 480, w: 65  },
+    ];
+    drawRect(doc, MARGIN, y, COL_W, 22, COLORS.secondary);
+    aCols.forEach(c => {
+      doc.font('Helvetica-Bold').fontSize(9).fillColor(COLORS.white)
+         .text(c.label, c.x + 4, y + 6, { width: c.w - 4 });
+    });
+    y += 22;
+
+    if (alerts.length === 0) {
+      drawRect(doc, MARGIN, y, COL_W, 24, COLORS.light);
+      doc.font('Helvetica-Oblique').fontSize(10).fillColor(COLORS.muted)
+         .text('No alerts recorded', MARGIN, y + 6, { align: 'center', width: COL_W });
+      y += 24;
+    } else {
+      alerts.forEach((a, i) => {
+        const rowH = 22;
+        y = checkPage(doc, y, rowH);
+        if (i % 2 === 0) drawRect(doc, MARGIN, y, COL_W, rowH, COLORS.light);
+        const sevColor = a.severity === 'critical' ? COLORS.danger
+                       : a.severity === 'warning'  ? COLORS.warning
+                       : COLORS.secondary;
+        doc.font('Helvetica').fontSize(9).fillColor(COLORS.text);
+        doc.text(fmt(a.created_at),              MARGIN + 4,     y + 6, { width: 101 });
+        doc.text(a.type.replace(/_/g,' '),       MARGIN + 109,   y + 6, { width: 106 });
+        doc.font('Helvetica-Bold').fontSize(9).fillColor(sevColor)
+           .text(a.severity,                     MARGIN + 219,   y + 6, { width: 66 });
+        doc.font('Helvetica').fontSize(8).fillColor(COLORS.text)
+           .text(a.message,                      MARGIN + 289,   y + 6, { width: 191 });
+        const stColor2 = a.is_resolved ? COLORS.primary : COLORS.warning;
+        doc.font('Helvetica-Bold').fontSize(9).fillColor(stColor2)
+           .text(a.is_resolved ? 'Resolved' : 'Active', MARGIN + 484, y + 6, { width: 61 });
+        y += rowH;
+      });
+    }
+
+    // ─── FOOTER ON ALL PAGES ───────────────────────────
+    const pages = doc.bufferedPageRange();
+    for (let i = 0; i < pages.count; i++) {
+      doc.switchToPage(pages.start + i);
+      if (i === 0) continue; // skip cover
+      const footerY = PAGE_H - 35;
+      doc.save().moveTo(MARGIN, footerY).lineTo(PAGE_W - MARGIN, footerY)
+         .strokeColor(COLORS.border).lineWidth(0.5).stroke().restore();
+      doc.font('Helvetica').fontSize(9).fillColor(COLORS.muted)
+         .text('FCHAN — Farm Intelligence Platform', MARGIN, footerY + 6, { width: COL_W / 2 })
+         .text(`Page ${i + 1} of ${pages.count}  |  ${fmt(generated_at)}`,
+               MARGIN + COL_W / 2, footerY + 6, { width: COL_W / 2, align: 'right' });
+    }
+
+    doc.end();
+
+  } catch (err) {
+    reject(err);
   }
-};
+});
 
 module.exports = { generatePDF };
